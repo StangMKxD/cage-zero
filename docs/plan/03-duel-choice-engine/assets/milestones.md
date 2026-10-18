@@ -2,4 +2,4 @@
 
 | Run | Status | Commit / Milestone Summary | Audited By |
 | :---: | :---: | :--- | :---: |
-| `run-01` | `PENDING` | Awaiting prior module approval before starting Module 03. | - |
+| `run-01` | `APPROVED & CLOSED` | Implemented `ChoiceConfigs.luau`, `DuelEngineService.luau`, and `DuelUIController.luau` with Shooting Zone enforcement, Mistake penalties, and `ShotBlock` exclusivity. | Codex |

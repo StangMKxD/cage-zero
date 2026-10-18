@@ -2,4 +2,4 @@
 
 | Run | Status | Commit / Milestone Summary | Audited By |
 | :---: | :---: | :--- | :---: |
-| `run-01` | `PENDING` | Awaiting prior module approval before starting Module 04. | - |
+| `run-01` | `APPROVED & CLOSED` | Implemented `CardConfigs.luau`, `CameraCutsceneController.luau`, `FreeKickService.luau`, and `FreeKickUIController.luau` with Tier-capped cutscenes and FC27 Magnus/Knuckleball physics. | Codex |

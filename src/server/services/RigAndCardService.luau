@@ -1,7 +1,9 @@
 --!strict
 -- src/server/services/RigAndCardService.luau
--- Module 00: Enforces Single Standard Custom R15 Rig for all players (Zero Player Avatar Models)
--- and applies proportional height/width scaling from CardConfigs without distorting Motor6D joints.
+-- Module 00 (run-02 Fixed):
+-- [FIX-M00-01] Sets Humanoid.AutomaticScalingEnabled = false, stores scales as Attributes (no NumberValue double-scaling),
+--              and scales Motor6D.C0 by Part0 scale and Motor6D.C1 by Part1 scale so Neck/Head never detach.
+-- [FIX-M00-02] Auto-respawns Custom Rig on Humanoid.Died (2.0s delay) and connects InventoryEquipRequest for "Card".
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,7 +12,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared:WaitForChild("Constants"))
-local Types = require(Shared:WaitForChild("Types"))
+local Network = require(Shared:WaitForChild("Network"))
 local CardConfigs = require(Shared:WaitForChild("configs"):WaitForChild("CardConfigs"))
 
 export type RigPartSpec = {
@@ -22,7 +24,6 @@ export type RigPartSpec = {
 	c1: CFrame?,
 }
 
--- Standard R15 limb dimensions and Motor6D joint offsets (Base Scale = 1.00)
 local R15_PART_SPECS: { RigPartSpec } = table.freeze({
 	{
 		name = "HumanoidRootPart",
@@ -160,18 +161,6 @@ local isInitialized = false
 
 local RigAndCardService = {}
 
-local function setOrCreateScaleNumberValue(humanoid: Humanoid, valueName: string, numericValue: number)
-	local existing = humanoid:FindFirstChild(valueName)
-	if existing and existing:IsA("NumberValue") then
-		existing.Value = numericValue
-		return
-	end
-	local nv = Instance.new("NumberValue")
-	nv.Name = valueName
-	nv.Value = numericValue
-	nv.Parent = humanoid
-end
-
 local function scaleCFrameOffset(baseCFrame: CFrame, scaleVec: Vector3): CFrame
 	local pos = baseCFrame.Position
 	local scaledPos = Vector3.new(pos.X * scaleVec.X, pos.Y * scaleVec.Y, pos.Z * scaleVec.Z)
@@ -199,6 +188,10 @@ function RigAndCardService.BuildStandardCustomR15Rig(characterName: string): Mod
 		cloned:SetAttribute("IsStandardCustomRig", true)
 		cloned:SetAttribute("UsesPlayerAvatar", false)
 		cloned:SetAttribute("AnimeFaceLocked", true)
+		local clonedHum = cloned:FindFirstChildOfClass("Humanoid")
+		if clonedHum then
+			clonedHum.AutomaticScalingEnabled = false
+		end
 		return cloned
 	end
 
@@ -254,7 +247,8 @@ function RigAndCardService.BuildStandardCustomR15Rig(characterName: string): Mod
 	local humanoid = Instance.new("Humanoid")
 	humanoid.Name = "Humanoid"
 	humanoid.RigType = Enum.HumanoidRigType.R15
-	humanoid.AutomaticScalingEnabled = true
+	-- [FIX-M00-01] Disable AutomaticScalingEnabled so Roblox engine never double-scales on top of ApplyCardScale
+	humanoid.AutomaticScalingEnabled = false
 	humanoid.HipHeight = 2.0
 	humanoid.Parent = rigModel
 
@@ -283,7 +277,15 @@ function RigAndCardService.ApplyCardScale(rigModel: Model, cardId: string?): boo
 	local clampedDepth = math.clamp(scaleCfg.depthScale, 0.85, 1.15)
 	local clampedHead = math.clamp(scaleCfg.headScale, 0.85, 1.15)
 
-	local scaleVec = Vector3.new(clampedWidth, clampedHeight, clampedDepth)
+	local bodyScaleVec = Vector3.new(clampedWidth, clampedHeight, clampedDepth)
+	local headScaleVec = Vector3.new(clampedHead, clampedHead, clampedHead)
+
+	local function getScaleVecForPart(part: BasePart?): Vector3
+		if part and part.Name == "Head" then
+			return headScaleVec
+		end
+		return bodyScaleVec
+	end
 
 	for _, inst in ipairs(rigModel:GetDescendants()) do
 		if inst:IsA("BasePart") then
@@ -293,15 +295,12 @@ function RigAndCardService.ApplyCardScale(rigModel: Model, cardId: string?): boo
 				inst:SetAttribute("BaseSize", baseSize)
 			end
 
-			if inst.Name == "Head" then
-				inst.Size = baseSize * clampedHead
-			else
-				inst.Size = Vector3.new(
-					baseSize.X * scaleVec.X,
-					baseSize.Y * scaleVec.Y,
-					baseSize.Z * scaleVec.Z
-				)
-			end
+			local partScale = getScaleVecForPart(inst)
+			inst.Size = Vector3.new(
+				baseSize.X * partScale.X,
+				baseSize.Y * partScale.Y,
+				baseSize.Z * partScale.Z
+			)
 		elseif inst:IsA("Motor6D") then
 			local baseC0Attr = inst:GetAttribute("BaseC0")
 			local baseC1Attr = inst:GetAttribute("BaseC1")
@@ -313,19 +312,21 @@ function RigAndCardService.ApplyCardScale(rigModel: Model, cardId: string?): boo
 			if typeof(baseC1Attr) ~= "CFrame" then
 				inst:SetAttribute("BaseC1", baseC1)
 			end
-			inst.C0 = scaleCFrameOffset(baseC0, scaleVec)
-			inst.C1 = scaleCFrameOffset(baseC1, scaleVec)
+			-- [FIX-M00-01] Scale C0 by Part0's scale and C1 by Part1's scale so Neck.C1 uses headScaleVec
+			inst.C0 = scaleCFrameOffset(baseC0, getScaleVecForPart(inst.Part0))
+			inst.C1 = scaleCFrameOffset(baseC1, getScaleVecForPart(inst.Part1))
 		end
 	end
 
 	local humanoid = rigModel:FindFirstChildOfClass("Humanoid")
 	if humanoid then
-		setOrCreateScaleNumberValue(humanoid, "BodyHeightScale", clampedHeight)
-		setOrCreateScaleNumberValue(humanoid, "BodyWidthScale", clampedWidth)
-		setOrCreateScaleNumberValue(humanoid, "BodyDepthScale", clampedDepth)
-		setOrCreateScaleNumberValue(humanoid, "HeadScale", clampedHead)
-		setOrCreateScaleNumberValue(humanoid, "BodyProportionScale", scaleCfg.proportionScale)
-		setOrCreateScaleNumberValue(humanoid, "BodyTypeScale", 0)
+		humanoid.AutomaticScalingEnabled = false
+		humanoid:SetAttribute("BodyHeightScale", clampedHeight)
+		humanoid:SetAttribute("BodyWidthScale", clampedWidth)
+		humanoid:SetAttribute("BodyDepthScale", clampedDepth)
+		humanoid:SetAttribute("HeadScale", clampedHead)
+		humanoid:SetAttribute("BodyProportionScale", scaleCfg.proportionScale)
+		humanoid:SetAttribute("BodyTypeScale", 0)
 		humanoid.HipHeight = 2.0 * clampedHeight
 	end
 
@@ -355,6 +356,22 @@ function RigAndCardService.SpawnCustomRigForPlayer(player: Player, cardId: strin
 		customRig:PivotTo(spawnCFrame)
 	end
 
+	-- [FIX-M00-02] Auto-respawn Custom Rig when Humanoid dies
+	local humanoid = customRig:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		local diedConn = humanoid.Died:Connect(function()
+			task.delay(2.0, function()
+				if player.Parent ~= nil then
+					RigAndCardService.SpawnCustomRigForPlayer(player, playerEquippedCardByUserId[player.UserId])
+				end
+			end)
+		end)
+		if not playerConnections[player.UserId] then
+			playerConnections[player.UserId] = {}
+		end
+		table.insert(playerConnections[player.UserId], diedConn)
+	end
+
 	customRig.Parent = Workspace
 	player.Character = customRig
 
@@ -366,6 +383,9 @@ function RigAndCardService.SpawnCustomRigForPlayer(player: Player, cardId: strin
 end
 
 function RigAndCardService.EquipCardForPlayer(player: Player, cardId: string): boolean
+	if CardConfigs.Cards[cardId] == nil then
+		return false
+	end
 	local cardConfig = CardConfigs.GetCardConfig(cardId)
 	playerEquippedCardByUserId[player.UserId] = cardConfig.cardId
 
@@ -382,11 +402,15 @@ function RigAndCardService.GetEquippedCardId(userId: number): string
 	return playerEquippedCardByUserId[userId] or Constants.DEFAULT_CARD_ID
 end
 
+function RigAndCardService.GetEquippedCardConfig(userId: number): CardConfigs.PlayerCardConfig
+	local cardId = RigAndCardService.GetEquippedCardId(userId)
+	return CardConfigs.GetCardConfig(cardId)
+end
+
 local function onPlayerAdded(player: Player)
 	playerEquippedCardByUserId[player.UserId] = Constants.DEFAULT_CARD_ID
 	playerConnections[player.UserId] = {}
 
-	-- Guarantee any avatar model is immediately replaced with the Single Standard Custom R15 Rig
 	local charAddedConn = player.CharacterAdded:Connect(function(character: Model)
 		if character:GetAttribute("IsStandardCustomRig") ~= true then
 			task.defer(function()
@@ -418,8 +442,17 @@ function RigAndCardService.Init()
 	end
 	isInitialized = true
 
-	-- Rule 2: Disable automatic Roblox Player Avatar loading so only our Single Custom R15 Rig is used
 	Players.CharacterAutoLoads = false
+
+	-- [FIX-M00-02] Connect InventoryEquipRequest for Card equips
+	local equipEvent = Network.GetRemoteEvent(Network.Names.InventoryEquipRequest)
+	equipEvent.OnServerEvent:Connect(function(player: Player, category: any, itemId: any)
+		if category == "Card" and Network.IsNonEmptyString(itemId, 64) then
+			if CardConfigs.Cards[itemId] ~= nil then
+				RigAndCardService.EquipCardForPlayer(player, itemId)
+			end
+		end
+	end)
 
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(onPlayerRemoving)

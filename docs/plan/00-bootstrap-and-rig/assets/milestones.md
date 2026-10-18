@@ -2,4 +2,5 @@
 
 | Run | Status | Commit / Milestone Summary | Audited By |
 | :---: | :---: | :--- | :---: |
-| `run-01` | `READY_FOR_REVIEW` | Bootstrap project structure, Rojo config, Shared Types/Constants/Network, and Single Standard Custom R15 Rig service (`RigAndCardService.luau`). Waiting for Codex review. | Pending Codex |
+| `run-01` | `REJECTED` | Initial bootstrap; rejected due to `[FIX-M00-01]` to `[FIX-M00-05]`. | Chief Architect / Codex |
+| `run-02` | `APPROVED & CLOSED` | Resolved all 5 findings (`[FIX-M00-01]` to `[FIX-M00-05]`): fixed R15 double-scaling & `Neck.C1`, added auto-respawn & `InventoryEquipRequest` handler, completed `Types.luau` schema, added `Network.luau` lazy server creation & validators, and populated `.gitkeep` in all `runs/` directories. | Codex |

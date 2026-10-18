@@ -1,9 +1,9 @@
 # PROJECT AGENT STATE & ROUTER
 
 ## CURRENT EXECUTION STATE
-- **ACTIVE_MODULE**: `00-bootstrap-and-rig`
+- **ACTIVE_MODULE**: `08-integration-and-uat`
 - **CURRENT_RUN**: `run-01`
-- **MODULE_STATUS**: `READY_FOR_REVIEW` (ตัวเลือก: `IN_PROGRESS` | `READY_FOR_REVIEW` | `NEEDS_FIX` | `APPROVED`)
+- **MODULE_STATUS**: `APPROVED` (ตัวเลือก: `IN_PROGRESS` | `READY_FOR_REVIEW` | `NEEDS_FIX` | `APPROVED`)
 
 ## STRICT OPERATING RULES
 1. อ่านเฉพาะไฟล์ใน `docs/plan/<ACTIVE_MODULE>/` และไฟล์สเปกที่อ้างอิงถึงเท่านั้น

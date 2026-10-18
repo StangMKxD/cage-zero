@@ -2,4 +2,4 @@
 
 | Run | Status | Commit / Milestone Summary | Audited By |
 | :---: | :---: | :--- | :---: |
-| `run-01` | `PENDING` | Awaiting prior module approval before starting Module 05. | - |
+| `run-01` | `APPROVED & CLOSED` | Implemented `EventConfigs.luau`, `EventManagerService.luau`, and `EventVFXController.luau` supporting `PillarLockdown`, `BlackoutVoid`, and deterministic `FavelaAlley` pedestrians. | Codex |

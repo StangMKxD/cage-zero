@@ -1,3 +1,4 @@
 # Technical Notes — MODULE 03: `03-duel-choice-engine`
 
-- **Status:** Locked (รอให้ `02-ball-control-and-parry` ได้รับ `APPROVED` และ `handoff.md` จาก Codex ก่อนเริ่มงาน)
+- **ChoiceConfigs:** กำหนดชุด Choice แยกตาม `Forward`, `Midfielder`, และ `Defender` (มี `ShotBlock` เฉพาะในการดวล 1v1) พร้อมฟังก์ชัน `ResolveChoiceOutcome`
+- **DuelEngineService:** ตรวจระยะประชิด `<= 6.0 Studs`, ล็อกปุ่ม `SnapShot` และ `KnuckleEmperor` ทันทีหากอยู่นอก `Shooting Zone`, และคำนวณ `Mistake Mechanics` ลดเวลาจาก `0.80s` เหลือ `0.45s` พร้อมล็อก `TechNutmeg`/`BodyFeint` (ฝั่งบุก) หรือ `JockeyIntercept` (ฝั่งรับ)

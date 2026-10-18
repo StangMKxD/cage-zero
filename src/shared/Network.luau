@@ -1,7 +1,6 @@
 --!strict
 -- src/shared/Network.luau
--- Canonical Network Contract (Section 4.8 of startprojects.md)
--- All 12 RemoteEvents / RemoteFunctions are defined here so Server and Client never drift.
+-- Canonical Network Contract (Section 4.8 & [FIX-M00-04] Lazy Remote Creation + Payload Validators)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -126,24 +125,31 @@ local function getOrCreateRemotesFolder(): Folder
 	return folder
 end
 
+local function getOrCreateServerRemote(folder: Folder, def: RemoteDefinition): Instance
+	local existing = folder:FindFirstChild(def.name)
+	if existing then
+		return existing
+	end
+	if def.kind == "RemoteFunction" then
+		local rf = Instance.new("RemoteFunction")
+		rf.Name = def.name
+		rf.Parent = folder
+		return rf
+	else
+		local re = Instance.new("RemoteEvent")
+		re.Name = def.name
+		re.Parent = folder
+		return re
+	end
+end
+
 function Network.InitServer(): Folder
 	assert(RunService:IsServer(), "[Network] InitServer can only be called on the Server")
 	local folder = getOrCreateRemotesFolder()
 
 	for remoteKey, def in pairs(Definitions) do
-		local existing = folder:FindFirstChild(def.name)
-		if not existing then
-			if def.kind == "RemoteFunction" then
-				local rf = Instance.new("RemoteFunction")
-				rf.Name = def.name
-				rf.Parent = folder
-			else
-				local re = Instance.new("RemoteEvent")
-				re.Name = def.name
-				re.Parent = folder
-			end
-		end
 		assert(remoteKey == def.name, "[Network] Remote key mismatch: " .. tostring(remoteKey))
+		getOrCreateServerRemote(folder, def)
 	end
 
 	return folder
@@ -154,14 +160,16 @@ function Network.GetRemoteEvent(remoteName: string): RemoteEvent
 	assert(def ~= nil, "[Network] Unknown Remote name: " .. tostring(remoteName))
 	assert(def.kind == "RemoteEvent", "[Network] Remote is not a RemoteEvent: " .. tostring(remoteName))
 
-	local folder = if RunService:IsServer()
-		then getOrCreateRemotesFolder()
-		else ReplicatedStorage:WaitForChild(REMOTE_FOLDER_NAME, 10) :: Folder
-	assert(folder ~= nil, "[Network] Remotes folder not found in ReplicatedStorage")
+	if RunService:IsServer() then
+		local folder = getOrCreateRemotesFolder()
+		local remote = getOrCreateServerRemote(folder, def)
+		assert(remote:IsA("RemoteEvent"), "[Network] Expected RemoteEvent: " .. def.name)
+		return remote
+	end
 
-	local remote = if RunService:IsServer()
-		then folder:FindFirstChild(def.name)
-		else folder:WaitForChild(def.name, 10)
+	local folder = ReplicatedStorage:WaitForChild(REMOTE_FOLDER_NAME, 10) :: Folder
+	assert(folder ~= nil, "[Network] Remotes folder not found in ReplicatedStorage")
+	local remote = folder:WaitForChild(def.name, 10)
 	assert(remote ~= nil and remote:IsA("RemoteEvent"), "[Network] Missing RemoteEvent: " .. def.name)
 	return remote
 end
@@ -171,16 +179,59 @@ function Network.GetRemoteFunction(remoteName: string): RemoteFunction
 	assert(def ~= nil, "[Network] Unknown Remote name: " .. tostring(remoteName))
 	assert(def.kind == "RemoteFunction", "[Network] Remote is not a RemoteFunction: " .. tostring(remoteName))
 
-	local folder = if RunService:IsServer()
-		then getOrCreateRemotesFolder()
-		else ReplicatedStorage:WaitForChild(REMOTE_FOLDER_NAME, 10) :: Folder
-	assert(folder ~= nil, "[Network] Remotes folder not found in ReplicatedStorage")
+	if RunService:IsServer() then
+		local folder = getOrCreateRemotesFolder()
+		local remote = getOrCreateServerRemote(folder, def)
+		assert(remote:IsA("RemoteFunction"), "[Network] Expected RemoteFunction: " .. def.name)
+		return remote
+	end
 
-	local remote = if RunService:IsServer()
-		then folder:FindFirstChild(def.name)
-		else folder:WaitForChild(def.name, 10)
+	local folder = ReplicatedStorage:WaitForChild(REMOTE_FOLDER_NAME, 10) :: Folder
+	assert(folder ~= nil, "[Network] Remotes folder not found in ReplicatedStorage")
+	local remote = folder:WaitForChild(def.name, 10)
 	assert(remote ~= nil and remote:IsA("RemoteFunction"), "[Network] Missing RemoteFunction: " .. def.name)
 	return remote
+end
+
+-- [FIX-M00-04] Server Payload Validators to prevent NaN / malformed payloads from Clients
+function Network.IsFiniteVector3(v: any): boolean
+	if typeof(v) ~= "Vector3" then
+		return false
+	end
+	local vec = v :: Vector3
+	if vec.X ~= vec.X or vec.Y ~= vec.Y or vec.Z ~= vec.Z then
+		return false
+	end
+	if math.abs(vec.X) == math.huge or math.abs(vec.Y) == math.huge or math.abs(vec.Z) == math.huge then
+		return false
+	end
+	return true
+end
+
+function Network.IsNonEmptyString(s: any, maxLen: number?): boolean
+	if type(s) ~= "string" then
+		return false
+	end
+	local str = s :: string
+	local len = #str
+	if len < 1 then
+		return false
+	end
+	if maxLen ~= nil and len > maxLen then
+		return false
+	end
+	return true
+end
+
+function Network.IsNumberInRange(n: any, minVal: number, maxVal: number): boolean
+	if type(n) ~= "number" then
+		return false
+	end
+	local num = n :: number
+	if num ~= num or math.abs(num) == math.huge then
+		return false
+	end
+	return num >= minVal and num <= maxVal
 end
 
 return table.freeze(Network)

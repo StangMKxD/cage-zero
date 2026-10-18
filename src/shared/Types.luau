@@ -1,17 +1,19 @@
 --!strict
 -- src/shared/Types.luau
--- Domain types and network payload schemas for Cage Zero (Module 00)
+-- Domain types and network payload schemas for Cage Zero (Module 00 - run-02 Fixed)
 
 export type PlayerPosition = "Forward" | "Midfielder" | "Defender"
 export type DuelRole = "Attacker" | "Defender"
 export type CardTier = "B" | "A" | "S"
+export type ThreadRarity = "Common" | "Rare" | "Epic" | "Legendary"
 export type BallActionType = "Pass" | "Shoot" | "Sprint"
 export type FreeKickTimingZone = "Green" | "Yellow" | "Red"
 export type MatchEventType = "PillarLockdown" | "BlackoutVoid" | "FavelaAlley"
 export type MatchEventState = "Warning" | "Active" | "Ended"
 export type InventoryCategory = "Card" | "Thread" | "Trait" | "Celebration"
-export type SummonCount = number -- 1 | 10
+export type SummonCount = number
 export type TradeActionType = "AddItem" | "LockOffer" | "ConfirmTrade" | "Cancel"
+export type TradeStatus = "Active" | "Locked" | "Completed" | "Cancelled"
 export type UIMode = "MAIN_MENU" | "LOBBY_MODE" | "MATCH_MODE"
 export type MutationType = "GoldenAura" | "VoidGlitch" | "BloodMoonFlame"
 
@@ -57,9 +59,16 @@ export type MutationData = {
 export type BattleThreadInstance = {
 	threadUid: string,
 	threadConfigId: string,
+	rarity: ThreadRarity,
 	maxTraitSlots: number,
 	equippedTraitIds: { string },
 	mutation: MutationData?,
+}
+
+export type TraitStoneInstance = {
+	traitUid: string,
+	traitId: string,
+	acquiredAt: number,
 }
 
 export type ObtainedItem = {
@@ -67,6 +76,28 @@ export type ObtainedItem = {
 	category: InventoryCategory,
 	configId: string,
 	tierOrRarity: string,
+}
+
+export type TradeSessionData = {
+	tradeId: string,
+	initiatorUserId: number,
+	partnerUserId: number,
+	initiatorOfferUids: { string },
+	partnerOfferUids: { string },
+	initiatorLocked: boolean,
+	partnerLocked: boolean,
+	lockTimestamp: number?,
+	initiatorConfirmed: boolean,
+	partnerConfirmed: boolean,
+	status: TradeStatus,
+}
+
+export type BoothListingData = {
+	listingId: string,
+	sellerUserId: number,
+	itemUid: string,
+	category: InventoryCategory,
+	priceCash: number,
 }
 
 export type PlayerProfileData = {
@@ -80,7 +111,7 @@ export type PlayerProfileData = {
 	equippedCelebrationId: string,
 	ownedCards: { string },
 	ownedThreads: { BattleThreadInstance },
-	ownedTraits: { string },
+	ownedTraits: { TraitStoneInstance },
 }
 
 local Types = {}
