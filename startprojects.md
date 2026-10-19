@@ -1,3 +1,5 @@
+> **Historical baseline:** โครงแผนปัจจุบันอยู่ใน docs/READ.md และ docs/plan/roadmap.md ใช้เลข 00–nn ภายในแต่ละ phase; รายละเอียด scope/ขั้นตอนปิดงานเก่าในเอกสารนี้ไม่ใช่คำอนุมัติรอบปัจจุบัน ให้ยึด phase plan และ accepted decisions ล่าสุด
+
 # MASTER PROJECT BLUEPRINT, CODEX AUDIT REPORT & FULL IMPLEMENTATION GUIDE (`startprojects.md`)
 
 เอกสารฉบับนี้คือ **Single Source of Truth & Active Remediation Guide (คัมภีร์หลักและใบสั่งแก้งานฉบับสมบูรณ์)** สำหรับโปรเจกต์ **`cage-zero`** หลังจากตรวจสอบซอร์สโค้ดและโครงสร้างทั้งหมดใน Commit ล่าสุด (`MODULE 00: run-01`)
@@ -20,7 +22,7 @@
 | **`[FIX-M00-02]`**<br>*(วิกฤต: ตัวละครตายแล้วไม่เกิดใหม่ & ไม่เชื่อม Remote)* | `src/server/services/RigAndCardService.luau`<br>*(บรรทัด 303–375)* | 1. เมื่อตั้ง `Players.CharacterAutoLoads = false` เวลาตัวละครตกแมพหรือ `Humanoid.Died` ผู้เล่นจะค้างและไม่เกิดใหม่อีกเลย เพราะไม่ได้ผูก Event `humanoid.Died`<br>2. ไม่ได้ผูก `Network.GetRemoteEvent("InventoryEquipRequest")` สำหรับหมวด `"Card"` ทำให้เมื่อผู้เล่นขอเปลี่ยนการ์ดจาก Client ตัวละครไม่เปลี่ยนสัดส่วนจริง | 1. ใน `SpawnCustomRigForPlayer` ต้องผูก `humanoid.Died:Connect` เพื่อหน่วงเวลา `2.0 วินาที` แล้วเรียก `SpawnCustomRigForPlayer` ให้เกิดใหม่ด้วย Custom Rig อัตโนมัติ<br>2. เพิ่มฟังก์ชันเชื่อม `InventoryEquipRequest.OnServerEvent` เมื่อ `category == "Card"` ให้ตรวจสอบว่าการ์ดมีอยู่จริงใน `CardConfigs` แล้วเรียก `EquipCardForPlayer(player, itemId)` ทันที |
 | **`[FIX-M00-03]`**<br>*(ผิดสเปก Data Schema)* | `src/shared/Types.luau`<br>*(บรรทัด 45–75)* | โครงสร้าง Type ใน `Types.luau` ตกหล่นฟิลด์บังคับจาก `docs/design/data-schema.md`:<br>1. `BattleThreadInstance` ขาดฟิลด์ `rarity: ThreadRarity` (`"Common" \| "Rare" \| "Epic" \| "Legendary"`)<br>2. `PlayerProfileData.ownedTraits` ถูกเขียนเป็น `{ string }` แทนที่จะเป็น `{ TraitStoneInstance }` ที่มี `traitUid: string` (ถ้าไม่มี UID เฉพาะชิ้น จะไม่สามารถอ้างอิง `itemUid` ในระบบเทรดป้องกันการปั๊มของได้)<br>3. ขาด Type `TradeSessionData`, `BoothListingData`, และ Payload Types ของ Network | อัปเดต `src/shared/Types.luau` ให้มีครบทุก Type ตาม `docs/design/data-schema.md`:<br>- เพิ่ม `export type ThreadRarity = "Common" \| "Rare" \| "Epic" \| "Legendary"`<br>- เพิ่ม `rarity: ThreadRarity` ใน `BattleThreadInstance`<br>- เพิ่ม `export type TraitStoneInstance = { traitUid: string, traitId: string, acquiredAt: number }`<br>- เปลี่ยน `ownedTraits: { TraitStoneInstance }` ใน `PlayerProfileData`<br>- เพิ่ม `TradeSessionData` และ `BoothListingData` ให้ครบถ้วน |
 | **`[FIX-M00-04]`**<br>*(ช่องโหว่ Race Condition & Payload Validation)* | `src/shared/Network.luau`<br>*(บรรทัด 147–176)* | 1. บนฝั่ง Server หาก Service ใดเรียก `Network.GetRemoteEvent(name)` ก่อนที่ `Network.InitServer()` จะสร้างลูกครบ `getOrCreateRemotesFolder()` จะคืนโฟลเดอร์ว่าง ทำให้ `folder:FindFirstChild(def.name)` ได้ค่า `nil` และเกิด Error แครชทันที<br>2. ไม่มีฟังก์ชันช่วยตรวจสอบชนิดข้อมูล (`Payload Validators`) สำหรับป้องกัน Client ส่งค่า `NaN` หรือชนิดข้อมูลปลอมมาให้ Server | 1. ใน `Network.GetRemoteEvent` และ `Network.GetRemoteFunction` ฝั่ง Server หากยังไม่มี Remote ชื่อนั้นในโฟลเดอร์ ให้สร้าง `Instance.new(def.kind)` ให้อัตโนมัติทันที (Lazy Creation)<br>2. เพิ่มฟังก์ชัน `Network.IsFiniteVector3(v: any): boolean`, `Network.IsNonEmptyString(s: any, maxLen: number?): boolean`, และ `Network.IsNumberInRange(n: any, minVal: number, maxVal: number): boolean` สำหรับใช้ในทุก Server Service |
-| **`[FIX-M00-05]`**<br>*(โครงสร้างโฟลเดอร์ไม่ครบ 100% ตามส่วนที่ 2)* | `docs/plan/`<br>*(ทุก Module `00` ถึง `08`)* | 1. ใน `docs/plan/00-bootstrap-and-rig/assets/runs/run-01/` ไม่มีโฟลเดอร์ `uat-images/` และ `fix-images/`<br>2. ใน `docs/plan/01-cage-physics/` ถึง `08-integration-and-uat/` มีแค่ `assets/` แต่ไม่มีโฟลเดอร์ `assets/runs/run-01/` (พร้อมไฟล์ตั้งต้นและโฟลเดอร์รูป) ตามที่กำหนดในแผนผังส่วนที่ 2 | 1. สร้างโฟลเดอร์ `uat-images/` และ `fix-images/` (ใส่ไฟล์ `.gitkeep` ไว้เพื่อให้ Git เก็บโฟลเดอร์เข้า Repo ได้) ในทุก `assets/runs/run-XX/` ของทุกโมดูล (`00` ถึง `08`)<br>2. บันทึกผลการตรวจรอบ `run-01` ของ Module 00 ว่า `REJECTED` ลงใน `run-01/review.md` และ `run-01/fix.md` จากนั้นเปิดโฟลเดอร์ `run-02/` แก้ไขทั้ง 5 ข้อให้ผ่าน แล้วออกใบ `handoff.md` (`STATUS: APPROVED & CLOSED`) เพื่อปลดล็อกไปทำ `MODULE 01` ทันที |
+| **`[FIX-M00-05]`**<br>*(โครงสร้างโฟลเดอร์ไม่ครบ 100% ตามส่วนที่ 2)* | `docs/plan/`<br>*(ทุก Module `00` ถึง `08`)* | 1. ใน `docs/plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/runs/run-01/` ไม่มีโฟลเดอร์ `uat-images/` และ `fix-images/`<br>2. ใน `docs/plan/phase-01-gameplay-demo/01-cage-physics/` ถึง `08-integration-and-uat/` มีแค่ `assets/` แต่ไม่มีโฟลเดอร์ `assets/runs/run-01/` (พร้อมไฟล์ตั้งต้นและโฟลเดอร์รูป) ตามที่กำหนดในแผนผังส่วนที่ 2 | 1. สร้างโฟลเดอร์ `uat-images/` และ `fix-images/` (ใส่ไฟล์ `.gitkeep` ไว้เพื่อให้ Git เก็บโฟลเดอร์เข้า Repo ได้) ในทุก `assets/runs/run-XX/` ของทุกโมดูล (`00` ถึง `08`)<br>2. บันทึกผลการตรวจรอบ `run-01` ของ Module 00 ว่า `REJECTED` ลงใน `run-01/review.md` และ `run-01/fix.md` จากนั้นเปิดโฟลเดอร์ `run-02/` แก้ไขทั้ง 5 ข้อให้ผ่าน แล้วออกใบ `handoff.md` (`STATUS: APPROVED & CLOSED`) เพื่อปลดล็อกไปทำ `MODULE 01` ทันที |
 
 ---
 
@@ -71,98 +73,30 @@ AI Agent ทุกตัวที่เข้ามาทำงานในโ�
 │   ├── tdd/
 │   │   └── master-test-cases.md                # เกณฑ์การทดสอบทั้งหมดที่ Codex ใช้ตรวจรับงาน
 │   └── plan/
-│       ├── roadmap.md                          # แผนผังลำดับการพัฒนาทั้ง 9 Modules (00 ถึง 08)
-│       ├── 00-bootstrap-and-rig/               # [Module 00] โครงสร้างโปรเจกต์ & Custom Rig มาตรฐานเดียว
+│       ├── roadmap.md
+│       ├── phase-01-gameplay-demo/
 │       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           ├── run-01/                 # รอบแรก (ถูก REJECTED จาก 5 จุดในส่วนที่ 0)
-│       │           │   ├── review.md
-│       │           │   ├── fix.md
-│       │           │   ├── result.md
-│       │           │   ├── handoff.md
-│       │           │   ├── uat-images/
-│       │           │   └── fix-images/
-│       │           └── run-02/                 # รอบแก้ไข (เมื่อแก้ครบ 5 จุดแล้วให้ Codex อนุมัติที่นี่)
-│       │               ├── review.md
-│       │               ├── fix.md
-│       │               ├── result.md
-│       │               ├── handoff.md
-│       │               ├── uat-images/
-│       │               └── fix-images/
-│       ├── 01-cage-physics/                    # [Module 01] สนามกรง 5 มิติ & ฟิสิกส์การชิ่งกำแพง/เพดาน
-│       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           └── run-01/
-│       │               ├── review.md
-│       │               ├── fix.md
-│       │               ├── result.md
-│       │               ├── handoff.md
-│       │               ├── uat-images/
-│       │               └── fix-images/
-│       ├── 02-ball-control-and-parry/          # [Module 02] ระบบเลี้ยง ส่ง ยิง & ระบบกองหลัง Parry
-│       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           └── run-01/
-│       ├── 03-duel-choice-engine/              # [Module 03] ระบบดวล 1v1 Choice, ตำแหน่ง & ข้อผิดพลาด
-│       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           └── run-01/
-│       ├── 04-cards-animations-freekick/       # [Module 04] การ์ดนักเตะหลาย Tier, อนิเมชันเบียว & ฟรีคิก FC27
-│       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           └── run-01/
-│       ├── 05-dynamic-match-events/            # [Module 05] 3 อีเวนต์สนาม (เสาขวาง, หลุมดำ, สตรีทบราซิล)
-│       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           └── run-01/
-│       ├── 06-traits-threads-economy/          # [Module 06] Trait มีคูลดาวน์, Battle Threads & Mutated Gear
-│       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           └── run-01/
-│       ├── 07-ui-navigation-and-screens/       # [Module 07] ระบบ UI ทั้งหมด การเชื่อมหน้าจอ Lobby, HUD & ร้านค้า
-│       │   ├── plan.md
-│       │   ├── tasks.md
-│       │   ├── notes.md
-│       │   └── assets/
-│       │       ├── milestones.md
-│       │       └── runs/
-│       │           └── run-01/
-│       └── 08-integration-and-uat/             # [Module 08] เชื่อมต่อทุกระบบ ทดสอบสมดุล & ปิดโปรเจกต์
+│       │   ├── 00-bootstrap-and-rig/
+│       │   ├── 01-cage-physics/
+│       │   ├── 02-player-actions/
+│       │   ├── 03-dribble-duel/
+│       │   ├── 04-goalkeepers/
+│       │   ├── 05-fouls-and-set-pieces/
+│       │   ├── 06-training-ground/
+│       │   ├── 07-dynamic-field-events/
+│       │   ├── 08-gameplay-ui/
+│       │   └── 09-uat/
+│       └── phase-02-full-match-and-progression/
 │           ├── plan.md
-│           ├── tasks.md
-│           ├── notes.md
-│           └── assets/
-│               ├── milestones.md
-│               └── runs/
-│                   └── run-01/
+│           ├── 00-match-flow/
+│           ├── 01-match-tiebreak/
+│           ├── 02-transactions/
+│           ├── 03-player-gacha-and-stats/
+│           ├── 04-collection-and-economy/
+│           ├── 05-effect-gacha/
+│           ├── 06-market/
+│           ├── 07-meta-ui/
+│           └── 08-integration-and-uat/
 └── src/
     ├── client/
     │   ├── init.client.luau
@@ -226,8 +160,8 @@ AI Agent ทุกตัวที่เข้ามาทำงานในโ�
 เพื่อให้โปรเจกต์เดินหน้าตั้งแต่แก้ `Module 00 (run-02)` ไปจนจบ `Module 08` โดยไม่หยุดค้างกลางคัน ให้ทำงานตามลำดับดังนี้:
 
 1. **เฟสแก้ไข `Module 00` (`run-02`):**
-   - บันทึกผลตรวจที่ตกใน `docs/plan/00-bootstrap-and-rig/assets/runs/run-01/review.md` (`STATUS: REJECTED`) และ `fix.md` (ระบุ `FIX-M00-01` ถึง `FIX-M00-05`)
-   - สร้างโฟลเดอร์ `docs/plan/00-bootstrap-and-rig/assets/runs/run-02/`
+   - บันทึกผลตรวจที่ตกใน `docs/plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/runs/run-01/review.md` (`STATUS: REJECTED`) และ `fix.md` (ระบุ `FIX-M00-01` ถึง `FIX-M00-05`)
+   - สร้างโฟลเดอร์ `docs/plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/runs/run-02/`
    - **Agy** แก้ไขโค้ด `RigAndCardService.luau`, `Types.luau`, `Network.luau` และสร้างโฟลเดอร์ `uat-images/` / `fix-images/` ให้ครบทุกโมดูล
    - **Codex** ตรวจสอบ `run-02` เมื่อผ่านครบทุกข้อ ให้ออกใบ `handoff.md` (`STATUS: APPROVED & CLOSED`) อัปเดต `milestones.md` และเปลี่ยน `ACTIVE_MODULE` ใน `agent.md` เป็น `01-cage-physics`
 2. **เฟสพัฒนาต่อเนื่อง `Module 01` ถึง `Module 08`:**
@@ -534,6 +468,6 @@ return table.freeze(Types)
 หลังจากคุณนำไฟล์ `startprojects.md` ฉบับนี้ไปวางทับไฟล์เดิมในโฟลเดอร์โปรเจกต์ `cage-zero` แล้ว ให้สั่ง AI Agent ด้วยข้อความนี้ได้เลย:
 
 > **"อ่านไฟล์ `startprojects.md` ฉบับอัปเดตล่าสุด (โดยเฉพาะส่วนที่ 0 และส่วนที่ 5) ให้ละเอียด: ตอนนี้ `MODULE 00 (run-01)` ไม่ผ่านการตรวจจาก Codex (`STATUS: REJECTED`) เนื่องจากพบปัญหา 5 ข้อ (`FIX-M00-01` ถึง `FIX-M00-05`) ให้ดำเนินการดังนี้ทันที:**
-> **1. บันทึกผลการตรวจ `REJECTED` และรายการแก้ไขทั้ง 5 ข้อลงใน `docs/plan/00-bootstrap-and-rig/assets/runs/run-01/review.md` และ `fix.md`**
+> **1. บันทึกผลการตรวจ `REJECTED` และรายการแก้ไขทั้ง 5 ข้อลงใน `docs/plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/runs/run-01/review.md` และ `fix.md`**
 > **2. เปิดโฟลเดอร์ `run-02` ใน `MODULE 00` แล้วแก้ไขโค้ดทั้ง 5 จุด (`RigAndCardService.luau`, `Types.luau`, `Network.luau`, และสร้างโฟลเดอร์ `runs/run-01/uat-images` & `fix-images` ให้ครบทุกโมดูล) จากนั้นตรวจรับงานและออกใบ `handoff.md` (`STATUS: APPROVED & CLOSED`)**
 > **3. เมื่อปิด `MODULE 00` เสร็จแล้ว ให้เดินหน้าเขียนโค้ดจริง (ห้ามเว้นเป็น Stub!) และตรวจรับงานผ่าน Codex ทีละโมดูลต่อเนื่องตั้งแต่ `MODULE 01` ไปจนจบ `MODULE 08` ตามพิมพ์เขียวในส่วนที่ 5 ของ `startprojects.md` จนครบสมบูรณ์ 100%"**

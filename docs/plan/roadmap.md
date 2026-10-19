@@ -1,15 +1,21 @@
-# Project Execution Roadmap (Modules 00 to 08)
+# Roadmap — ใช้แผนภายใน Phase โดยตรง
 
-การพัฒนาโปรเจกต์ **Cage Zero** ดำเนินการตามลำดับ `Sequential Module Lock` ครบทั้ง 9 โมดูล (`00` ถึง `08`) และผ่านการตรวจรับ `STATUS: APPROVED & CLOSED` ครบทุกโมดูลแล้ว:
+**Phase 1: SCOPE_SELECTED / PLANNING | Phase 2: DEFERRED | Implementation approval: PENDING**
 
-| ลำดับ | โฟลเดอร์โมดูล (`docs/plan/`) | เป้าหมายหลัก (Scope Summary) | สถานะปัจจุบัน |
-| :---: | :--- | :--- | :---: |
-| **00** | `00-bootstrap-and-rig` | โครงสร้างโปรเจกต์, เอกสาร `docs/`, ตั้งค่า Rojo, `Network.luau` และ `Single Custom R15 Rig` ที่ปรับ Scale ตามการ์ด (`run-02` Fixed & Closed) | `APPROVED & CLOSED` |
-| **01** | `01-cage-physics` | สนามกรง 6 เหลี่ยม 3D, เพดานชิ่ง, `Pinball Bumpers`, `360° Goal Zone`, `Elevating Ramps` และฟิสิกส์การสะท้อนฝั่ง Server | `APPROVED & CLOSED` |
-| **02** | `02-ball-control-and-parry` | ระบบครองบอล, Stamina, ส่ง/ยิงปกติ และระบบกองหลังกด `Parry` เสี้ยววินาที (`0.35s`) เมื่อบอลพุ่งผ่านรัศมี `5 Studs` | `APPROVED & CLOSED` |
-| **03** | `03-duel-choice-engine` | ระบบดวล 1v1 (`<= 6 Studs`) แยก Choice ตามตำแหน่ง (`FW`/`MF`/`DF`), เช็ก `Shooting Zone` และคำนวณ `Mistake Mechanics` | `APPROVED & CLOSED` |
-| **04** | `04-cards-animations-freekick` | การ์ดนักเตะหลาย Tier (`B`/`A`/`S`), ชอยส์พิเศษพร้อม Cooldown/Buff, กล้องคัตซีนชนะดวล 1–3 ท่า และฟรีคิก FC27 | `APPROVED & CLOSED` |
-| **05** | `05-dynamic-match-events` | ระบบสุ่ม 3 อีเวนต์กลางแมตช์ (`Pillar Lockdown`, `The Blackout Void`, `Favela Alleyway`) ทุก `90 วินาที` | `APPROVED & CLOSED` |
-| **06** | `06-traits-threads-economy` | หิน `Trait` มีคูลดาวน์, ชุด `Battle Threads` (ไม่มีรองเท้าสตั๊ด), `Mutated Gear` คูณ Cash/EXP และระบบตลาดเทรด `TradeMarketService` | `APPROVED & CLOSED` |
-| **07** | `07-ui-navigation-and-screens` | ระบบ `UIManager.luau` ควบคุม `LOBBY_MODE` และ `MATCH_MODE`, Reusable Components และหน้าจอ UI ทั้ง 11 หน้า | `APPROVED & CLOSED` |
-| **08** | `08-integration-and-uat` | เชื่อมต่อ `MatchService.luau` ครบวงจร ทดสอบสมดุลและรัน UAT ครบทุกเคสใน `master-test-cases.md` | `APPROVED & CLOSED` |
+## โครงสร้างและลำดับ
+- [Phase 1 — Gameplay Demo](phase-01-gameplay-demo/plan.md): 00 bootstrap/Rig -> 01 สนาม/บอล -> 02 player actions -> 03 ดวล -> 04 โกล -> 05 ลูกนิ่ง -> 06 สนามซ้อม -> 07 อีเวนต์ -> 08 gameplay UI -> 09 UAT
+- [Phase 2 — Full Game](phase-02-full-match-and-progression/plan.md): 00 แมตช์ -> 01 ตัดสินเสมอ -> 02 transactions -> 03 สุ่มนักเตะ/stats -> 04 collection/เศรษฐกิจ -> 05 สุ่มเอฟเฟค -> 06 ตลาด -> 07 meta UI -> 08 integration/UAT
+
+โฟลเดอร์แผนย้ายอยู่ใต้ phase จริงแล้ว ใช้ชื่อ phase + ชื่อแผนเป็นที่อยู่เดียว ไม่มีรหัส feature อีกชุดเพื่อ map ไปยังโฟลเดอร์แผนแบน ๆ เดิม และไม่มีการทำหลายแผนพร้อมกันจากการจัดโครงนี้
+
+## Scope และ gate
+- Phase 1 คง feature ที่ผู้ใช้เลือกครบ: สนาม/Rig/physics, movement/เลี้ยง, ยิงส่ง/ชาร์จ, กลางอากาศ/บล็อก, duel/cutscene/stun, โกลคน/AI, ฟาวล์/ลูกนิ่ง, ซ้อม/หุ่น, อีเวนต์สามแบบและ UI ที่เกี่ยวข้อง
+- ระบบแมตช์เต็ม 5 นาที/ตัดสินเสมอ/สุ่มนักเตะและ stats/collection/สุ่มเอฟเฟค/ตลาดรอ Phase 2 หลัง Phase 1 เสร็จครบและผ่าน review gate
+- ตัวควบคุมฉากฝึกใน Phase 1 ใช้ทดสอบโกล/ลูกนิ่ง/อีเวนต์ได้ แต่ไม่ถือว่าเปิดวงจรแมตช์เต็ม
+- สกิลยิง/ส่งจากการ์ดและ Trait ที่ตัดไม่กลับมาเพียงเพราะเพิ่ม base stats นักเตะ
+- กติกาที่ตกลงแล้วเก็บที่ [notes](phase-01-gameplay-demo/01-cage-physics/notes.md) ระบบที่เลื่อนจะ grill เมื่อใกล้ทำ; source หลักคงใน repo และใช้ Studio MCP โดยตรง
+
+## ประวัติและอำนาจ
+รายงานเก่า/assets/runs ย้ายตามโฟลเดอร์โดยไม่ลบ ชื่อ/เลขเก่าในรายงานเป็นประวัติ ไม่ใช่ APPROVED ของแผนใหม่ งานที่แยกจากแผนเดิมถูกแบ่งขอบเขตเป็นแผนเฉพาะใน phase ที่ถูกต้องแล้ว
+
+Base SHA `6d0f273dc174f0c1460e9ed8ce98e5aa4261b182`; Owner Stang, Planner Codex, Implementer/Reviewer ยังไม่มอบหมาย ไม่มีการเปลี่ยน source/รัน application tests/merge/deploy; ผู้ใช้อนุญาต commit/push เฉพาะเอกสารและ .gitignore ในรอบนี้

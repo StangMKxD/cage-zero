@@ -1,5 +1,0 @@
-# Milestones — MODULE 02: `02-ball-control-and-parry`
-
-| Run | Status | Commit / Milestone Summary | Audited By |
-| :---: | :---: | :--- | :---: |
-| `run-01` | `APPROVED & CLOSED` | Implemented `BallService.luau`, `ParryService.luau`, `InputController.luau`, and `ParryIndicatorController.luau` with strict 5-Studs Parry separation and Server `os.clock()` verification. | Codex |
