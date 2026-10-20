@@ -12,6 +12,8 @@
 - [ ] T-03: ใช้หุ่น/HUD ขั้นต่ำช่วยตรวจแผนก่อนหน้าได้ แล้วเก็บขอบเขตสนามซ้อมครบก่อนปิด phase
 - [ ] T-04: Debug tuning panel ค่าdefault/current/apply/restore สำหรับความเร็วพื้นฐานและกลุ่มค่าจูนตามplan; validateและServerapply เฉพาะtestsession
 - [ ] T-05: Dummy presets/เลือก/เสก/ย้าย/ทีม/จำนวน/ลบ/รีเซ็ต พร้อมlimits/cleanup; ไม่สร้างAIของแผนอื่นทดแทน
+- [ ] T-05a: exposeRebound Rush targetSpeed/Active durationเมื่อ07พร้อม โดยใช้configvalidationของเจ้าของevent ไม่เขียนphysicsซ้ำ
+- [ ] T-05b: DebugtestOverdriveและLowRoofheight/timelineเมื่อ07พร้อม พร้อมค่าeffectiveและrestoreของeventowner
 - [ ] T-06: ตรวจeffectivevalues/resetไม่ค้าง/repeatable scenario/invalidinputsและสิทธิ์; บันทึกconfigที่ใช้กับผลจริง
 - [ ] T-98: ตรวจ source/ref และ functional/visual evidence ที่จำเป็นผ่าน Studio MCP
 - [ ] T-99: sync เอกสารตามผลงานจริงและส่งให้ reviewer ตรวจ ไม่ปิดงานตนเอง

@@ -59,3 +59,12 @@
 - **N-42 Starter/resources (Q3/Q15–Q18):** ตัวเริ่มต้น1ตัวSkillMove5ดาว/ทุกท่าทดลองฟรี ไม่เปลี่ยนTierหรือ4scalefixturesของ00 จ่ายStaminaไม่พอใช้ท่านั้นไม่ได้ CDแยก+ช่วงจบท่าร่วม พลาดช้าลง/ล็อกSkillDashสกัดแต่เล่นพื้นฐานเมื่อท่าเอื้อ สไลด์รอลุก เลือกชุดก่อนรอบหรือหยุด/รีเซ็ตซ้อม
 - **N-43 First-time/deferred (Q5/Q22):** Phase1ยิงส่งจังหวะแรกได้; Phase2ต้องเพิ่มแอนิเมชันและเสียจังหวะเมื่อวืด รวมสุ่มตัวละคร/สกิล/เอฟเฟค,ความต่างStats/ดาว,ท่าเพิ่มและระบบตั้งค่าจริง; เริ่มจากSpeed/Jump/ShotPower/Curve/Sliding/Strengthเป็นรายการgrill ไม่ถือว่าล็อกสูตรหรือเพิ่มstatsต่างตัวในPhase1
 - **N-44 Debug:** คำสั่งเพิ่มค่าจูน/เสกDummyในPhase1/06 accepted; sessionoverrides/คืนdefault/cleanup ส่วนค่าถาวรและระบบตั้งค่าจริงอยู่Phase2/07 รายละเอียดในplan06 ไม่เปิดimplementationก่อนgate
+
+## N-45 — Event 4 wall-speed boost (Accepted / Planned, 2026-10-20)
+
+Ownerขอเพิ่มevent “ถ้าโดนกำแพงบอลจะเร่งความเร็วขึ้น” และตอบ: กำแพง/เพดาน/ขอบลาด, ความเร็วเป้าหมายคงที่ไม่สะสม, จบแล้วหยุดboostใหม่แต่เก็บความเร็วปัจจุบัน ชื่อชั่วคราวRebound Rush; target/เวลาเป็นค่าจูนในDebug06 รายละเอียดอยู่[plan07](../07-dynamic-field-events/plan.md) Supersedeข้อจำกัด3eventsเดิมเฉพาะcatalogเพิ่มevent4 ไม่เปลี่ยนbasephysics/bumperของ01หรือscope00 และไม่อนุมัติimplementation
+
+## N-46/N-47 — Event 5/6 (2026-10-20)
+
+- **N-46:** Ownerแก้Wall-Dash Overdriveเป็นทุกคนStaminaไม่จำกัดขณะActive ไม่ต้องชิ่งและมีhighlightแสงวิ่งเร็วบนหลอด คงCD/recoveryกติกาปกติ OwnerยืนยันEndStaminaเต็ม100%แล้วใช้ปกติ โดยCD/recoveryที่เหลือเดินต่อไม่รีเซ็ต ข้อเสนอรับรางวัลจากDashไปครองบอลเป็นSuperseded
+- **N-47:** OwnerเลือกLowRooftemporaryflatceilingใต้ผิวสูง12studsจากplayingfloorทุกA/B/C แล้วคืนรูปเดิมเมื่อจบ ไม่เลื่อนbevelCทั้งชุดให้ขอบเหลือ4 ข้อความเร็วขึ้น2เท่าเป็นhypothesisที่ต้องวัด ScopeAccepted/Plannedไม่ใช่implementationapproval ไม่ขยาย00

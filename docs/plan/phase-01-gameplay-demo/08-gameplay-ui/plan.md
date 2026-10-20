@@ -20,3 +20,5 @@
 อ่าน [architecture](../../../design/architecture-and-network.md) และ PRD/spec เดิมเพื่อทำ diff เฉพาะส่วนก่อนลงมือ ไม่ใช้เนื้อหา Parry/Choice ยิงส่งหรือสถานะปิดงานเก่าเป็นสิทธิ์ให้ทำของที่ถูกตัด/เลื่อน
 
 รายงานใน assets/runs ที่ย้ายมาด้วยเป็นประวัติของ module baseline เดิม ชื่อ/หมายเลข/ข้อความอนุมัติในรายงานไม่ใช่ผลตรวจของแผนฉบับนี้ รายงาน card/UI/เศรษฐกิจเดิมอาจครอบหลายขอบเขตก่อนแยก phase ให้ใช้อ้างอิงประวัติเท่านั้น
+
+- [Scope event5/6] HUDหลอดStaminaมีhighlightวิ่งเร็วและสถานะไม่จำกัดจากOverdrive พร้อมคืนUIเมื่อจบ/respawn; LowRoofมีwarning/eventstateตาม07 ไม่แปลงUIเป็นบัฟความเร็วหรือผลphysics

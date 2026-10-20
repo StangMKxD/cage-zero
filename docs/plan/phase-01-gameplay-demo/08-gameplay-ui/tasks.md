@@ -10,5 +10,6 @@
 - [ ] T-01: HUD/ปุ่ม3คู่ตามทีม/กล้อง/feedbackสำหรับบอล Skill Moves เกมรับ โกล ลูกนิ่ง อีเวนต์และสนามซ้อม
 - [ ] T-02: 3skill slots/ดาว/CD/Stamina/recovery/เลือกชุดก่อนรอบหรือหยุดรีเซ็ต ไม่มีDuel Modal/Parry prompt/คัตซีนล็อกคู่
 - [ ] T-03: หน้าระบบสุ่ม/ตลาด/collection/สรุปแมตช์อยู่แผน UI ของ Phase 2 ไม่เปิดทำงานหรือใช้ข้อมูลปลอมอ้างว่าส่งแล้ว
+- [ ] T-04: Event5/6 HUD: OverdriveหลอดStaminahighlightวิ่งเร็ว/infinite stateและcleanup; LowRoofwarning/timelineตามServer ไม่คำนวณresource/physicsเอง
 - [ ] T-98: ตรวจ source/ref และ functional/visual evidence ที่จำเป็นผ่าน Studio MCP
 - [ ] T-99: sync เอกสารตามผลงานจริงและส่งให้ reviewer ตรวจ ไม่ปิดงานตนเอง

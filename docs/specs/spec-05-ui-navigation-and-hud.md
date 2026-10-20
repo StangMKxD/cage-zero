@@ -23,3 +23,5 @@ Decision Accepted / Delivery Planned จากQ22 — 2026-10-20; [UI routing](.
 ## Acceptance
 
 inputlabelกับServercontextตรงกัน loadoutแก้ไม่ได้กลางรอบ cooldown/costไม่ถูกUIหลบ overlay/reset/respawnคืนinputและกล้อง ไม่มีตัวเลขผลการแข่งขัน/เงิน/การสุ่มคำนวณแทนServer และvisualที่ยังไม่ตรวจคงNOT VERIFIED
+
+Event HUDเพิ่ม: Overdriveมีhighlightวิ่งเร็วที่หลอดStaminaและสถานะไม่จำกัดจากServer LowRoofมีwarning/phaseของการลดและคืนเพดาน; resource/geometryอยู่ระบบเจ้าของ07 ไม่เกิดจากแอนิเมชันUI

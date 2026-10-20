@@ -16,13 +16,13 @@
 | [04-goalkeepers](04-goalkeepers/plan.md) | ผู้รักษาประตูคนและ AI | ยังไม่เริ่ม |
 | [05-fouls-and-set-pieces](05-fouls-and-set-pieces/plan.md) | ฟาวล์ ฟรีคิก และจุดโทษ FC27 | ยังไม่เริ่ม |
 | [06-training-ground](06-training-ground/plan.md) | สนามซ้อม Debugจูนค่าการเล่น และเสก/จัดDummy | ยังไม่เริ่ม |
-| [07-dynamic-field-events](07-dynamic-field-events/plan.md) | อีเวนต์สนามทั้งสามแบบ | ยังไม่เริ่ม |
+| [07-dynamic-field-events](07-dynamic-field-events/plan.md) | อีเวนต์สนาม6แบบ | ยังไม่เริ่ม |
 | [08-gameplay-ui](08-gameplay-ui/plan.md) | UI กล้อง และ feedback ของ Demo | ยังไม่เริ่ม |
 | [09-uat](09-uat/plan.md) | UAT — Gameplay Demo | ยังไม่เริ่ม |
 
 ## Dependency และขอบเขต
 - 00 เตรียม Custom R6/root/spawn contract ก่อน implementation ของ 01; 01 สนามรวม bumper/ramp/back zone และเขตอ้างอิงประตู; 02 รวม movement/บอล/กลางอากาศที่ผู้ใช้เลือกครบ
-- 03 เป็นSkill Moves3ช่องและเกมรับแบบต่อเนื่อง; 04 โกลคน/AI; 05 ลูกนิ่ง; 06 สนามซ้อม/หุ่น; 07 อีเวนต์ทั้งสาม; 08 UI/กล้องที่รองรับทั้งหมด; 09 UAT ของ Phase 1
+- 03 เป็นSkill Moves3ช่องและเกมรับแบบต่อเนื่อง; 04 โกลคน/AI; 05 ลูกนิ่ง; 06 สนามซ้อม/หุ่น; 07 อีเวนต์6แบบ; 08 UI/กล้องที่รองรับทั้งหมด; 09 UAT ของ Phase 1
 - ใช้หุ่นและ HUD ขั้นต่ำจาก 06/08 ช่วยทดสอบแผนก่อนหน้าได้ โดยไม่ถือว่า 06/08 ส่งมอบครบแล้ว
 - โกล/ลูกนิ่ง/อีเวนต์ใช้ตัวควบคุมฉากฝึกและ state ที่จำเป็น ไม่ดึงวงจรแมตช์เต็ม/นาฬิกา 5 นาที/การโหวต/รางวัลจาก Phase 2 มาทำแทรก
 - UI ของระบบสุ่ม/collection/ตลาด/สรุปแมตช์แยกอยู่แผน UI ใน Phase 2; เอฟเฟคตอบสนองพื้นฐานทำใน phase นี้ได้ แต่ระบบสุ่ม/ownership/ชุดเอฟเฟคยังเลื่อน

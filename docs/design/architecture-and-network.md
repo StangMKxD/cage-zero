@@ -172,3 +172,18 @@ R6 ground height ใช้ `Left Leg.Size.Y + HumanoidRootPart.Size.Y/2 + HipHei
 - Validate action/slot/ดาว/round/character/context/finiteaim/cost/rate/CD/ballreachบนServer; clientส่งintent ไม่ส่งwinner/guaranteedballclaim
 - ไม่มีการเพิ่มremote/schema/sourceในรอบเอกสารนี้ ปัญหาAPIที่พบตอนเปิดแผนแก้เฉพาะallowlistของHANDOFFนั้น
 - Gateตาม [TDD](../tdd/master-test-cases.md): actualruntime teamcontext/first-time/ทุกskillและdefence/ต้นทุน/recovery/contacts/cleanup พร้อมvisualอ่านท่าได้ แยกจากstaticchecks/JSsimulation; spectatorผลตามsessionที่ตรวจจริง
+
+## 7. Rebound Rush — Event 4 / Accepted design
+
+แผน07เพิ่มeventเร่งบอลตามคำสั่งOwner2026-10-20: wall/ceiling/bevel contactsที่อยู่ในcatalogทำให้บอลถึงtargetSpeedคงที่ ไม่สะสม ไม่ลดลูกที่เข้าเร็วกว่าtargetและไม่คูณซ้ำกับbumper EventManagerเป็นเจ้าของactivation/target/expiry ส่วนcollision owner01/02applyresponseเพียงจุดเดียวตามsurfaceID/contactจริง; floor/player/pillar/NPC/goalframeไม่อยู่ในsurfacefilter
+
+ตอนEnd/Cancel/Switchให้ถอนoverrideสำหรับcontactsใหม่แต่ไม่เขียนvelocityบอลให้กลับความเร็วปกติทันที เก็บtest envelope/capที่รองรับความเร็วค้างและคืนbaselineโดยไม่กระโดดทิศ/ความเร็ว Debug06ปรับtargetและระยะActiveเฉพาะsessionได้
+
+ตาราง12remotesใน§2เป็นbaselineเดิม enumMatchEventBroadcastยังไม่รวมevent4ในsource; ก่อนimplementation07ต้องfreezecontractdelta/config/allowlistกับผู้เรียก ไม่เพิ่มsource/แก้Networkของ00หรือเปิดeventนี้ในแผน01จากเอกสารรอบนี้
+
+## 8. Overdrive และLow-Roof — Event 5/6
+
+- Overdriveเป็นscopedresourceoverrideจาก07ไปเจ้าของStamina02: ทุกทีมใช้ทรัพยากรไม่จำกัดขณะActive ไม่เปิดCD/recovery bypassและไม่แก้movement/shot power NormalDashcostคงconfigเดิม UI08รับeventstateแล้วแสดงinfinite/highlightsweep ไม่ตัดสินresourceเอง Endเติม100%ครั้งเดียวแล้วกลับใช้ปกติ CD/recoveryไม่reset Endซ้ำ/stalegenerationไม่เติมซ้ำ
+- Low-Roof07เป็นtemporarygeometryoverride: flatroofundersideสูงจากplayingfloor12studsทุกprofile ปิดresponseของroof/bevelเดิมเฉพาะช่วงevent ภาพและsolverอ่านsurfaceheight/timeเดียวกันระหว่างลด/คง/คืน
+- โกล/ผู้เล่น/บอลต้องไม่ติดหรือทะลุmovingroof surfacevelocity/contacttimeรองรับตามcollisionowner ไม่ใช้visualTweenอย่างเดียวหรือคัดกติกาReboundRushมาเพิ่มspeed
+- latejoin/respawn/reset/cancel/switchใช้event/round/generationguards ล้างoverrides/effects/temporarycollidersแล้วคืนค่าที่ownerกำหนด ไม่เขียนpersistence/source00

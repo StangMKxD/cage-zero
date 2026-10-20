@@ -64,6 +64,18 @@
 4. **[TC-P1-08-01]** label3คู่ตรงServercontext/CD/cost/recovery,3slotsเลือกก่อนรอบ,เปลี่ยนcontextขณะกดไม่เปลี่ยนintent,reset/respawnคืนinput/กล้อง
 5. **[TC-P1-08-02]** ไม่มีChoice Modal/ParryPrompt/คัตซีนล็อกคู่หรือUIสุ่ม/แมตช์/ตลาดที่Phase2ยังไม่ทำ; visualอ่านท่าจริงที่ไม่ได้ตรวจยังNOT VERIFIED
 
+### 07 Event 4 — Rebound Rush (Accepted / NOT RUN)
+
+1. **[TC-P1-07-01]** A/B/C: wall/ceiling/bevelเข้าtargetSpeedคงที่ floor/ramp/goalframe/player/pillar/NPCไม่boost ตรวจspeed/normal/surfaceIDจริง
+2. **[TC-P1-07-02]** ชนต่อเนื่องไม่สะสมtargetหรือคูณbumperซ้ำ contactค้าง/ส่งซ้ำ/มุมหลายผิวในstepเดียวไม่เพิ่มแรงซ้ำ บอลเร็วกว่าtargetไม่ถูกลดเพราะevent
+3. **[TC-P1-07-03]** จบ/cancel/switchไม่มีvelocityลดฉับพลัน contactsใหม่ไม่boostและคืนresponseปกติ ตรวจbounceหลังEndและstatecleanup
+4. **[TC-P1-07-04]** Debugเปลี่ยนtarget/Active durationเฉพาะsessionและคืนdefaultได้ ปฏิเสธค่าที่ไม่finite/เกินenvelopeที่solverรองรับ รายงานconfig/speed/dt/radiusที่ตรวจ ไม่อ้างผ่านจากUIมีปุ่ม
+
+5. **[TC-P1-07-05]** Overdriveทุกทีม/actorใช้Staminaไม่จำกัดระหว่างActive แต่Dash/Skill/สกัดยังเคารพCD/recovery/ballreach ไม่มีI-frame/บัฟspeedหรือshotpowerเพิ่ม
+6. **[TC-P1-07-06]** highlightแสงวิ่ง/infiniteindicatorตรงeventstate latejoin/respawn/reset/cancel/switchไม่ค้าง UI/resource EndเติมStamina100%ครั้งเดียวแล้วกลับใช้ปกติ CD/recoveryเดินต่อไม่reset Endซ้ำไม่เติมให้generationเก่า
+7. **[TC-P1-07-07]** LowRoofA/B/Cใต้เพดานflat12จากplayingfloorจริง ทดสอบsweptballcontactระหว่างลด/Active/คืน geometryตรงภาพ ไม่มีbevel/planeซ้ำหรือช่องหนีที่seams
+8. **[TC-P1-07-08]** บอลอยู่สูง/ผู้เล่นกระโดด/GK/คานประตูไม่ถูกทับค้างหรือตัดผ่านโดยteleportกลบ End/cancelคืนoriginalroof/attributes/contactsครบ เก็บเวลาชิ่งจริง ไม่อ้าง2เท่าอัตโนมัติ
+
 ### Phase2 deferred gates
 
 - **[TC-P2-DEFER-01]** ต้องมีสุ่มตัวละคร03/สุ่มสกิลพร้อมinventory04/สุ่มเอฟเฟค05ผ่านtransactions02ก่อนmetaUI07; สูตร/เรต/ราคา/ของซ้ำ/ดาว/Statsเปิดgrillก่อนimplementation ไม่เพิ่มค่า/พลังถาวรจากDebug

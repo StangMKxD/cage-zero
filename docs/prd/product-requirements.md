@@ -20,7 +20,7 @@ Owner Stang; Planner/Reviewer Codex. **Decision Accepted / Delivery Planned** �
 | Skill Moves | 1★Heavy Knock-On,2★Drag Back & Turn,3★La Croqueta,4★Sombrero Flick,5★Elastico; ฟรี5ท่าเลือกใส่3ช่อง กดช่อง+ทิศตอนเริ่ม มีR6ท่าร่างอ่านจังหวะได้ |
 | ข้อจำกัดท่า | ดาวจำกัดสิทธิ์ใช้ท่า ไม่การันตีผล; Staminaไม่พอใช้ท่าที่มีต้นทุนไม่ได้; คูลดาวน์แยก+ช่วงจบท่าร่วม; เปลี่ยนชุดก่อนรอบ/หยุดหรือรีเซ็ตซ้อม |
 | Recovery | พลาดแล้วช้าลงและล็อกSkill/Dash/เข้าสกัดซ้ำ ยังเล่นบอลพื้นฐานเมื่อท่าเอื้อ สไลด์รอลุก; แอนิเมชันและลงโทษยิงส่งจังหวะแรกวืดเลื่อนไปPhase2 |
-| ระบบรอบสนาม | โกลคน/AI ฟาวล์และลูกนิ่งFC27 Training/Debugค่าจูน/Dummy อีเวนต์3ชนิด HUD และUAT ตามแผนเจ้าของ |
+| ระบบรอบสนาม | โกลคน/AI ฟาวล์และลูกนิ่งFC27 Training/Debugค่าจูน/Dummy อีเวนต์6ชนิด HUD และUAT ตามแผนเจ้าของ |
 
 ## ข้อกำหนดที่คงไว้และสิ่งที่ถูกแทน
 
@@ -39,3 +39,7 @@ Owner Stang; Planner/Reviewer Codex. **Decision Accepted / Delivery Planned** �
 [Spec02](../specs/spec-02-duel-and-parry.md) เป็นรายละเอียดเกมเพลย์; [architecture](../design/architecture-and-network.md), [TDD](../tdd/master-test-cases.md), [Phase1](../plan/phase-01-gameplay-demo/plan.md), [Phase2](../plan/phase-02-full-match-and-progression/plan.md) และ [accepted decisions](../plan/phase-01-gameplay-demo/01-cage-physics/notes.md) ต้องตรงกันก่อนลงมือ
 
 Training/3v3/4v4คงไว้ ไม่มี1v1v1กลับมา งาน00ยังตามHANDOFFเดิม ไม่มีการอนุมัติsource/Studio/commit/push/merge/deployใหม่จากการยืนยันเอกสารนี้
+
+Ownerเพิ่มevent4หลังQ22: ชนกำแพง/เพดาน/ขอบลาดแล้วเร่งบอลสู่targetSpeedคงที่ไม่สะสม จบeventหยุดboostใหม่แต่คงvelocity ตาม[plan07](../plan/phase-01-gameplay-demo/07-dynamic-field-events/plan.md) เป็นscopeเอกสารที่Acceptedไม่ใช่implementationapproval
+
+Ownerเพิ่มevent5/6: Wall-Dash Overdriveให้ทุกคนStaminaไม่จำกัดโดยไม่ต้องชิ่ง คงCD/recoveryและมีUIhighlightหลอด; Low-Roofใช้temporaryflatceilingใต้ผิวสูง12studsทุกprofileแล้วคืนroofเดิม จบOverdriveเติมStaminaเต็ม100%แล้วใช้ปกติโดยCD/recoveryยังเดินต่อ รายละเอียดอยู่plan07
