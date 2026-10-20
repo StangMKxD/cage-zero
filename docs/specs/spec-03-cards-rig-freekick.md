@@ -1,28 +1,29 @@
-# Spec 03 — การ์ดนักเตะหลาย Tier, Custom R15 Rig, อนิเมชันเบียว และฟรีคิก FC27
+# Spec 03 — การ์ดนักเตะหลาย Tier, Custom Rig, Skill Moves และฟรีคิก FC27
+
+> ผู้ใช้ยืนยัน Custom R6 ตลอด Phase 1 เมื่อ 2026-10-20 และให้ Codex ปรับแผน/architecture; เป็น accepted design ไม่ใช่ implementation approval ส่วน Phase 2 ยังไม่กำหนดการเปลี่ยน rig [แผน 00](../plan/phase-01-gameplay-demo/00-bootstrap-and-rig/plan.md) / [Architecture](../design/architecture-and-network.md#5-phase-1-runtime--custom-r6)
 
 ## 1. โครงกระดูกมาตรฐานเดียว (Single Standard Custom Rig)
 - **ห้ามโหลดโมเดลอวาตารผู้เล่นจาก Roblox มาลงสนามเด็ดขาด**
-- ใช้โมเดล `Custom R15` มาตรฐานเดียวของเกมที่มีโครงกระดูกชุดเดียวกันทั้งหมด
+- Phase 1 ใช้ Custom R6 มาตรฐานเดียว: 6 visible parts + HumanoidRootPart และ 6 Motor6Ds ไม่ใช่เปลี่ยน Enum ของ skeleton R15; เกมกำหนด PrimaryPart=HumanoidRootPart
+- ใช้ R6 standard locomotion ผ่าน Animator และเก็บ config/source ใน repo; ไม่ใช้ R15 clips หรือ animation pack ส่วนตัว
+- scale จาก base sizes/joints และ ground clearance ของ R6 ไม่คัดสูตร HipHeight ของ R15; แผน 00 ไม่เพิ่ม stats/กาชา
 - ปรับค่า `HeightScale` และ `WidthScale` ตามข้อมูลการ์ดนักเตะต้นแบบเป็น Easter Egg โดยใบหน้ายังคงเป็นสไตล์อนิเมะของเกม:
   - นักเตะอิงเมสซี่ (`Leon`): `HeightScale = 0.92`
   - นักเตะอิงเนย์มาร์ (`Ney`): `HeightScale = 0.98`
   - นักเตะอิงโรนัลโด้ (`Ronan`): `HeightScale = 1.03`
   - นักเตะอิงฮาแลนด์/ฟานไดจ์ค (`Vandik`): `HeightScale = 1.08`
 
-## 2. ระบบการ์ดนักเตะหลาย Tier & ชอยส์พิเศษ (Signature Duel Choice)
-- นักเตะ 1 คนมีได้หลาย Card Tier (`Tier B`, `Tier A`, `Tier S`)
-- ค่าสเตตัสของการ์ด Tier สูงห้ามฉีกห่างจากการ์ดเริ่มต้นเกิน `15%`
-- สิ่งที่แตกต่างกันตามการ์ดคือ **Signature Duel Choice (ชอยส์ที่ 5 ในการดวล)** และ **Card Trait** ที่ติดมากับการ์ด (ทุกสกิลต้องมี Cooldown):
-  - **`Leon - Tier S`:** ชอยส์พิเศษ `"Phantom La Pulga"` (คูลดาวน์ `45 วินาที`) เลี้ยงผ่านกองหลัง 100% และได้รับบัฟ Boost ค่าความแม่นยำการส่งและพลังยิง `+35%` นาน `4 วินาที`
-  - **`Ronan - Tier S`:** ชอยส์พิเศษ `"Knuckle Emperor"` (คูลดาวน์ `50 วินาที`) ใช้ได้ในระยะยิง ทะลุการบล็อกของกองหลัง 100% พร้อมท่ายืนอ้าขาสูดหายใจลึกเป็น Easter Egg ตอนยิงฟรีคิก
-  - **`Ney - Tier S`:** ชอยส์พิเศษ `"Samba Illusion"` (คูลดาวน์ `40 วินาที`) เลี้ยงผ่าน 100% พร้อมทำให้กองหลังติดสถานะมึนงงลุกช้าลง `1 วินาที`
-  - **`Vandik - Tier S`:** ชอยส์เกมรับพิเศษ `"Colossus Wall"` (คูลดาวน์ `45 วินาที`) ชนะการดวลเกมรับ 100% และแย่งบอลมาครองที่เท้าทันที
+## 2. ดาว Skill Move และตัวเริ่มต้น — Q22 supersedes Signature Choice
 
-## 3. อนิเมชันคัตซีนดวลชนะสุดเบียว (1–3 ท่าตาม Tier)
-เมื่อชนะการดวล ระบบกล้อง `CameraCutsceneController` จะซูมเข้ามุมต่ำสไตล์อนิเมะ สโลว์โมชัน `0.6 วินาที` พร้อมเอฟเฟกต์เส้นสปีดและดวงตาเรืองแสง:
-- **การ์ด `Tier B`:** มีอนิเมชันชนะดวล **1 ท่า** (`Slow-Mo Nutmeg`)
-- **การ์ด `Tier A`:** มีอนิเมชันชนะดวล **2 ท่า** (สุ่มระหว่าง `Slow-Mo Nutmeg` กับ `Elastico Flash`)
-- **การ์ด `Tier S`:** มีอนิเมชันชนะดวลครบ **3 ท่า** (สุ่มระหว่าง `Slow-Mo Nutmeg`, `Rainbow Flick`, และ `Heel Chop`)
+Phase1มีตัวเริ่มต้น1ตัว SkillMove5ดาวและค่าพื้นฐานกลาง ใช้5ท่าทดลองฟรี ติดตั้ง3ช่องตาม [Spec02](spec-02-duel-and-parry.md) ดาวจำกัดระดับท่าที่ใช้ได้ ไม่เพิ่มstats/Tierหรือเปลี่ยนCardConfigs/Default Cardและ4scalefixturesของ00
+
+Phase2สุ่มตัวละคร/ดาว/Statsและskill inventory รายการStatsเริ่มgrillจากSpeed,Jump,ShotPower,Curve,Sliding,Strength คงขอบเขตสมดุลการ์ดเดิมจนOwnerปรับอย่างชัดเจน ไม่มีสูตร/เรต/ราคาอนุมัติในรอบนี้
+
+## 3. Animation และสิ่งที่ถูกแทน
+
+Skill5ท่ามีR6ท่าร่างอ่านจังหวะได้ในPhase1โดยไม่หยุดบอล/ล็อกคู่/ทำI-frame; ท่าเฉพาะและassetprovenanceอยู่แผน03 แยกจากlocomotion00
+
+Signature Duel Choice/ชอยส์ที่5/การันตีชนะหรือยิงทะลุบล็อก/จำนวนคัตซีน1–3ตามTierและสโลว์แพ้ชนะถูกsupersedeตามQ22 ไม่ใช้เป็นtargetปัจจุบัน แอนิเมชันพร้อมเสียจังหวะเมื่อยิงส่งจังหวะแรกวืดเลื่อนไปPhase2
 
 ## 4. ระบบยิงฟรีคิก & ลูกนิ่ง (สไตล์ FC27 Control)
 1. **เล็งทิศทาง (`Aim Line`):** ขยับมุมกล้องเล็งทิศทางเริ่มต้นของลูกบอล พร้อมแสดงเส้นวิถีโค้งจำลองสั้นๆ

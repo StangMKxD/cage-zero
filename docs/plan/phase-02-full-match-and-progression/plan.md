@@ -13,14 +13,14 @@
 | [01-match-tiebreak](01-match-tiebreak/plan.md) | โหวตและตัดสินเสมอ | ยังไม่เริ่ม |
 | [02-transactions](02-transactions/plan.md) | Transactions — ธุรกรรม Cash และไอเทม | ยังไม่เริ่ม |
 | [03-player-gacha-and-stats](03-player-gacha-and-stats/plan.md) | สุ่มนักเตะ ระดับ และ Stats | ยังไม่เริ่ม |
-| [04-collection-and-economy](04-collection-and-economy/plan.md) | Collection อุปกรณ์ และเศรษฐกิจ | ยังไม่เริ่ม |
+| [04-collection-and-economy](04-collection-and-economy/plan.md) | สุ่มสกิล Skill Inventory/Collection และเศรษฐกิจ | ยังไม่เริ่ม |
 | [05-effect-gacha](05-effect-gacha/plan.md) | สุ่ม สวมใส่ และสะสมเอฟเฟค | ยังไม่เริ่ม |
 | [06-market](06-market/plan.md) | ตลาดแผงและธุรกรรม | ยังไม่เริ่ม |
-| [07-meta-ui](07-meta-ui/plan.md) | UI แมตช์ Collection และร้านค้า | ยังไม่เริ่ม |
+| [07-meta-ui](07-meta-ui/plan.md) | UI แมตช์ Collection ร้านค้า และระบบตั้งค่าฉบับใช้งานจริง | ยังไม่เริ่ม |
 | [08-integration-and-uat](08-integration-and-uat/plan.md) | Full Integration และ UAT | ยังไม่เริ่ม |
 
 ## กติกาที่ต้องรักษา
-- แมตช์ปกติไม่เกิน 5 นาทีของเวลาเล่น หยุดหลังประตู/เตรียมลูกนิ่ง แต่คัตซีนส่วนตัว/สโลว์เปิดดวลนับต่อ
+- แมตช์ปกติไม่เกิน 5 นาทีของเวลาเล่น หยุดหลังประตู/เตรียมลูกนิ่ง ไม่มีสโลว์เปิดดวล/คัตซีนล็อกคู่จากQ22
 - Golden Goal/ต่อเวลามีเพดานของตัวเอง หากหมดแล้วยังเสมอจบทันที; การเลือกเล่นต่อต้องเห็นตรงกัน ส่วน shootout ให้โอกาสเท่ากัน
 - สุ่มนักเตะมี Tier/rarity และ stats ชุดเล็ก เช่นยิงแรง/ยิงโค้ง/วิ่งเร็ว/พุ่งสกัด/เลี้ยงบอล เป็นคนละเรื่องกับสกิลยิง/ส่งที่ตัดไป ไม่คืนสกิลเหล่านั้น
 - ความต่าง stats 15% ใน spec เดิมยังไม่ถูกสั่งยกเลิก; สูตร/ระดับ/การเติบโต/เรต/ราคาให้ grill ภายหลัง
@@ -29,3 +29,12 @@
 - ก่อนเปิดแต่ละแผนให้ grill เรื่องที่ยังเปิดและ sync PRD/spec/TDD/API/data/UI ตาม accepted deltas ไม่ออกแบบ implementation ล่วงหน้าทั้ง phase
 
 - 02-transactions เป็นฐานธุรกรรม Cash/ไอเทมร่วม ก่อนเปิดกาชา/collection/ตลาด; 08-integration-and-uat เป็น gate ท้าย phase ทั้งหมด
+- คำสั่งผู้ใช้2026-10-20: Debugจูนความเร็ว/ค่าทดสอบและเสกDummyอยู่Phase1/06; ระบบตั้งค่าฉบับใช้งานจริง/ค่าถาวรเลื่อนมา07-meta-uiของPhase2 รายละเอียดรอgrill ไม่เปิดimplementationจากบันทึกนี้
+
+## Gameplay extension queue หลัง Q22 — Accepted / Deferred
+
+- ต้องมีสามระบบสุ่ม: ตัวละคร03, สกิล/Skill Inventory04, เอฟเฟค05; Phase1ใช้ตัวเริ่มต้นSkillMove5ดาวและ5ท่าฟรี3ช่องเท่านั้น
+- เพิ่มท่าที่เหลือ/ความต่างดาวและStatsเมื่อเปิดแผนเจ้าของ ไม่ตีความชุดทดลองเป็น15ท่าในPhase1
+- เพิ่มแอนิเมชันยิง/ส่งจังหวะแรกและเสียจังหวะเมื่อวืดในPhase2 ต้องแยกimplementationcontractของงานขยาย02ก่อนทำและก่อน08Full UAT; รอบนี้ล็อกเพียงdelivery phase ไม่ออกแบบassets/timingหรือย้ายimplementationไปทำในแผนทดสอบ
+- ระบบตั้งค่าจริง/ค่าถาวรอยู่07-meta-ui ส่วนDebug/Dummysessionอยู่Phase1/06 คงเดิม
+- trait/การ์ดที่อ้างผลชนะChoiceอัตโนมัติต้องทบทวนก่อนใช้กับฟุตบอลต่อเนื่อง ไม่มีI-frame/คัตซีนล็อกคู่กลับมาจากschemaหรือreportเก่า

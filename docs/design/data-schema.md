@@ -1,4 +1,18 @@
-# Data Schema & Domain Models (`src/shared/Types.luau`)
+# Data Schema & Domain Models — target และ baseline
+
+Decision Accepted / Delivery Planned ตามQ22; ไม่แก้Types/CardConfigs/Networkของ00ในรอบเอกสารนี้ แผน02/03/Phase2ต้องfreezefield types/validation/migrationในHANDOFFก่อนimplementation
+
+## Target concepts — Phase1
+
+- แยก ball holder, ball motion/contact และ Attack Context Team ที่ครองสำเร็จล่าสุด; มีround/character generationป้องกันcallbacksเก่า
+- Gameplay sessionของตัวทดสอบ1ตัวมีSkillMoveStars=5 และloadout3slotsจาก5ท่าฟรี แยกจากCard Tier/rig scale presets ไม่ใช้itemUIDหรือpersistentprofile
+- แต่ละskillมีID/requiredstars/directionprofile/animationreference/provenance/cost/CD/ช่วงจบท่า/contact/recovery ข้อมูลServerเป็นเจ้าของ ไม่เชื่อwinnerจากClient
+- movement/Stamina/recovery/CD/roundcontextมีsingle ownerร่วม02/03; Debug06ใช้sessionoverridesพร้อมdefault/current/validation/restore
+- Phase2เพิ่มownership/Skill Inventory/สามระบบสุ่ม/Stats/profile/settingsหลังtransactionsพร้อม ไม่เพิ่มpersistenceเพื่อให้Demoเลือก3ท่าได้
+
+## Baseline schema reference — ไม่ใช่ target ใหม่โดยอัตโนมัติ
+
+โครงสร้างด้านล่างบันทึกsourceก่อนQ22 โดยเฉพาะsignatureChoiceId/winCutsceneAnimIdsถูกsupersedeและต้องเลิกพึ่งในแผนเจ้าของ ไม่เปลี่ยนTypesของ00ก่อนgate; เรต/pity/จำนวนslot/สูตรตลาดที่ยังไม่grillไม่กลายเป็นข้อกำหนดใหม่จากreferenceนี้
 
 ## 1. โครงสร้างข้อมูลผู้เล่น (`PlayerProfileData`)
 - `userId: number` — รหัสผู้เล่น Roblox

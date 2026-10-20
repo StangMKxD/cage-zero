@@ -1,4 +1,4 @@
-# 04-collection-and-economy — Collection อุปกรณ์ และเศรษฐกิจ
+# 04-collection-and-economy — สุ่มสกิล, Skill Inventory, Collection และเศรษฐกิจ
 
 - **Phase:** 2; **State:** DEFERRED / LOCKED_UNTIL_PHASE_1_COMPLETE
 - **Owner:** Stang; Planner: Codex; Implementer / Reviewer: ยังไม่มอบหมาย
@@ -12,7 +12,7 @@
 
 ## Scope
 - Battle Threads/Trait/Mutations, Cash/EXP/Level, reward/celebrations และข้อมูล ownership
-- คงสกิลเลี้ยง–รับที่ยังเลือกไว้และ cooldown; ตัดสกิลยิง/ส่งตาม accepted decisions
+- เป็นเจ้าของสุ่มสกิล/สะสมท่า/Skill Inventory/ownershipและloadout3ช่องตามเพดานดาวต่อจากPhase1 มีท่าเพิ่มเติมที่Ownerเลือกเมื่อเปิดPhase2 คงcost/CD/recoveryและการถูกสกัดได้
 - ไม่มีรองเท้าสตั๊ดและ Mutations ไม่เพิ่มพลังสนาม; รองรับฐานข้อมูลสำหรับเอฟเฟค/ตลาดภายหลัง
 
 ## Acceptance / ก่อนลงมือ
@@ -22,3 +22,9 @@
 อ่าน [architecture](../../../design/architecture-and-network.md) และ PRD/spec เดิมเพื่อทำ diff เฉพาะส่วนก่อนลงมือ ไม่ใช้เนื้อหา Parry/Choice ยิงส่งหรือสถานะปิดงานเก่าเป็นสิทธิ์ให้ทำของที่ถูกตัด/เลื่อน
 
 รายงานใน assets/runs ที่ย้ายมาด้วยเป็นประวัติของ module baseline เดิม ชื่อ/หมายเลข/ข้อความอนุมัติในรายงานไม่ใช่ผลตรวจของแผนฉบับนี้ รายงาน card/UI/เศรษฐกิจเดิมอาจครอบหลายขอบเขตก่อนแยก phase ให้ใช้อ้างอิงประวัติเท่านั้น
+
+## Skill gacha — Accepted scope / Deferred delivery จากQ22
+
+ต้องมีสุ่มสกิลแยกจากสุ่มตัวละคร03และเอฟเฟค05 ธุรกรรม02ต้องพร้อมก่อน การสุ่ม/ของซ้ำ/เรต/pity/ราคา/ช่องทางได้ฟรี/การซื้อขายท่าและdata schemaยังต้องgrill ไม่อนุมัติให้ขายหรือเทรดสกิลโดยอัตโนมัติจากการเพิ่มSkill Inventory
+
+ไม่เปิดSignature Choice/การชนะmatrix/ยิงส่งการันตีจากbaseline และไม่ตีความฟรี5ท่าในDemoว่าได้ทำinventory/persistenceแล้ว

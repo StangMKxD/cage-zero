@@ -1,31 +1,25 @@
-# UI State Machine & Screen Routing (`src/client/ui/UIManager.luau`)
+# UI State & Routing — target หลัง Q22
 
-## 1. โหมดหลักของ `UIManager` (Primary Modes)
-1. **`MAIN_MENU` (สถานะเริ่มต้นเข้าเกม):**
-   - แสดงเฉพาะ `MainMenuScreen`
-   - ซ่อน `TopCurrencyBar`, `NavigationDock` และหน้าจอการแข่งขันทั้งหมด
-2. **`LOBBY_MODE` (สถานะอยู่ในตัวเมือง / ห้องเตรียมตัว):**
-   - แสดง `TopCurrencyBar` (ด้านบน) และ `NavigationDock` (ด้านล่าง) ตลอดเวลา
-   - อนุญาตให้เปิดหน้าจอหลักใน Lobby ได้ทีละ 1 หน้าเท่านั้น (`ModeSelectScreen`, `PreMatchLobbyScreen`, `LockerScreen`, `SummonGachaScreen`, `TradingPlazaScreen`)
-   - เมื่อสลับหน้าผ่าน `NavigationDock` ต้องปิดหน้าต่างเดิมทันที ห้ามเปิดซ้อนทับกัน
-3. **`MATCH_MODE` (สถานะกำลังแข่งขันในสนามกรง):**
-   - ซ่อน UI ของ `LOBBY_MODE` ทั้งหมดทันที (`TopCurrencyBar`, `NavigationDock`, และหน้าต่าง Lobby ทุกบาน)
-   - แสดง `MatchHUDScreen` เป็นหน้าจอหลัก
-   - ควบคุม Modal/Overlay เฉพาะกิจตามสถานะเกม:
-     - `DuelChoiceModal`: เปิดเมื่อเกิด `DuelStartEvent` (`<= 6 Studs`) และซ่อนปุ่มควบคุมทั่วไปชั่วคราว
-     - `ParryPromptOverlay`: เปิดเมื่อเกิด `ParryWindowTrigger` (`0.35 วินาที`)
-     - `FreeKickOverlay`: เปิดเมื่อเกิด `FreeKickStartEvent`
-     - `PostMatchSummaryScreen`: เปิดเมื่อจบการแข่งขัน
+Decision Accepted / Delivery Planned — 2026-10-20; source UIเก่ายังต้องretireตามHANDOFFของแผนเจ้าของ ไม่มีimplementationapprovalจากเอกสารนี้ [Spec05](../specs/spec-05-ui-navigation-and-hud.md)
 
-## 2. ตารางการเปลี่ยนผ่านสถานะ (State Transition Table)
+## Phase1 — Gameplay/Training
 
-| สถานะต้นทาง (From) | เหตุการณ์ (Trigger / Action) | สถานะปลายทาง (To) | พฤติกรรมของ `UIManager` |
-| :--- | :--- | :--- | :--- |
-| `MainMenuScreen` | กดปุ่ม `PLAY` | `LOBBY_MODE` (Hub) | ซ่อน `MainMenuScreen`, เปิด `TopCurrencyBar` + `NavigationDock` |
-| `LOBBY_MODE` (Any) | กดปุ่มใน `NavigationDock` | `ModeSelect` / `Locker` / `Summon` / `Trade` | ปิดหน้าจอ Lobby ปัจจุบัน แล้วเปิดหน้าที่เลือกเพียงหน้าเดียว |
-| `ModeSelectScreen` | เลือกโหมด (`3v3` / `4v4` / `1v1v1`) | `PreMatchLobbyScreen` | เปิดหน้าเลือกตำแหน่ง (`Forward`, `Midfielder`, `Defender`) |
-| `PreMatchLobbyScreen` | ทุกคนกด `READY` | `MATCH_MODE` (`MatchHUDScreen`) | ซ่อน UI ของ Lobby ทั้งหมด เปิด `MatchHUDScreen` |
-| `MatchHUDScreen` | `DuelStartEvent` (`<= 6 Studs`) | `DuelChoiceModal` | แสดงปุ่ม Choice 1–5 ตามตำแหน่ง ล็อกปุ่มที่ติด `Mistake` หรืออยู่นอก `Shooting Zone` |
-| `MatchHUDScreen` | `ParryWindowTrigger` (`<= 5 Studs`) | `ParryPromptOverlay` | แสดงวงแหวนกด `Parry` `0.35 วินาที` โดยไม่ตัดเข้าหน้าจอดวล |
-| `MatchHUDScreen` | หมดเวลาการแข่งขัน | `PostMatchSummaryScreen` | แสดง MVP และคำนวณรางวัลคูณตาม `Mutated Gear` |
-| `PostMatchSummaryScreen` | กด `RETURN TO LOBBY` | `LOBBY_MODE` (Hub) | ปิด UI สนามทั้งหมด กลับสู่ `LOBBY_MODE` |
+ใช้UIManager routerเดียว HUD/fixtureขั้นต่ำของ02/03/06ทดสอบได้ก่อน08 ตัวเลือกอุปกรณ์/การจัดวางหน้าจอล็อกเมื่อเปิด08 ไม่เพิ่มLobby/แมตช์เต็มเพื่อให้เล่นDemoได้
+
+| State / event | Target UI / control |
+| --- | --- |
+| เตรียม/หยุด/รีเซ็ตซ้อม | เลือก3skillsจาก5ฟรี/initialteam/scenario; Debug06จูนค่าและเสกDummyได้ตามสิทธิ์ |
+| เริ่มรอบเล่น | ล็อกloadoutระหว่างรอบ; แสดงcontext3คู่/3slots/ดาว/CD/Stamina/recovery |
+| ทีมครองล่าสุด | ยิง/ส่ง/ยิงโค้ง ทั้งทีมคงlabelหลังปล่อยบอล ไม่มีบอลในระยะก็ไม่ได้สิทธิ์ยิง |
+| อีกทีมครองสำเร็จ | เปลี่ยนlabelเป็นSlide/Poke/Shoulder การบล็อกบอลเด้งไม่สลับ; intentที่เริ่มแล้วไม่กลายเป็นอีกท่า |
+| Staminaไม่พอ/CD/ช่วงจบท่าหรือrecovery | แสดงเหตุที่กดท่านั้นไม่ได้ แต่ไม่ปิดการเดิน/เล็ง/ยิงส่งที่ท่าทางอนุญาต |
+| ลูกนิ่งจาก05 | แสดงaim/spin/timingoverlayตามกติกาลูกนิ่ง แล้วคืนHUD |
+| reset/death/leave/เปลี่ยนgeneration | ยกเลิกpendinginput/track/overlayของรอบเก่าและคืนกล้อง |
+
+ไม่มีDuelChoiceModal/ParryPromptOverlay/สโลว์เปิดดวล/คัตซีนล็อกคู่; ท่าร่างskillเป็นanimationระหว่างการเล่น ไม่บังคับกล้องคู่ต่อสู้หรือผู้ชม
+
+## Phase2 — Lobby/Match/Meta
+
+MainMenu → Lobbyผ่านNavigationDock → ModeSelect(3v3/4v4)/PreMatch → MatchHUD → PostMatch → Lobby; Locker/สุ่มตัวละคร/สุ่มสกิล/สุ่มเอฟเฟค/Collection/ตลาด/settingsผ่านrouterเดิม เปิดทีละหน้าตามscopeเจ้าของ ไม่แสดงสถานะplaceholderเป็นระบบพร้อมใช้
+
+Serverตัดสินแมตช์/รางวัล/ownership/ผลสุ่มและsettingsที่กระทบเกม; UIรับsnapshot/ผลจริง รายละเอียดเรต/ราคา/profile/settingsและfirst-timepolishรอPhase2gate ไม่เปิดhandlerเหล่านี้ใน00หรือDemo

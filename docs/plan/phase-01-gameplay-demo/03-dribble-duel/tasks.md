@@ -1,15 +1,17 @@
-# Tasks — 03-dribble-duel
+# Tasks — 03 Skill Moves และเกมรับ
 
-**Phase 1 | PLANNING / IMPLEMENTATION_PENDING**
+**SCOPE_CONFIRMED / IMPLEMENTATION_PENDING** · Owner Stang · Planner/Reviewer Codex · Implementerยังไม่มอบหมาย
+[Plan](plan.md) / [Spec02](../../../specs/spec-02-duel-and-parry.md) / [TDD](../../../tdd/master-test-cases.md)
+Q22ยืนยันเอกสาร2026-10-20; planningHEADf8729cc+dirtyfiles localcommitเอกสารตามคำสั่งล่าสุดในagent.md ไม่รวมsource/push/merge/deploy
 
-รายการนี้คือคิวงานปัจจุบัน ไม่ใช่ checkbox ส่งมอบจาก module baseline เดิม ดู [plan](plan.md) และ [phase gate](../plan.md)
-
-- [x] P-01: จัดที่อยู่แผนและขอบเขตให้ตรง phase ตามคำสั่งผู้ใช้
-- [ ] P-02: ตรวจ prerequisites/grill เรื่องที่ยังเปิด และ sync spec/TDD/contract เฉพาะส่วนก่อนลงมือ
-- [ ] P-03: มอบหมาย implementation หลังผ่าน approval/gate ที่เกี่ยวข้อง
-- [ ] T-01: เข้าเขตเกิด Duel Event อัตโนมัติ Feint ใช้หลบระยะ สโลว์ทั้งสนามสั้น ๆ ตอนเปิดแล้วกลับปกติ
-- [ ] T-02: ชอยส์พื้นฐานร่วม: กระชาก/โยกหลอก/ลอดขา ฝ่ายรับพุ่งสกัด/คุมเชิง/ดักทาง ไม่มีชอยส์ยิง/ส่ง/Snap Shot/Shot Block เดิม
-- [ ] T-03: ผู้ชนะครองบอลพร้อมคัตซีนเฉพาะคู่ ผู้แพ้สตั้นหลังคืนการควบคุม คนอื่นแทรกคู่ไม่ได้
-- [ ] T-04: คนอื่นเคลื่อนที่ได้หลังช่วงสโลว์; คัตซีนส่วนตัวไม่หยุดนาฬิกาเมื่อเปิดระบบแมตช์ใน Phase 2
-- [ ] T-98: ตรวจ source/ref และ functional/visual evidence ที่จำเป็นผ่าน Studio MCP
-- [ ] T-99: sync เอกสารตามผลงานจริงและส่งให้ reviewer ตรวจ ไม่ปิดงานตนเอง
+- [x] P-01: เปลี่ยนscopeจากChoiceเป็นSkillMoves/เกมรับตามQ22; คงlegacyfolder/ประวัติ
+- [x] P-02a: ตกลง5ท่า/ดาว/3ช่อง/activation/recovery/collision/Phase2deferrals
+- [ ] P-02b: finalize02seams/animationassets/intentNetworkและverificationก่อนimplementationHANDOFF
+- [ ] P-03: Ownerอนุมัติimplementationหลัง02ผ่านgate
+- [ ] T-01: catalog5ท่า/ตัวทดสอบ5ดาว/3ช่อง/เลือกชุดก่อนรอบหรือหยุดรีเซ็ต ไม่เปิดกาชา
+- [ ] T-02: Skill action lifecycle/ทิศ/Servervalidation/R6ท่าร่าง/บอลยังสัมผัสได้ ไม่มีFeintเดิม
+- [ ] T-03: Poke/Slide/Shoulder/ชนคู่แข่งช้าลง/เพื่อนผ่านตัวได้และผลcontactตามSpec02
+- [ ] T-04: CDแยก+ช่วงจบท่าร่วม/cost/recovery/cleanupโดยใช้ทรัพยากร02 ไม่เขียนball stateซ้ำ
+- [ ] T-05: retireเฉพาะoldChoicebootstrap/handlersที่ระบุในHANDOFF ไม่reuseDuelremotesผิดความหมาย
+- [ ] T-98: runtime5moves/สกัดได้/ต้นทุนไม่พอ/CD/รีเซ็ต/เปลี่ยนทีมและvisualอ่านท่าได้; ตอนนี้NOT RUN
+- [ ] T-99: syncdocs/currenthash/evidence ส่งreview ไม่ปิดงานเอง

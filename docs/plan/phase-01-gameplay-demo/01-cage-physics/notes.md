@@ -1,5 +1,7 @@
 # Notes — 01-cage-physics
 
+> Current gameplay: อ่านN37–N44/Q22ล่าสุดก่อน N11/N12/N13, ส่วนChoiceในN14, สโลว์/คัตซีนในN15และMistake/คัตซีนในN23ถูกsupersede; ข้ออื่นที่ไม่ขัดคงเดิม Q1–Q38ด้านล่างเป็นรอบประวัติก่อนgrillใหม่Q1–Q22
+
 - **N-01 Scope:** ผู้ใช้ย้ำ “แค่วาง architecture พร้อม plan แรก” งาน active จึงเป็นเอกสาร architecture/Plan 1 และยังไม่อนุมัติ implementation
 - **N-02 Baseline:** Git มี source/เอกสารโมดูล 00–08 อยู่ก่อนแล้ว แต่ลำดับงานปัจจุบันเริ่มเตรียม Plan 1 ห้ามยึด agent router เดิมที่ชี้ Module 08 เพื่อข้ามคำสั่งผู้ใช้
 - **N-03 Geometry:** baseline มี solver/ชิ้นสนามที่ไม่สอดคล้องกันและ ramp trigger กว้างเกินชิ้นจริง ใช้เป็นข้อสังเกตสำหรับออกแบบ Plan 1 ไม่ใช่สิทธิ์ให้แก้โค้ดก่อนอนุมัติ
@@ -39,6 +41,21 @@
 - **N-31 UAT/transactions/Git:** ผู้ใช้เพิ่ม Phase 1 09-uat, Phase 2 transactions ก่อนกาชา/เศรษฐกิจ/ตลาดและ full UAT ท้ายสุด พร้อมอนุญาต commit/push เอกสารรอบนี้; implementation ยัง PENDING
 
 
+- **N-32 Rig scope (2026-10-20, Accepted design):** ผู้ใช้ตอบ “ใช้ R6 ตลอด Phase 1 (แนะนำ)” supersede เฉพาะ Custom R15 ใน scope Phase 1 ใช้ Custom R6 ของเกม/หน้าอนิเมะ/สเกลเดิม ไม่เพิ่มกาชา/สเตตัส ไม่กำหนดการกลับ R15 ใน Phase 2
+- **N-33 Planning authority (2026-10-20):** ผู้ใช้ให้ Codex ปรับแผนเองและ grill เฉพาะเรื่องเปิด จึงจบขอบเขต 00/architecture ด้วย R6 standard clips และ root/floor contract ไม่ส่งการวางแผนกลับ AGY; implementation/Git ยัง PENDING ไม่มีคำถามผลิตภัณฑ์ค้างของแผน 00
+
+
 - **N-34 Map comparison (2026-10-20, Accepted design):** ผู้ใช้เพิ่ม A Classic Box, B กรงปาดมุม, C หลังคาขอบลาด45° เพื่อเทียบทดลอง แล้วตอบ “ปาด 4 มุม เป็น 8 ผนัง (แนะนำ)” สำหรับ B/C; supersede ข้อจำกัด 6 ผนังของชื่อ Hex เดิมเฉพาะโปรไฟล์ทดลองนี้ ยังไม่เลือก winner/default map สุดท้าย
 - **N-35 Rebound markers (Accepted design):** ผู้ใช้เลือก “ฟิสิกส์จริง + marker ไกด์ (แนะนำ)” ไม่มีแรงนำบอลเข้าจุดนัดพบ ข้อความตกหน้าโกล/ตบลงกลางสนามเป็น hypotheses ต้องทดลอง ไม่ใช่ผลรับรอง 100%
 - **N-36 Trial scope:** base rebound 5 รายการอยู่การทดลอง01; pillar2ระดับ/beveled cap/ripple1s/ป้ายแขวนแกว่งเป็น experiments ของ event07 จังหวะ90s/ตัวเลขresponseเป็น config ไม่เริ่ม full match clock หรือรับรองผล gameplay ก่อนทดสอบ
+
+## N-37–N-44 — Accepted gameplay replacement (2026-10-20)
+
+- **Authority N-37:** StangตอบQ22 “ตรงตามนี้ ปรับแผนและเอกสารได้ (แนะนำ)” หลังQ1–Q21 อนุญาตเอกสาร/architecture/PRD/spec/TDD ไม่อนุมัติimplementationใหม่ ไม่ขยาย00 Canonicalรายละเอียดอยู่ [Spec02](../../../specs/spec-02-duel-and-parry.md)
+- **N-38 Replaces Choice (Q1/Q19/Q22):** ตัดChoice trigger/หน้าจอ/matrix/สโลว์เปิดดวล/คัตซีนล็อกคู่/สตั้นแพ้ดวล และFeintเดิม เก็บDashตามQ8; supersede N-11/N-13และส่วนDuelของN-10/N-12 โดยเก็บmovement/ยิงส่ง/สนาม/โกล/ฟาวล์เดิมที่ไม่ขัด
+- **N-39 Inputs (Q1/Q6/Q8/Q10/Q13):** ยิง↔Slide,ส่ง↔Poke,ยิงโค้งโดยตรง↔Shoulder; ทีมครองล่าสุดทั้งทีมอยู่บุกต่อเมื่อบอลอิสระ เปลี่ยนเมื่ออีกทีมครองสำเร็จ ไม่เปลี่ยนจากผนัง/เพดาน/deflect; การเห็นปุ่มยิงไม่ให้ยิงบอลระยะไกลได้
+- **N-40 Contacts (Q9/Q11/Q12/Q14):** ชนคู่แข่งช้าลง เพื่อนผ่านตัว; บอลพื้นรับไหวตัดได้ครอง บอลแรง/สูงเด้งอิสระ Shoulderสำเร็จทำให้เสียเหลี่ยม/บอลหลุดแล้วแย่งต่อ ไม่มีI-frameหรือชนะอัตโนมัติ
+- **N-41 Skills (Q2/Q4/Q7/Q19–Q21):** ข้อเสนอ15ท่าถูกแก้เป็น5ท่า ดาวละ1: 1Knock-On,2DragBack,3Croqueta,4Sombrero,5Elastico ติดตั้ง3ช่องข้ามระดับ กดช่อง+ทิศตอนเริ่ม มีR6ท่าร่างอ่านได้ครบ5; ท่าเพิ่มเติมไปPhase2
+- **N-42 Starter/resources (Q3/Q15–Q18):** ตัวเริ่มต้น1ตัวSkillMove5ดาว/ทุกท่าทดลองฟรี ไม่เปลี่ยนTierหรือ4scalefixturesของ00 จ่ายStaminaไม่พอใช้ท่านั้นไม่ได้ CDแยก+ช่วงจบท่าร่วม พลาดช้าลง/ล็อกSkillDashสกัดแต่เล่นพื้นฐานเมื่อท่าเอื้อ สไลด์รอลุก เลือกชุดก่อนรอบหรือหยุด/รีเซ็ตซ้อม
+- **N-43 First-time/deferred (Q5/Q22):** Phase1ยิงส่งจังหวะแรกได้; Phase2ต้องเพิ่มแอนิเมชันและเสียจังหวะเมื่อวืด รวมสุ่มตัวละคร/สกิล/เอฟเฟค,ความต่างStats/ดาว,ท่าเพิ่มและระบบตั้งค่าจริง; เริ่มจากSpeed/Jump/ShotPower/Curve/Sliding/Strengthเป็นรายการgrill ไม่ถือว่าล็อกสูตรหรือเพิ่มstatsต่างตัวในPhase1
+- **N-44 Debug:** คำสั่งเพิ่มค่าจูน/เสกDummyในPhase1/06 accepted; sessionoverrides/คืนdefault/cleanup ส่วนค่าถาวรและระบบตั้งค่าจริงอยู่Phase2/07 รายละเอียดในplan06 ไม่เปิดimplementationก่อนgate

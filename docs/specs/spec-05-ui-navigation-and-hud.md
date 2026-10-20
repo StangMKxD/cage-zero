@@ -1,32 +1,25 @@
-# Spec 05 — ระบบ UI ทั้งหมด, การเชื่อมต่อหน้าจอ และ HUD
+# Spec 05 — Gameplay UI, Skill Loadout และหน้าระบบ Phase2
 
-## 1. กฎการควบคุมหน้าจอด้วย `UIManager` ตัวเดียว (Single UI Router Rule)
-ระบบ UI ทั้งหมดบริหารจัดการผ่าน `src/client/ui/UIManager.luau` โดยแบ่งเป็น **2 โหมดหลัก (`LOBBY_MODE` และ `MATCH_MODE`)** ห้ามเปิดหน้าต่างซ้อนทับกันมั่ว เมื่อเข้าสู่ `MATCH_MODE` ต้องซ่อน UI ของ Lobby ทั้งหมดทันที
+Decision Accepted / Delivery Planned จากQ22 — 2026-10-20; [UI routing](../design/ui-state-and-routing.md) / [Spec02](spec-02-duel-and-parry.md)
 
-## 2. ผังการเชื่อมต่อหน้าจอ (UI Screen Navigation Map)
-- `MainMenuScreen` -> กด `PLAY` -> เข้าสู่ `LOBBY_MODE` (`TopCurrencyBar` + `NavigationDock`)
-- `NavigationDock` สลับหน้าจอหลักใน Lobby:
-  - `PLAY MATCH` -> `ModeSelectScreen` (`3v3 Hex-Cage`, `4v4 Pro`, `1v1v1 King of Cage`) -> `PreMatchLobbyScreen` (เลือก `Forward`, `Midfielder`, `Defender` + กด `READY`) -> ตัดเข้า `MATCH_MODE`
-  - `LOCKER` -> `LockerScreen` (3 แท็บ: `Player Cards`, `Battle Threads`, `Celebrations`)
-  - `SUMMON` -> `SummonGachaScreen` (ตู้สุ่มการ์ด Tier B/A/S พร้อม Pity `100` และตู้สุ่ม Trait / Battle Threads)
-  - `TRADE PLAZA` -> `TradingPlazaScreen` (`Market Booth UI` 6 ช่อง และ `P2P Trade Window` ยืนยัน 2 ชั้น)
-  - `TRAINING` -> สนามซ้อมส่วนตัว
-- ใน `MATCH_MODE`:
-  - แสดง `MatchHUDScreen` เป็นหลัก
-  - เมื่อเข้าดวล 1v1 (`<= 6 Studs`): เด้ง `DuelChoiceModal`
-  - เมื่อบอลส่ง/ยิงผ่านกองหลัง (`<= 5 Studs`): เด้ง `ParryPromptOverlay` (`0.35 วินาที`)
-  - เมื่อได้ลูกนิ่ง/ฟรีคิก: เปิด `FreeKickOverlay`
-  - เมื่อหมดเวลาแข่งขัน: เปิด `PostMatchSummaryScreen` (`Play Again` -> `PreMatchLobbyScreen`, `Return Lobby` -> `LOBBY_MODE`)
+## Phase1 / 08-gameplay-ui
 
-## 3. รายละเอียดองค์ประกอบในแต่ละหน้าจอ (Screen-by-Screen Specs)
-1. **`MainMenuScreen.luau`:** โลโก้เกม, ตัวละคร Custom Rig โพสท่าประจำการ์ด, ปุ่ม `PLAY`, ปุ่ม `SETTINGS`
-2. **`TopCurrencyBar.luau` & `NavigationDock.luau`:** แสดง `Cash`, เลเวล, `EXP`, ตัวคูณจากชุด Mutated และแถบปุ่มเมนู 5 ปุ่ม (`Play`, `Locker`, `Summon`, `Trade`, `Training`)
-3. **`ModeSelectScreen.luau` & `PreMatchLobbyScreen.luau`:** การ์ดเลือกโหมด และหน้าเลือกตำแหน่ง (`FW`, `MF`, `DF`) พร้อมพรีวิวชุด Choice ประจำตำแหน่งและปุ่ม `READY`
-4. **`LockerScreen.luau`:** พรีวิวโมเดล Custom Rig หมุน 360 องศา + ตารางเก็บของ 3 แท็บ (`Cards`, `Battle Threads` พร้อมช่อง `Trait Slot 1-2`, `Celebrations`)
-5. **`SummonGachaScreen.luau`:** แบนเนอร์หน้าตู้, เรต (`Tier S: 0.5%`, `Tier A: 9.5%`, `Tier B: 90%`), ตัวนับ Pity (`0/100`), ปุ่ม `Summon x1` และ `Summon x10`
-6. **`TradingPlazaScreen.luau`:** `Market Booth UI` (6 ช่อง) และ `P2P Trade Window` (กด `1. Lock Offer` และรอนับถอยหลัง `3 วินาที` ก่อนกด `2. Confirm Trade`)
-7. **`MatchHUDScreen.luau`:** สกอร์บอร์ด, เวลานับถอยหลัง, `Event Alert Banner`, `Stamina Bar` (กะพริบสีแดงเมื่อ `< 15%`), ป้ายบัฟ/Mistake และ `Skill & Trait Dock`
-8. **`DuelChoiceModal.luau`:** หลอดเวลา (`0.8 วิ` หรือ `0.45 วิ`), ปุ่ม Choice 1–5 ตามตำแหน่ง, ป้าย `OUT OF SHOOTING ZONE` บนปุ่ม `Snap Shot` เมื่ออยู่นอกระยะยิง และไอคอนแม่กุญแจสีแดงทับปุ่มที่ติด `Mistake`
-9. **`ParryPromptOverlay.luau`:** วงแหวนหดเข้าตรงกลางภายใน `0.35 วินาที` พร้อมปุ่ม `[F] PARRY`
-10. **`FreeKickOverlay.luau`:** เส้นเล็งวิถีบอล, `Spin Cursor` บนรูปลูกบอล และหลอด `Timed Power Bar` กด 2 จังหวะ
-11. **`PostMatchSummaryScreen.luau`:** ตัวละคร MVP เล่นท่าดีใจ, ตารางคะแนน, กล่องคำนวณรางวัล (`Base Match Reward` + `Mutated Thread Bonus` = `Total Cash & EXP`), ปุ่ม `PLAY AGAIN` และ `RETURN TO LOBBY`
+- UIManager routerเดียว ใช้HUDของDemo/Trainingและoverlaysของโกล/ลูกนิ่ง/อีเวนต์ ไม่ต้องสร้างวงจรLobby/แมตช์เต็มก่อน
+- ปุ่ม3คู่ยิง↔Slide ส่ง↔Poke ยิงโค้งโดยตรง↔Shoulder แสดงตามทีมครองล่าสุดที่Serverยืนยัน ทั้งทีมคงโหมดบุกระหว่างบอลอิสระจนอีกทีมครองสำเร็จ
+- Dash/Sprint/DirectionalJumpคงตาม02; Skill3ช่องใช้ปุ่มช่อง+ทิศเริ่มท่า ไม่มีปุ่มFeintแยก
+- แสดง3skill slots/ชื่อท่า/ดาว/cooldown/Stamina/commonend/recovery พร้อมเหตุที่ใช้ไม่ได้ แสดง5ท่าฟรีและตัวเริ่มต้นSkillMove5ดาวให้เลือก3ช่องก่อนรอบ/หยุดรีเซ็ตซ้อม
+- Ballreach/การเล่นfirst-timeต้องfeedbackอ่านออก ไม่ให้contextlabelหมายถึงยิงได้ทั้งสนามหรือแปลงท่าระหว่างกดค้าง
+- มีR6ท่าร่างทั้ง5ที่อ่านได้โดยไม่ล็อกกล้อง/ผู้เล่นอื่น บอลยังสัมผัสได้; แอนิเมชันพร้อมเสียจังหวะเมื่อfirst-timeวืดอยู่Phase2
+- Debug06มีค่าdefault/current/apply/restore, Dummycontrolsและscenarioreset; กั้นเฉพาะtestsessionและสิทธิ์ที่เหมาะสม ไม่บันทึกค่าถาวรผ่านDebug
+- ไม่มีChoice modal/Parry prompt/ตารางชนะทาง/สโลว์เปิดดวล/คัตซีนล็อกคู่/สตั้นผู้แพ้จากผลดวล
+
+## Phase2 / meta UI
+
+- หน้าทีม/เลือกโหมด3v3หรือ4v4/แมตช์/ผล/โหวต, LockerและSkill Inventory/Loadoutตามดาว, สุ่มตัวละคร/สุ่มสกิล/สุ่มเอฟเฟค, collection/ตลาดและsettingsฉบับใช้งานจริงตามแผนเจ้าของ
+- คงNo Boots/Mutationsไม่เพิ่มพลังสนาม และเอฟเฟคไม่มีstats; เงื่อนไขซื้อขายแต่ละประเภทตามscopePhase2ไม่คัด6ช่อง/เรต/pityจากspecเก่ามาเป็นข้อกำหนดใหม่
+- รูปแบบscreens/แพลตฟอร์ม/controls/เรต/pity/ราคา/ownership/profileและpersistenceต้องgrillเมื่อเปิดงาน ไม่มีplaceholderPASS
+- หน้าเลือกตำแหน่งหรือไอเทมไม่แสดงChoice matrix/Signature Choiceหรือคัตซีนชนะดวลเก่า
+
+## Acceptance
+
+inputlabelกับServercontextตรงกัน loadoutแก้ไม่ได้กลางรอบ cooldown/costไม่ถูกUIหลบ overlay/reset/respawnคืนinputและกล้อง ไม่มีตัวเลขผลการแข่งขัน/เงิน/การสุ่มคำนวณแทนServer และvisualที่ยังไม่ตรวจคงNOT VERIFIED

@@ -1,3 +1,7 @@
+## Current accepted design — 2026-10-20
+
+Q22อนุมัติเอกสารตามQ1–Q21; ใช้ [Spec02](../../../specs/spec-02-duel-and-parry.md) และplan/tasksปัจจุบันเป็นเจ้าของscope implementationยังPENDING ไม่ขยายงาน00 และไม่เปลี่ยนรายงานhistoricalเป็นผลผ่านของระบบใหม่
+
 > **Historical baseline notes:** ข้อมูลเดิมก่อนย้าย/แยก phase ให้ใช้ plan.md และ tasks.md ในโฟลเดอร์นี้เป็น scope ปัจจุบัน ผลตรวจ/สถานะเก่าไม่ใช่การรับรองแผนใหม่
 
 # Technical Notes — MODULE 03: `03-duel-choice-engine`

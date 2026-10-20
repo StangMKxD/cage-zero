@@ -16,7 +16,7 @@
 - รักษาผลตรวจเก่าเป็นประวัติและตรวจซ้ำกับ source/ref ปัจจุบัน
 
 ## Acceptance / ก่อนลงมือ
-- ทุกแผนที่อยู่ใน scope ส่งมอบและไม่มี blocking findings ค้าง
+- ทุกแผนที่อยู่ในscopeรวมงานขยายfirst-time animation/miss recoveryที่ต้องจัดimplementationcontractแยกก่อนUAT ส่งมอบและไม่มีblocking findingsค้าง
 - มี functional/visual UAT ที่จำเป็นและหลักฐานตรง source ไม่ใช้ผลทดลองเก่าแทน
 
 อ่าน [architecture](../../../design/architecture-and-network.md) และ PRD/spec เดิมเพื่อทำ diff เฉพาะส่วนก่อนลงมือ ไม่ใช้เนื้อหา Parry/Choice ยิงส่งหรือสถานะปิดงานเก่าเป็นสิทธิ์ให้ทำของที่ถูกตัด/เลื่อน
