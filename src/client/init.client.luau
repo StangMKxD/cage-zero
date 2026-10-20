@@ -1,48 +1,44 @@
 --!strict
 -- src/client/init.client.luau
--- MODULE 08: 08-integration-and-uat
--- Client Bootstrapper initializing Network, UIManager + 11 Screens, and all 6 Client Controllers
+-- MODULE 00: 00-bootstrap-and-rig
+-- Client Bootstrapper initializing Network and R6AnimationController (Custom R6)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Network = require(Shared:WaitForChild("Network"))
+local bootstrapStart = os.clock()
+local TOTAL_BOOTSTRAP_BUDGET = 10.0
 
-local UIFolder = script:WaitForChild("ui")
-local UIManager = require(UIFolder:WaitForChild("UIManager"))
-local ScreensFolder = UIFolder:WaitForChild("screens")
+local remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before waiting for Shared")
+local Shared = ReplicatedStorage:WaitForChild("Shared", remaining) :: Folder?
+assert(Shared ~= nil, "[Client.Init] Shared folder timed out in ReplicatedStorage")
 
--- Require all 11 screens so they register with UIManager
-require(ScreensFolder:WaitForChild("MainMenuScreen"))
-require(ScreensFolder:WaitForChild("ModeSelectScreen"))
-require(ScreensFolder:WaitForChild("PreMatchLobbyScreen"))
-require(ScreensFolder:WaitForChild("LockerScreen"))
-require(ScreensFolder:WaitForChild("SummonGachaScreen"))
-require(ScreensFolder:WaitForChild("TradingPlazaScreen"))
-require(ScreensFolder:WaitForChild("MatchHUDScreen"))
-require(ScreensFolder:WaitForChild("DuelChoiceModal"))
-require(ScreensFolder:WaitForChild("ParryPromptOverlay"))
-require(ScreensFolder:WaitForChild("FreeKickOverlay"))
-require(ScreensFolder:WaitForChild("PostMatchSummaryScreen"))
+remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before waiting for Network")
+local NetworkModule = Shared:WaitForChild("Network", remaining) :: ModuleScript?
+assert(NetworkModule ~= nil, "[Client.Init] Network module timed out in Shared")
 
-local ControllersFolder = script:WaitForChild("controllers")
-local InputController = require(ControllersFolder:WaitForChild("InputController"))
-local ParryIndicatorController = require(ControllersFolder:WaitForChild("ParryIndicatorController"))
-local DuelUIController = require(ControllersFolder:WaitForChild("DuelUIController"))
-local CameraCutsceneController = require(ControllersFolder:WaitForChild("CameraCutsceneController"))
-local FreeKickUIController = require(ControllersFolder:WaitForChild("FreeKickUIController"))
-local EventVFXController = require(ControllersFolder:WaitForChild("EventVFXController"))
+local Network = require(NetworkModule)
 
--- 1. Initialize Network client cache
-Network.Init()
+-- 1. Initialize Network client cache within total bootstrap budget (10s)
+remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before Network.Init")
+Network.Init(remaining)
 
--- 2. Initialize Single UI Router & Screens
-UIManager.Init()
+-- 2. Wait for character folder and R6AnimationController within remaining budget
+remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before waiting for character folder")
+local CharacterFolder = script:WaitForChild("character", remaining) :: Folder?
+assert(CharacterFolder ~= nil, "[Client.Init] character folder timed out in script")
 
--- 3. Initialize all Client Controllers
-InputController.Init()
-ParryIndicatorController.Init()
-DuelUIController.Init()
-CameraCutsceneController.Init()
-FreeKickUIController.Init()
-EventVFXController.Init()
+remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before waiting for R6AnimationController")
+local ControllerModule = CharacterFolder:WaitForChild("R6AnimationController", remaining) :: ModuleScript?
+assert(ControllerModule ~= nil, "[Client.Init] R6AnimationController module timed out in character folder")
+
+local R6AnimationController = require(ControllerModule)
+
+-- 3. Initialize R6 Animation Controller within remaining budget
+remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before R6AnimationController.Init")
+R6AnimationController.Init(remaining)

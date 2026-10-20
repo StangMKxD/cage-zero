@@ -8,8 +8,13 @@ local Constants = {
 	ALLOW_BOOTS_OR_CLEATS_SYSTEM = false,
 	ALLOW_MUTATION_COMBAT_STATS = false,
 
-	-- Single Standard Custom R15 Rig Defaults (Section 4.4)
-	CUSTOM_RIG_MODEL_NAME = "CageZeroStandardR15Rig",
+	-- Single Standard Custom R6 Rig Defaults (Module 00)
+	CUSTOM_RIG_MODEL_NAME = "CageZeroStandardR6Rig",
+	RIG_PROFILE = "R6",
+	RIG_SCHEMA_VERSION = 1,
+	IS_STANDARD_CUSTOM_RIG = true,
+	USES_PLAYER_AVATAR = false,
+	DEFAULT_HIP_HEIGHT = 0.0,
 	ANIME_FACE_DECAL_ID = "rbxassetid://144075659",
 	DEFAULT_CARD_ID = "Ronan_TierB",
 	MIN_HEIGHT_SCALE = 0.85,
@@ -19,6 +24,14 @@ local Constants = {
 	DEFAULT_HEAD_SCALE = 1.00,
 	DEFAULT_DEPTH_SCALE = 1.00,
 	DEFAULT_PROPORTION_SCALE = 0.00,
+
+	-- Explicit Floor & Spawn Anchors (Module 00 Seam to 01)
+	PRIMARY_FLOOR_PATH = "Workspace.BootstrapTestFloor",
+	PRIMARY_SPAWN_PATH = "Workspace.BootstrapSpawnLocation",
+	FALLBACK_FLOOR_PATH = "Workspace.Baseplate",
+	BOOTSTRAP_FLOOR_SIZE = Vector3.new(160, 2, 240),
+	BOOTSTRAP_FLOOR_POSITION = Vector3.new(0, -1, 0),
+	BOOTSTRAP_SPAWN_POSITION = Vector3.new(0, 5, 0),
 
 	-- Archetype Height Scales (Section 4.4 Easter Egg Proportions)
 	ARCHETYPE_HEIGHT_SCALES = table.freeze({

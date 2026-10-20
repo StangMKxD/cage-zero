@@ -1,12 +1,15 @@
 # Cage Zero — จุดเริ่มอ่านเอกสาร
 
-- กติกา/บทบาท: [agent.md](../agent.md)
-- [Roadmap](plan/roadmap.md), [Phase1](plan/phase-01-gameplay-demo/plan.md), [Phase2](plan/phase-02-full-match-and-progression/plan.md); implementationของแผนใหม่ยังPENDING
-- Q22ยืนยันฟุตบอลต่อเนื่องแทนChoice เมื่อ2026-10-20: [Spec02](specs/spec-02-duel-and-parry.md), [PRD](prd/product-requirements.md), [accepted decisions N37–N44](plan/phase-01-gameplay-demo/01-cage-physics/notes.md)
-- เริ่มจาก [00 Bootstrap/R6](plan/phase-01-gameplay-demo/00-bootstrap-and-rig/plan.md) และgateของ00ก่อน [01สนามA/B/C](plan/phase-01-gameplay-demo/01-cage-physics/plan.md); source/ผลรีวิว00ที่ยังค้างไม่รวมในเอกสารcommitรอบgameplayนี้
-- [02บอล/movement/Dash/team inputs/first-time](plan/phase-01-gameplay-demo/02-player-actions/plan.md) → [03SkillMoves5ท่า/3ช่อง/เกมรับ](plan/phase-01-gameplay-demo/03-dribble-duel/plan.md); พาธ03/spec02เดิมเป็นlegacy ไม่อนุญาตChoice Duelกลับมา
-- [06 Debug/Dummy](plan/phase-01-gameplay-demo/06-training-ground/plan.md) จูนเช่นความเร็วพื้นฐานเฉพาะtestsessionได้; [Phase2/07settingsจริง](plan/phase-02-full-match-and-progression/07-meta-ui/plan.md) ดูแลระบบตั้งค่า/persistenceเมื่อเปิดแผน
-- Phase2ต้องมี [สุ่มตัวละคร03](plan/phase-02-full-match-and-progression/03-player-gacha-and-stats/plan.md), [สุ่มสกิล/SkillInventory04](plan/phase-02-full-match-and-progression/04-collection-and-economy/plan.md), [สุ่มเอฟเฟค05](plan/phase-02-full-match-and-progression/05-effect-gacha/plan.md) และfirst-time animation/miss recoveryตามextension queue
-- [Architecture](design/architecture-and-network.md#6-continuous-football--q22), [R6contract](design/architecture-and-network.md#5-phase-1-runtime--custom-r6), [UI routing](design/ui-state-and-routing.md), [TDD](tdd/master-test-cases.md)
-- Sourceหลักsrc/; .sandboxเป็นignoredreference/evidence snapshotและรายงานเก่าไม่ใช่ผลผ่านของระบบใหม่ ต้องอ้างcurrentref/hash/ผลruntimeจริง
-- Stangอนุญาตlocalcommitเอกสารรอบนี้เมื่อครบ ไม่รวมsource/ผลรีวิว00/push/merge/deployหรือimplementationfeatureใหม่
+- กติกา/สถานะ: [agent.md](../agent.md)
+- [Roadmap](plan/roadmap.md) / [Phase 1 — Gameplay Demo](plan/phase-01-gameplay-demo/plan.md) / [Phase 2](plan/phase-02-full-match-and-progression/plan.md)
+- ปัจจุบัน: [00-bootstrap-and-rig](plan/phase-01-gameplay-demo/00-bootstrap-and-rig/plan.md), [tasks](plan/phase-01-gameplay-demo/00-bootstrap-and-rig/tasks.md), [HANDOFF](plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/HANDOFF.md)
+- ผู้ใช้ยืนยัน **Custom R6 ตลอด Phase 1**; หลัง[review010](plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/review-010.md) Ownerสั่ง “พักรอบ 00 ก่อน” สถานะPAUSED_BY_OWNER หยุดแก้/ทดสอบ/dispatchจนกว่าจะresume F18/F19ยังOPEN historicalgaprunแรกACCEPTED_GAPคงเดิม ยังไม่ปิด00
+- แผนถัดไป [01-cage-physics](plan/phase-01-gameplay-demo/01-cage-physics/plan.md) ต่อจากสัญญา root/floor ของ 00 ทำรายละเอียดเอกสารได้ แต่ลงมือต้องรอ dependency gate จริง
+- แผน 01 มี map list A/B/C (4/8/8 ผนัง), จุดชิ่ง 5 กรณี และวิธีเทียบ; marker เป็นไกด์ไม่มีแรงนำบอล ส่วน pillar/ripple/ป้ายแกว่งเป็น [trials ใน 07](plan/phase-01-gameplay-demo/07-dynamic-field-events/plan.md)
+- ผู้ใช้เพิ่ม [Debug tuning/DummyในPhase1/06](plan/phase-01-gameplay-demo/06-training-ground/plan.md) สำหรับจูนเช่นความเร็วพื้นฐานระหว่างทดสอบ; ระบบตั้งค่าฉบับใช้งานจริง/ค่าถาวรอยู่ [Phase2/07](plan/phase-02-full-match-and-progression/07-meta-ui/plan.md) implementationทั้งสองยังPENDING
+- Q22ยืนยัน [ฟุตบอลต่อเนื่อง/Skill MovesแทนChoice](specs/spec-02-duel-and-parry.md): [02บอล/movement](plan/phase-01-gameplay-demo/02-player-actions/plan.md) และ [03สกิล3ช่อง/เกมรับ](plan/phase-01-gameplay-demo/03-dribble-duel/plan.md) scopeconfirmedแต่implementationยังPENDING; พาธ03/spec02เดิมเก็บเป็นlegacy ไม่เปิดระบบChoice
+- [Architecture](design/architecture-and-network.md#5-phase-1-runtime--custom-r6) / [PRD](prd/product-requirements.md) / [spec rig](specs/spec-03-cards-rig-freekick.md) / [TDD](tdd/master-test-cases.md)
+- [Accepted decisions](plan/phase-01-gameplay-demo/01-cage-physics/notes.md) supersede เฉพาะข้อความเก่าที่ระบุ ไม่คืน Parry/Snap Shot/1v1v1 ที่ตัดแล้ว
+- Sourceอยู่src/เป็นworking-treeR6ยังไม่commit; review010อ่านสดsource9/9ตรงrepoจากPlace4Edit HEAD0e2d23eเป็นเอกสารอีเวนต์; runtimeprobesในรายงานยังต้องtraceกับsource .sandboxเป็นignoredreference/evidence
+- [Live intake](plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/review-003.md) และ review-001..006 เป็นหลักฐาน/ผลข้อเสนอ R15 เดิม ไม่ใช่ผลรัน R6
+- รายงาน historical runs/milestones เก็บเดิม การมี APPROVED เก่าไม่รับรองแผนปัจจุบัน; เอกสารระบบอนาคตยังต้อง sync เฉพาะส่วนเมื่อเปิดแผนนั้น

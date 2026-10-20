@@ -155,6 +155,44 @@ function Network.InitServer(): Folder
 	return folder
 end
 
+function Network.Init(timeoutSec: number?): Folder
+	local deadline = timeoutSec or 10.0
+	local startTime = os.clock()
+
+	if RunService:IsServer() then
+		local folder = Network.InitServer()
+		for _, def in pairs(Definitions) do
+			local child = folder:FindFirstChild(def.name)
+			assert(child ~= nil, "[Network.Init] Server remote missing: " .. def.name)
+			assert(child.ClassName == def.kind, string.format(
+				"[Network.Init] Server remote class mismatch for %s: expected %s, got %s",
+				def.name, def.kind, child.ClassName
+			))
+		end
+		local elapsed = os.clock() - startTime
+		assert(elapsed <= deadline, string.format("[Network.Init] Server initialization exceeded deadline (%.3fs > %.3fs)", elapsed, deadline))
+		return folder
+	else
+		local remaining = deadline - (os.clock() - startTime)
+		assert(remaining > 0, "[Network.Init] Bootstrap deadline exhausted before waiting for Remotes folder")
+		local folder = ReplicatedStorage:WaitForChild(REMOTE_FOLDER_NAME, remaining) :: Folder?
+		assert(folder ~= nil and folder:IsA("Folder"), "[Network.Init] Remotes folder timed out in ReplicatedStorage")
+
+		for _, def in pairs(Definitions) do
+			remaining = deadline - (os.clock() - startTime)
+			assert(remaining > 0, string.format("[Network.Init] Bootstrap deadline exhausted while waiting for remote %s", def.name))
+			local remote = folder:WaitForChild(def.name, remaining)
+			assert(remote ~= nil, string.format("[Network.Init] Remote %s timed out on client", def.name))
+			assert(remote.ClassName == def.kind, string.format(
+				"[Network.Init] Client remote class mismatch for %s: expected %s, got %s",
+				def.name, def.kind, remote.ClassName
+			))
+		end
+
+		return folder
+	end
+end
+
 function Network.GetRemoteEvent(remoteName: string): RemoteEvent
 	local def = Definitions[remoteName]
 	assert(def ~= nil, "[Network] Unknown Remote name: " .. tostring(remoteName))
