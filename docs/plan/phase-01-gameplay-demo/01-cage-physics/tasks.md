@@ -1,14 +1,21 @@
 # Tasks — 01-cage-physics
 
-**Phase 1 | PLANNING / IMPLEMENTATION_PENDING**
+**Phase 1 | DESIGN_DRAFT / DEPENDS_ON_00 / IMPLEMENTATION_PENDING**
+Owner Stang · Planner/Reviewer Codex · Implementer ยังไม่มอบหมาย
+[Plan](plan.md) · [Spec](../../../specs/spec-01-cage-and-events.md) · [Architecture](../../../design/architecture-and-network.md)
 
-รายการนี้คือคิวงานปัจจุบัน ไม่ใช่ checkbox ส่งมอบจาก module baseline เดิม ดู [plan](plan.md) และ [phase gate](../plan.md)
+- [x] P-01: phase layout และ scope สนามเดิม
+- [x] P-02a: บันทึกคำสั่งเพิ่ม A/B/C; ผู้ใช้เลือก B/C 8 ผนัง และ physics + marker ไกด์
+- [ ] P-02b: ล็อก geometry catalog/API delta/verification matrix/target baseline ก่อน implementation
+- [ ] P-03: Owner อนุมัติ contract และ 00 ผ่าน dependency gate จริง
 
-- [x] P-01: จัดที่อยู่แผนและขอบเขตให้ตรง phase ตามคำสั่งผู้ใช้
-- [ ] P-02: ตรวจ prerequisites/grill เรื่องที่ยังเปิด และ sync spec/TDD/contract เฉพาะส่วนก่อนลงมือ
-- [ ] P-03: มอบหมาย implementation หลังผ่าน approval/gate ที่เกี่ยวข้อง
-- [ ] T-01: Hex-Cage พร้อมพื้น/ผนัง/เพดาน ประตู bumper/ramp/back zone ครบตาม scope ที่เลือก
-- [ ] T-02: ข้อมูล geometry ชุดเดียวกับ collision รวมรัศมีบอล/normal/ความหนาและการชนความเร็วสูง
-- [ ] T-03: คง bumper 1.25, ramp 25 องศา, back zone 14 Studs ตาม spec เดิม และพื้นที่อ้างอิงเขตโทษสำหรับแผนโกล/ลูกนิ่ง
-- [ ] T-98: ตรวจ source/ref และ functional/visual evidence ที่จำเป็นผ่าน Studio MCP
-- [ ] T-99: sync เอกสารตามผลงานจริงและส่งให้ reviewer ตรวจ ไม่ปิดงานตนเอง
+- [ ] T-01: builder/catalog 3 profiles A box, B chamfered 8 ผนัง, C bevel roof 45° จาก config ชุดเดียว
+- [ ] T-02: swept collision/finite surfaces/ceiling seams/step budget ทุก profile
+- [ ] T-03: transom, 4 corner bumpers, ramp 25° และ back zone 14 พร้อม flags แยก
+- [ ] T-04: test launch fixture + shape/mechanics comparison ที่ควบคุมตัวแปร ไม่ทำ BallService gameplay
+- [ ] T-05: R6 traversal และ floor/bootstrap seam จาก 00
+- [ ] T-98: source/hash, focused probes, visual UAT และตารางผล A/B/C ตาม envelope จริง; ตอนนี้ NOT RUN
+- [ ] T-99: sync docs/evidence และส่ง reviewer ไม่ปิดงานเอง
+
+Event pillars/ripple/swinging signs เป็นงานทดลองใน 07 ไม่ทำแทรก 01
+Protect user changes/source/reference; Stangอนุญาต local commit เฉพาะเอกสารสนาม/อีเวนต์แยกจาก00 (2026-10-20) ไม่รวม source/ผลงาน00/push/merge/deploy

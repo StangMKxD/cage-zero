@@ -1,3 +1,6 @@
+## Current trial decision — 2026-10-20
+ผู้ใช้เพิ่มรายการทดลองชิ่งกับ pillarสองระดับ/capเอียง, Blackout impact ripple และ Favela ป้ายแขวนแกว่ง ให้เก็บในแผน07 ไม่ทำแทรก01 ตัวเลขเป็น trial config ไม่ใช่ผล gameplay ที่พิสูจน์แล้ว; B/C เป็น8ผนังและ markerเป็นไกด์ไม่มีแรงช่วยตาม N-34/N-35
+
 > **Historical baseline notes:** ข้อมูลเดิมก่อนย้าย/แยก phase ให้ใช้ plan.md และ tasks.md ในโฟลเดอร์นี้เป็น scope ปัจจุบัน ผลตรวจ/สถานะเก่าไม่ใช่การรับรองแผนใหม่
 
 # Technical Notes — MODULE 05: `05-dynamic-match-events`

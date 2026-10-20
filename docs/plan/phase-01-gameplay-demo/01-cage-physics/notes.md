@@ -37,3 +37,8 @@
 - **N-30 Player stats:** ผู้ใช้ย้ำ Phase 2 ให้สุ่มตัวละครมี stats ไม่มาก เช่นยิงแรง/ยิงโค้ง/วิ่งเร็ว/พุ่งสกัด/เลี้ยงบอล; เก็บรายการสุดท้ายและรายละเอียดไว้ grill เมื่อเปิดแผน ไม่ล็อกสูตรตอนนี้
 
 - **N-31 UAT/transactions/Git:** ผู้ใช้เพิ่ม Phase 1 09-uat, Phase 2 transactions ก่อนกาชา/เศรษฐกิจ/ตลาดและ full UAT ท้ายสุด พร้อมอนุญาต commit/push เอกสารรอบนี้; implementation ยัง PENDING
+
+
+- **N-34 Map comparison (2026-10-20, Accepted design):** ผู้ใช้เพิ่ม A Classic Box, B กรงปาดมุม, C หลังคาขอบลาด45° เพื่อเทียบทดลอง แล้วตอบ “ปาด 4 มุม เป็น 8 ผนัง (แนะนำ)” สำหรับ B/C; supersede ข้อจำกัด 6 ผนังของชื่อ Hex เดิมเฉพาะโปรไฟล์ทดลองนี้ ยังไม่เลือก winner/default map สุดท้าย
+- **N-35 Rebound markers (Accepted design):** ผู้ใช้เลือก “ฟิสิกส์จริง + marker ไกด์ (แนะนำ)” ไม่มีแรงนำบอลเข้าจุดนัดพบ ข้อความตกหน้าโกล/ตบลงกลางสนามเป็น hypotheses ต้องทดลอง ไม่ใช่ผลรับรอง 100%
+- **N-36 Trial scope:** base rebound 5 รายการอยู่การทดลอง01; pillar2ระดับ/beveled cap/ripple1s/ป้ายแขวนแกว่งเป็น experiments ของ event07 จังหวะ90s/ตัวเลขresponseเป็น config ไม่เริ่ม full match clock หรือรับรองผล gameplay ก่อนทดสอบ
