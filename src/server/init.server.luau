@@ -1,18 +1,24 @@
 --!strict
 -- src/server/init.server.luau
--- MODULE 00: 00-bootstrap-and-rig
--- Server Bootstrapper initializing Network and RigAndCardService (Custom R6)
+-- MODULE 01: 01-cage-physics (chained onto MODULE 00: 00-bootstrap-and-rig)
+-- Server Bootstrapper: Network.Init(10.0) -> CagePhysicsService.Init() -> RigAndCardService.Init()
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Network = require(Shared:WaitForChild("Network"))
 
 local Services = script:WaitForChild("services")
+local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
 local RigAndCardService = require(Services:WaitForChild("RigAndCardService"))
 
 -- 1. Initialize all 12 RemoteEvents/RemoteFunctions with deadline budget (10s)
-Network.Init()
+Network.Init(10.0)
 
--- 2. Initialize RigAndCardService (Single Custom R6 lifecycle)
+-- 2. Initialize CagePhysicsService (builds Workspace.HexCageArena + CageFloor and retires temporary Module 00 fixtures without touching Baseplate)
+CagePhysicsService.Init()
+CagePhysicsService.RetireBootstrapFixtures(Workspace)
+
+-- 3. Initialize RigAndCardService (Single Custom R6 lifecycle spawning on Workspace.HexCageArena.CageFloor)
 RigAndCardService.Init()

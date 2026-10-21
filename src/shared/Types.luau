@@ -114,5 +114,110 @@ export type PlayerProfileData = {
 	ownedTraits: { TraitStoneInstance },
 }
 
+-- Module 01: 01-cage-physics (3D Cage Variants A/B/C & Rebound Physics)
+export type CageVariantId = "A" | "B" | "C"
+
+export type CageVariantAlias =
+	| "HexClassicVariantA"
+	| "HexChamferVariantB"
+	| "HexStreetVariantC"
+	| "HexClassicA"
+	| "HexChamferB"
+	| "HexStreetC"
+	| "HexClassic"
+	| "HexChamfer"
+	| "HexStreet"
+	| "VariantA"
+	| "VariantB"
+	| "VariantC"
+	| "Variant_A"
+	| "Variant_B"
+	| "Variant_C"
+	| "Classic"
+	| "Chamfer"
+	| "Street"
+	| "Bevel"
+	| "a"
+	| "b"
+	| "c"
+
+export type CageVariantInput = CageVariantId | CageVariantAlias | string
+
+export type ArenaSurfaceKind =
+	"Floor"
+	| "Wall"
+	| "CornerWall"
+	| "Ceiling"
+	| "RoofBevel"
+	| "GoalFrame"
+	| "GoalPost"
+	| "GoalCrossbar"
+	| "GoalTransom"
+	| "GoalPocket"
+	| "Transom"
+	| "PinballBumper"
+	| "ElevatingRamp"
+	| "CeilingMarker"
+	| "SpawnLocation"
+
+export type ReboundFeatureFlags = {
+	enableBumpers: boolean,
+	enableTransom: boolean,
+	enableRamps: boolean,
+	includeCornerOverlayInA: boolean?,
+}
+
+export type ArenaSurfaceDef = {
+	surfaceId: string,
+	kind: ArenaSurfaceKind,
+	size: Vector3,
+	cframe: CFrame,
+	normal: Vector3,
+	restitution: number,
+	color: Color3,
+	material: Enum.Material,
+	transparency: number,
+	canCollide: boolean,
+	canQuery: boolean,
+	isGuideOnly: boolean,
+	requiresBumperFlag: boolean?,
+	requiresTransomFlag: boolean?,
+	requiresRampFlag: boolean?,
+	goalSide: ("North" | "South")?,
+}
+
+export type ArenaGeometryProfile = {
+	variantId: CageVariantId,
+	displayName: string,
+	wallCount: number,
+	hasChamferedCorners: boolean,
+	hasBeveledRoof: boolean,
+	halfWidthX: number,
+	halfLengthZ: number,
+	ceilingHeightY: number,
+	eaveHeightY: number,
+	chamferCutStuds: number,
+	roofBevelStuds: number,
+	ballRadius: number,
+	goalFrontAbsZ: number,
+	backGoalAlleyStuds: number,
+	footprintPolygonXZ: { Vector2 },
+	surfaces: { ArenaSurfaceDef },
+}
+
+export type ReboundStepResult = {
+	position: Vector3,
+	velocity: Vector3,
+	hitSurfaceTag: string?,
+	hitCount: number,
+	hitSurfaces: { string },
+	substepsUsed: number,
+	budgetExhausted: boolean,
+	speedBeforeHit: number,
+	speedPreCap: number,
+	speedAfterHit: number,
+	appliedRampLift: boolean,
+}
+
 local Types = {}
 return table.freeze(Types)
