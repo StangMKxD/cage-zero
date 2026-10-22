@@ -1415,6 +1415,73 @@ local function runPlayerActionsTests(TestHarness: any)
 			Expect(math.abs(flzTriv)).toBeGreaterThan(0.01, "Left plant leg must apply counter-roll during Trivela follow-through")
 			Expect(math.abs(frzTriv + flzTriv)).toBeLessThan(0.05, "Trivela follow-through plant leg net tilt must cancel torso roll")
 		end)
+
+		-- TC-P02-50: Dynamic Airborne Jump Trajectory Phase Mapping (F-28)
+		SafeTest("TC-P02-50_DynamicAirborneJumpTrajectoryPhaseMapping", function()
+			-- 1. Ascent Phase (vy > 0): Arms drive upward, hip coiling forward
+			local ascentPose = PlayerActionPoseConfigs.GetJumpPose(50.0)
+			Expect(ascentPose).toNotBeNil()
+			local rShoulderAscent = ascentPose.RightShoulder
+			local rxAsc, _, _ = rShoulderAscent:ToEulerAnglesXYZ()
+			Expect(rxAsc).toBeGreaterThan(math.rad(45.0), "Ascent phase must drive arms upward (rx > 45 deg)")
+
+			-- 2. Apex Phase (vy ≈ 0): Balanced hang-time stance
+			local apexPose = PlayerActionPoseConfigs.GetJumpPose(0.0)
+			Expect(apexPose).toNotBeNil()
+
+			-- 3. Descent Phase (vy < 0): Arms counter-balance downward/outward
+			local descentPose = PlayerActionPoseConfigs.GetJumpPose(-50.0)
+			Expect(descentPose).toNotBeNil()
+			local rShoulderDesc = descentPose.RightShoulder
+			local rxDesc, _, _ = rShoulderDesc:ToEulerAnglesXYZ()
+			Expect(rxDesc).toBeLessThan(rxAsc, "Descent phase shoulder angle must be lower than ascent phase")
+
+			-- 4. Default / Backward compatibility (verticalVelocity is nil) returns apex pose
+			local defaultJump = PlayerActionPoseConfigs.GetJumpPose()
+			Expect(defaultJump).toNotBeNil()
+			local rxDef, _, _ = defaultJump.RightShoulder:ToEulerAnglesXYZ()
+			local rxApex, _, _ = apexPose.RightShoulder:ToEulerAnglesXYZ()
+			Expect(math.abs(rxDef - rxApex)).toBeLessThan(0.01, "Nil vertical velocity must default to apex pose")
+		end)
+
+		-- TC-P02-51: Authored Locomotion & Slide Timeline Progression (F-21)
+		SafeTest("TC-P02-51_AuthoredLocomotionAndSlideTimelineProgression", function()
+			-- 1. A04 Dash Burst timeline
+			local dashEntry = PlayerActionPoseConfigs.GetDashPose(0.0)
+			local dashPeak = PlayerActionPoseConfigs.GetDashPose(0.5)
+			local dashExit = PlayerActionPoseConfigs.GetDashPose(1.0)
+			Expect(dashEntry).toNotBeNil()
+			Expect(dashPeak).toNotBeNil()
+			Expect(dashExit).toNotBeNil()
+
+			-- 2. A17 Slide Tackle timeline progression
+			local slideEntry = PlayerActionPoseConfigs.GetSlidePose(0.0)
+			local slideActive = PlayerActionPoseConfigs.GetSlidePose(0.38)
+			local slideExit = PlayerActionPoseConfigs.GetSlidePose(1.0)
+			Expect(slideEntry).toNotBeNil()
+			Expect(slideActive).toNotBeNil()
+			Expect(slideExit).toNotBeNil()
+			-- Active slide authored keyframe has dropped torso (-1.027 studs), sweeping lead leg, and contact phase
+			local kfActive = PlayerActionPoseConfigs.SampleAuthoredKeyframe("A17", 0.38)
+			Expect(kfActive["RootJoint"].pos.Y).toBeLessThan(0, "Authored active slide RootJoint must have lowered torso position")
+			local rHipSpec = kfActive["Right Hip"] or kfActive["RightHip"]
+			Expect(rHipSpec).toNotBeNil("Right Hip spec must exist in active slide keyframe")
+			Expect(rHipSpec.rotDeg.X).toBeGreaterThan(0, "Authored lead leg must be pitched forward for sweeping tackle")
+			local animA17 = PlayerActionPoseConfigs.ANIMATIONS["A17"]
+			Expect(animA17).toNotBeNil("A17 animation spec must be registered")
+			Expect(animA17.contactPhase).toBe(0.38, "Active slide ball contact phase must be calibrated at t = 0.38")
+			Expect(animA17.nextAnimOnComplete).toBe("A18", "A17 slide must hand off to A18 recovery")
+
+			-- 3. A01 Idle, A02 Walk, A03 Sprint, A05 Strafe authored poses exist and sample correctly
+			local idlePose = PlayerActionPoseConfigs.SampleAuthoredPose("A01", 0.5)
+			local walkPose = PlayerActionPoseConfigs.SampleAuthoredPose("A02", 0.5)
+			local sprintPose = PlayerActionPoseConfigs.SampleAuthoredPose("A03", 0.5)
+			local strafePose = PlayerActionPoseConfigs.Get8WayStrafePose(Vector3.new(1, 0, 0), math.pi)
+			Expect(idlePose).toNotBeNil()
+			Expect(walkPose).toNotBeNil()
+			Expect(sprintPose).toNotBeNil()
+			Expect(strafePose).toNotBeNil()
+		end)
 	end)
 
 	cleanupAllMockPlayers()

@@ -94,6 +94,27 @@ local function isCharacterCharging(char: Model?): boolean
 	return false
 end
 
+local function isProceduralCustomPoseActive(char: Model?): boolean
+	if not char then
+		return false
+	end
+	if char:GetAttribute("IsCustomPoseActive") == true
+		or char:GetAttribute("IsAirborne") == true
+		or char:GetAttribute("IsSliding") == true
+		or char:GetAttribute("IsDashing") == true
+	then
+		return true
+	end
+	local apc = getActionPoseController()
+	if apc and type(apc.IsCustomPoseActive) == "function" then
+		local ok, result = pcall(apc.IsCustomPoseActive)
+		if ok and result == true then
+			return true
+		end
+	end
+	return false
+end
+
 -- Lazy / budget-bounded config resolution (F-14)
 local resolvedConfigs: any = nil
 
@@ -471,8 +492,8 @@ local function setupCharacter(character: Model)
 			return
 		end
 
-		-- Do not layer walk/run/sprint/idle over charging kick stance!
-		if isCharacterCharging(character) then
+		-- Do not layer walk/run/sprint/idle over charging kick stance or active authored procedural poses!
+		if isCharacterCharging(character) or isProceduralCustomPoseActive(character) then
 			if activeTracks["walk"] and activeTracks["walk"].IsPlaying then
 				activeTracks["walk"]:Stop(0.08)
 			end
@@ -515,14 +536,18 @@ local function setupCharacter(character: Model)
 
 	local jumpingConn = humanoid.Jumping:Connect(function(isActive: boolean)
 		if isActive then
-			playState("jump", 0.05)
+			if not isProceduralCustomPoseActive(character) then
+				playState("jump", 0.05)
+			end
 		end
 	end)
 	table.insert(activeConnections, jumpingConn)
 
 	local freefallConn = humanoid.FreeFalling:Connect(function(isActive: boolean)
 		if isActive then
-			playState("fall", 0.15)
+			if not isProceduralCustomPoseActive(character) then
+				playState("fall", 0.15)
+			end
 		else
 			evaluateLocomotion(humanoid.MoveDirection.Magnitude > 0 and humanoid.WalkSpeed or 0)
 		end
@@ -547,9 +572,13 @@ local function setupCharacter(character: Model)
 		if newState == Enum.HumanoidStateType.Landed then
 			evaluateLocomotion(humanoid.MoveDirection.Magnitude > 0 and humanoid.WalkSpeed or 0)
 		elseif newState == Enum.HumanoidStateType.Freefall then
-			playState("fall", 0.15)
+			if not isProceduralCustomPoseActive(character) then
+				playState("fall", 0.15)
+			end
 		elseif newState == Enum.HumanoidStateType.Jumping then
-			playState("jump", 0.05)
+			if not isProceduralCustomPoseActive(character) then
+				playState("jump", 0.05)
+			end
 		elseif newState == Enum.HumanoidStateType.Climbing then
 			playState("climb")
 		elseif newState == Enum.HumanoidStateType.Running then
@@ -588,6 +617,35 @@ local function setupCharacter(character: Model)
 		end
 	end)
 	table.insert(activeConnections, chargingConn)
+
+	local customPoseConn = character:GetAttributeChangedSignal("IsCustomPoseActive"):Connect(function()
+		if not isReady or not isSetupValid(token) then
+			return
+		end
+		if isProceduralCustomPoseActive(character) then
+			if activeTracks["walk"] and activeTracks["walk"].IsPlaying then
+				activeTracks["walk"]:Stop(0.08)
+			end
+			if activeTracks["sprint"] and activeTracks["sprint"].IsPlaying then
+				activeTracks["sprint"]:Stop(0.08)
+			end
+			if activeTracks["run"] and activeTracks["run"].IsPlaying then
+				activeTracks["run"]:Stop(0.08)
+			end
+			if activeTracks["idle"] and activeTracks["idle"].IsPlaying then
+				activeTracks["idle"]:Stop(0.08)
+			end
+			if activeTracks["jump"] and activeTracks["jump"].IsPlaying then
+				activeTracks["jump"]:Stop(0.08)
+			end
+			if activeTracks["fall"] and activeTracks["fall"].IsPlaying then
+				activeTracks["fall"]:Stop(0.08)
+			end
+		else
+			evaluateLocomotion(humanoid.MoveDirection.Magnitude > 0 and humanoid.WalkSpeed or 0)
+		end
+	end)
+	table.insert(activeConnections, customPoseConn)
 
 	local ancestryConn = character.AncestryChanged:Connect(function(_, parent)
 		if parent == nil then

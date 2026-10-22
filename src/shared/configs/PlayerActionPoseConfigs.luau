@@ -498,58 +498,32 @@ end
 -- 6. Dash, Charge Stance Hold, and Action Follow-Through Poses
 -- ============================================================================
 function PlayerActionPoseConfigs.GetDashPose(progress: number): R6JointPoseOffsets
-	local clamped = math.clamp(progress, 0, 1)
-	local burst = math.sin(clamped * math.pi)
-	local leanDeg = 20.0 * burst
-	local armDrive = burst * 0.85
-
-	return {
-		RootJoint = CFrame.new(0, -0.22 * burst, 0) * CFrame.Angles(math.rad(leanDeg), 0, 0),
-		Neck = CFrame.Angles(math.rad(-leanDeg * 0.75), 0, 0),
-		RightShoulder = CFrame.Angles(math.rad(-48 * armDrive), 0, math.rad(16 * armDrive)),
-		LeftShoulder = CFrame.Angles(math.rad(38 * armDrive), 0, math.rad(-16 * armDrive)),
-		RightHip = CFrame.Angles(math.rad(26 * armDrive), 0, 0),
-		LeftHip = CFrame.Angles(math.rad(-24 * armDrive), 0, 0),
-	}
+	return PlayerActionPoseConfigs.SampleAuthoredPose("A04", math.clamp(progress, 0, 1))
 end
 
 function PlayerActionPoseConfigs.GetChargePose(chargeAction: string, elapsed: number, curveStyle: string?): R6JointPoseOffsets
 	local pullAlpha = math.clamp(elapsed / 0.20, 0, 1)
 
 	if chargeAction == "Slide" or chargeAction == "SlideKick" then
-		return {
-			RootJoint = CFrame.new(0, -0.55 * pullAlpha, 0) * CFrame.Angles(math.rad(-16 * pullAlpha), 0, math.rad(-8 * pullAlpha)),
-			Neck = CFrame.Angles(math.rad(14 * pullAlpha), 0, 0),
-			RightShoulder = CFrame.Angles(math.rad(-25 * pullAlpha), 0, math.rad(42 * pullAlpha)),
-			LeftShoulder = CFrame.Angles(math.rad(35 * pullAlpha), 0, math.rad(-42 * pullAlpha)),
-			RightHip = CFrame.Angles(math.rad(48 * pullAlpha), 0, math.rad(-12 * pullAlpha)),
-			LeftHip = CFrame.Angles(math.rad(-36 * pullAlpha), 0, math.rad(12 * pullAlpha)),
-		}
+		return PlayerActionPoseConfigs.SampleAuthoredPose("A17", 0.0)
 	elseif chargeAction == "CurveShoot" or chargeAction == "ShootCurve" or chargeAction == "ShootFinesse" or chargeAction == "ShootTrivela" then
-		-- Plant foot (Left Leg) grounded with counter-roll matching curveStyle
-		local sideWaist = if curveStyle == "Trivela" then math.rad(14) else math.rad(-14)
-		local sideRoll = if curveStyle == "Trivela" then math.rad(12) else math.rad(-14)
-		local kickYaw = if curveStyle == "Trivela" then math.rad(24) else math.rad(-28)
-
-		return {
-			RootJoint = CFrame.new(0, -0.10 * pullAlpha, 0) * CFrame.Angles(math.rad(8 * pullAlpha), sideWaist * pullAlpha, sideRoll * pullAlpha),
-			Neck = CFrame.Angles(math.rad(-8 * pullAlpha), -sideWaist * 0.5 * pullAlpha, 0),
-			RightShoulder = CFrame.Angles(math.rad(-30 * pullAlpha), 0, math.rad(32 * pullAlpha)),
-			LeftShoulder = CFrame.Angles(math.rad(45 * pullAlpha), 0, math.rad(-36 * pullAlpha)),
-			RightHip = CFrame.Angles(math.rad(-65 * pullAlpha), kickYaw * pullAlpha, math.rad(15 * pullAlpha)),
-			-- Counter-roll equal and opposite to torso roll ensures plant leg stays vertical
-			LeftHip = CFrame.Angles(math.rad(2 * pullAlpha), 0, -sideRoll * pullAlpha),
-		}
+		-- A14: Curve Shoot Wind-up / Hold. Samples KF1 -> KF3 (t = 0.50 HOLD LOCK)
+		local phase = math.clamp(pullAlpha * 0.50, 0, 0.50)
+		local pose = PlayerActionPoseConfigs.SampleAuthoredPose("A14", phase)
+		if curveStyle == "Trivela" then
+			-- Invert coronal roll & yaw for Trivela (outside-foot curl windup)
+			local rj = pose.RootJoint
+			local rrx, rry, rrz = rj:ToEulerAnglesXYZ()
+			local lh = pose.LeftHip
+			local lrx, lry, lrz = lh:ToEulerAnglesXYZ()
+			pose.RootJoint = CFrame.new(rj.Position) * CFrame.Angles(rrx, -rry, -rrz)
+			pose.LeftHip = CFrame.new(lh.Position) * CFrame.Angles(lrx, -lry, -lrz)
+		end
+		return pose
 	else
-		-- DirectShoot (A12): Plant foot solid, right kicking leg cocked back deep (-78 deg)
-		return {
-			RootJoint = CFrame.new(0, -0.12 * pullAlpha, 0) * CFrame.Angles(math.rad(10 * pullAlpha), math.rad(-12 * pullAlpha), 0),
-			Neck = CFrame.Angles(math.rad(-8 * pullAlpha), math.rad(8 * pullAlpha), 0),
-			RightShoulder = CFrame.Angles(math.rad(30 * pullAlpha), 0, math.rad(24 * pullAlpha)),
-			LeftShoulder = CFrame.Angles(math.rad(-55 * pullAlpha), 0, math.rad(-24 * pullAlpha)),
-			RightHip = CFrame.Angles(math.rad(-78 * pullAlpha), math.rad(-12 * pullAlpha), math.rad(-8 * pullAlpha)),
-			LeftHip = CFrame.Angles(math.rad(3 * pullAlpha), 0, 0),
-		}
+		-- DirectShoot (A12): Direct Shoot Wind-up / Hold. Samples KF1 -> KF3 (t = 0.50 HOLD LOCK)
+		local phase = math.clamp(pullAlpha * 0.50, 0, 0.50)
+		return PlayerActionPoseConfigs.SampleAuthoredPose("A12", phase)
 	end
 end
 
@@ -629,8 +603,12 @@ end
 -- 8. Slide Tackle & Recovery Poses (Backward Compatible & A17/A18 Variants)
 -- ============================================================================
 -- Distinct turf slide pose: lowered torso (-0.92), extended lead sweeping leg, tucked trail leg.
--- Guaranteed RootJoint.Position.Y == -0.92 and RightHip.Position.Z == -0.62 for TC-P02-40 compatibility.
-function PlayerActionPoseConfigs.GetSlidePose(): R6JointPoseOffsets
+-- Guaranteed RootJoint.Position.Y == -0.92 and RightHip.Position.Z == -0.62 for TC-P02-40 compatibility when progress is nil.
+-- When progress is provided, evaluates authored A17 Slide Tackle timeline (Drop Entry -> Active Extension -> Exit).
+function PlayerActionPoseConfigs.GetSlidePose(progress: number?): R6JointPoseOffsets
+	if progress ~= nil then
+		return PlayerActionPoseConfigs.SampleAuthoredPose("A17", math.clamp(progress, 0, 1))
+	end
 	return {
 		RootJoint = CFrame.new(0, -0.92, 0) * CFrame.Angles(math.rad(-28), 0, math.rad(-15)),
 		Neck = CFrame.Angles(math.rad(28), 0, 0),
@@ -664,8 +642,16 @@ end
 -- ============================================================================
 -- 9. Aerial Jump, Landing Cushion, and Whiff Recovery Poses
 -- ============================================================================
-function PlayerActionPoseConfigs.GetJumpPose(): R6JointPoseOffsets
-	return PlayerActionPoseConfigs.SampleAuthoredPose("A06", 0.50)
+-- Evaluates authored A06 Directional Jump across flight trajectory:
+-- vy > 0 (ascent) -> phase 0.05..0.45; vy ≈ 0 (apex) -> phase 0.50; vy < 0 (descent) -> phase 0.55..0.95.
+-- If verticalVelocity is nil, defaults to apex phase (0.50) for backwards compatibility.
+function PlayerActionPoseConfigs.GetJumpPose(verticalVelocity: number?): R6JointPoseOffsets
+	local phase = 0.50
+	if verticalVelocity ~= nil then
+		local refVy = 72.0
+		phase = math.clamp(0.50 - 0.50 * (verticalVelocity / refVy), 0.05, 0.95)
+	end
+	return PlayerActionPoseConfigs.SampleAuthoredPose("A06", phase)
 end
 
 function PlayerActionPoseConfigs.GetJumpLandingPose(progress: number): R6JointPoseOffsets
@@ -2172,7 +2158,7 @@ PlayerActionPoseConfigs.ANIMATIONS = table.freeze({
                     ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -10.0, 24.0) },
                     ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 12.0, -28.0) },
                     ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -16.0, 14.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 10.0, -10.0) },
+                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 10.0, 6.0) },
                 },
             },
             {
@@ -2188,7 +2174,7 @@ PlayerActionPoseConfigs.ANIMATIONS = table.freeze({
                     ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, -14.0, 32.0) },
                     ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 18.0, -38.0) },
                     ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -24.0, 20.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 12.0, -12.0) },
+                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 12.0, 8.0) },
                 },
             },
             {
@@ -2204,7 +2190,7 @@ PlayerActionPoseConfigs.ANIMATIONS = table.freeze({
                     ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
                     ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
                     ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, -14.0) },
+                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
                 },
             },
             {
@@ -2249,7 +2235,7 @@ PlayerActionPoseConfigs.ANIMATIONS = table.freeze({
                     ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
                     ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
                     ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, -14.0) },
+                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
                 },
             },
             {
@@ -2326,7 +2312,7 @@ PlayerActionPoseConfigs.ANIMATIONS = table.freeze({
                             ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
                             ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
                             ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, -14.0) },
+                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
                         },
                     },
                     {
@@ -2403,7 +2389,7 @@ PlayerActionPoseConfigs.ANIMATIONS = table.freeze({
                             ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
                             ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
                             ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, -14.0) },
+                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
                         },
                     },
                     {

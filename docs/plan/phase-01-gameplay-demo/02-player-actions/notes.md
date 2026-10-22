@@ -399,3 +399,47 @@ Q22อนุมัติเอกสารตามQ1–Q21; ใช้ [Spec02](
     - ทดสอบง้างยิง: เข้าสู่สถานะ `Holding` ปราศจากอาการสับขาหลอก
     - ทดสอบ Sagittal Mirroring: ท่าปั่นเท้าซ้ายและเท้าขวาสะท้อนตรงข้ามกันอย่างสมบูรณ์แบบ
 - **สถานะ:** รายงาน `fix-004.md` เสร็จสมบูรณ์ พร้อมส่งมอบให้ Codex (`stang-luna`) ตรวจสอบต่อไป โดยรักษากฎความปลอดภัย ไม่มีการ git commit, push, merge, deploy หรือปิดแผนงาน 00, 01, 02
+
+## N-17 — Boost Supplement: A01–A18 Active Path Wiring, In-Engine Cache Parity & 51/51 Pass (2026-10-22)
+
+- **Directives & Feedback (คำสั่ง Owner และข้อค้นพบ Codex ใน review-004):**
+  - Owner สั่งเปิดงาน rework ต่อเนื่องจากคำสั่ง “Animation ไม่เห็นเหมือนที่ส่งไป”
+  - Codex ออก verdict CHANGES_REQUESTED ใน `review-004.md` เปิดข้อค้นพบสำคัญ:
+    - **F-21 (P1 OPEN):** `R6ActionPoseController:612-634` ยังสร้างเฉพาะ Torso/Neck lean โดยปล่อยแขนขาเป็น Identity limb ทำให้ตัวละครใช้ท่าเดินเดิมของ Roblox, A17 Slide ใช้ค่าคงที่แทนไทม์ไลน์จริง, Dash/Charge Stance ใช้สูตร procedural math แทน authored keyframes
+    - **F-28 (P1 OPEN):** ทางเดิน Airborne ยังคงสุ่ม A06 ที่เฟสคงที่ 0.50 (Apex) ไม่เคลื่อนไหวตามไทม์ไลน์ความเร็วดิ่งจริง
+    - ข้อสังเกตเรื่อง Module require cache ใน Roblox Studio ที่อาจทำให้โค้ดที่รันไม่ตรงกับ Source บนดิสก์
+  - Owner อนุญาตให้ AGY Lead ทำ local commit และ push บน branch `codex/plan02-animation-rework` สำหรับงาน Plan 02 รอบนี้โดยเฉพาะ
+- **การแก้ไขเชิงลึก (Deep Architectural & Kinematic Resolutions):**
+  1. **F-21 (Authored Poses Routed Through All Active Paths):**
+     - ใน `R6ActionPoseController.luau`:
+       - เชื่อมต่อการเคลื่อนไหวเต็มรูปแบบ (Priority 10): เมื่อยืนนิ่ง (`moveSpeed <= 1.2`) จะสุ่มท่า `A01` (Idle/Ready athletic stance) ตามจังหวะการหายใจและถ่ายน้ำหนัก; เมื่อเคลื่อนที่บนพื้น (`moveSpeed > 1.2`) จะขยับก้าวขาตาม Stride Phase หาก Shift Lock หรือเคลื่อนที่สลับข้าง/ถอยหลังจะใช้ `A05` (Shift Lock 8-Way Strafe) หากเคลื่อนที่ไปข้างหน้าจะใช้ `A03` (Sprint, speed > 22) หรือ `A02` (Walk) อย่างสมบูรณ์ทุกข้อต่อ
+       - เชื่อมต่อ A17 Slide Tackle (Priority 1) ตามไทม์ไลน์ต่อเนื่อง 0.55s: Entry ($t=0.00$) -> Active Full-Extension Slide ($t=0.38$) จุดปะทะบอล -> Turf Glide -> Exit ($t=1.00$) ส่งต่อให้ A18 Recovery
+       - เชื่อมต่อ A04 Dash Burst (Priority 7) ตามไทม์ไลน์จริง: Entry Coil -> Explosive Push-Off -> Peak Surge -> Exit Catch
+       - เชื่อมต่อ A12 (Direct Shoot Hold) และ A14 (Curve Shoot Hold) จากคีย์เฟรมจริงของ Argon Pack ตรึงท่าง้างยิง (KF3 Hold Lock) โดยขาไม่สับหลอก
+     - ใน `R6AnimationController.luau`:
+       - ตรวจจับ `IsCustomPoseActive` เพื่อสั่ง Stop/Suppress แทร็ก locomotion พื้นฐานของ Roblox (`walk`, `run`, `sprint`, `idle`) ป้องกันไม่ให้แอนิเมชันเดิมแย่งเขียน `Motor6D.Transform` ทับซ้อนกับท่าของ Argon Pack
+  2. **F-28 (Active Airborne Flight Phase Binding & Zero Shoulder Dislocation):**
+     - พัฒนา `PlayerActionPoseConfigs.GetJumpPose(verticalVelocity: number?)`:
+       - ผูกค่าความเร็วดิ่งจริง $vy = \text{AssemblyLinearVelocity.Y}$ เข้ากับเฟส A06:
+         $$\text{phase} = \text{clamp}(0.50 - 0.50 \times \frac{vy}{72.0}, 0.05, 0.95)$$
+         - จังหวะพุ่งตัวขึ้น ($vy > 0$): เล่นเฟส $0.05 \dots 0.45$ (Ascent Drive, แขนยกพุ่งส่งแรง)
+         - จังหวะลอยตัวสูงสุด ($vy \approx 0$): เล่นเฟส $0.50$ (Apex Transition, ลอยตัวทรงตัว)
+         - จังหวะทิ้งตัวลง ($vy < 0$): เล่นเฟส $0.55 \dots 0.95$ (Descent Counter-Balance, แขนกางรับน้ำหนัก)
+       - ใน `R6AnimationController.luau`: ตัดการเล่นแทร็ก `jump` และ `fall` ของ Roblox เมื่อตัวละครอยู่ในสภาวะกระโดดของระบบ ขจัดปัญหาไหล่หมุนทับซ้อน 2 เท่า (220 องศา) ที่ทำให้แขนหลุดลอยออกจากเบ้าไหล่ 100%
+  3. **Plant Foot Grounding Correction (แก้ปัญหาเท้าลอยเวลากดปั่น):**
+     - ปรับแก้คีย์เฟรม A14 (KF1, KF2, KF3) และ A15 (KF1): กำหนดให้ Left Hip มีมุม Counter-roll ทิศทางบวก ($rotDeg.Z = +6.0^\circ, +8.0^\circ, +10.0^\circ$) หักล้างมุมเอียงลำตัว Torso ($rotDeg.Z = -6.0^\circ, -8.0^\circ, -10.0^\circ$) อย่างพอดีเป๊ะ ผลลัพธ์คือความเอียงสุทธิเป็นศูนย์ ($0.0000^\circ$) ขาหลักปักพื้นหญ้าแน่นสนิท ไม่ลอยขึ้นจากพื้น
+- **ผลการทดสอบ In-Engine (Roblox Studio Place 137721422246269 / Studio ID `18da0dd6-7ae3-4d86-bf86-c0b4e72c65f1`):**
+  - ซิงค์โมดูลและรีเซ็ต require cache ผ่านการสร้าง fresh ModuleScript instances ใน Edit DataModel
+  - ขยายชุดทดสอบ E2E `Tier1_PlayerActions.luau` เพิ่ม TC-P02-50 (Dynamic Airborne Jump Trajectory Phase Mapping) และ TC-P02-51 (Authored Locomotion & Slide Timeline Progression) รวมเป็น 51 ข้อ:
+    - **ผลการรัน: 51 / 51 PASSED (367 Assertions, 0 Failures, Time: 3,037.7 ms)**
+  - รัน Play Mode ทดสอบใน Client DataModel:
+    - ตัวละคร `StangMKxD` (UserId 2772253354) ยืนบนพื้นคอนกรีต/หญ้า
+    - ข้อต่อทั้ง 6 ครบถ้วน แขนขวา/ซ้ายติดเบ้าไหล่ (Dislocation = 0.000)
+    - จังหวะกระโดด A06: Ascent RShoulder Rx = 53.2°, Apex Rx = 68.0°, Descent Rx = 23.7°
+    - จังหวะง้างปั่น A14 Hold: Torso roll = -10.00°, Plant leg roll = +10.00°, Net tilt deficit = 0.0000° (ปักพื้นสมบูรณ์แบบ)
+    - จังหวะสไลด์ A17: Entry Y = 1.322, Active Y = 1.159, Exit Y = 1.152
+    - จังหวะแดช A04: Entry Z = 0.180, Peak Z = -0.083, Exit Z = 0.000
+- **Git Checkpoints & Governance:**
+  - Checkpoint 1 (WIP): commit `4d1ba7a` pushed to `origin/codex/plan02-animation-rework`
+  - Checkpoint 2 (Final Rework): commit & push ตามสิทธิที่ได้รับมอบหมาย
+  - แผนงาน 00, 01, 02 ยังคงเปิดอยู่ตามกติกา ไม่มีการ merge เข้า `main` หรือ deploy

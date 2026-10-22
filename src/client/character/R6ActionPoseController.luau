@@ -58,6 +58,11 @@ local dashDuration = 0.22
 
 -- Slide
 local isSliding = false
+local slideStartTime = 0
+local slideDuration = 0.55
+
+-- Locomotion Stride Cycle
+local locomotionStridePhase = 0
 
 -- Recovery & Whiff States
 local isLanding = false
@@ -352,6 +357,15 @@ end
 
 function R6ActionPoseController.SetSliding(sliding: boolean)
 	isSliding = sliding
+	if sliding then
+		slideStartTime = os.clock()
+	else
+		slideStartTime = 0
+	end
+end
+
+function R6ActionPoseController.IsCustomPoseActive(): boolean
+	return wasCustomPoseActive
 end
 
 function R6ActionPoseController.TriggerLandingRecovery(durationSec: number?)
@@ -398,6 +412,8 @@ function R6ActionPoseController.ResetPoses(char: Model?)
 	isCharging = false
 	isDashing = false
 	isSliding = false
+	slideStartTime = 0
+	locomotionStridePhase = 0
 	isLanding = false
 	isWhiffing = false
 	isSlideRecovering = false
@@ -490,7 +506,12 @@ function R6ActionPoseController.Init()
 		local serverSliding = char:GetAttribute("IsSliding") == true
 		if isSliding or serverSliding then
 			isActionActive = true
-			targetPose = PlayerActionPoseConfigs.GetSlidePose()
+			if slideStartTime == 0 then
+				slideStartTime = now
+			end
+			local elapsed = now - slideStartTime
+			local progress = math.clamp(elapsed / slideDuration, 0, 1)
+			targetPose = PlayerActionPoseConfigs.GetSlidePose(progress)
 
 		-- PRIORITY 2: Slide Recovery (Image 3 Row 1 Step 4: Pushing up from turf)
 		elseif isSlideRecovering or (char:GetAttribute("RecoveryRemaining") or 0) > 0 then
@@ -604,37 +625,45 @@ function R6ActionPoseController.Init()
 				isLanding = false
 			end
 
-		-- PRIORITY 9: Mid-Air Jump Pose (Athletic balance, zero shoulder dislocation)
-		elseif char:GetAttribute("IsAirborne") == true then
+		-- PRIORITY 9: Mid-Air Jump Pose (A06 Flight Trajectory: Ascent -> Apex -> Descent)
+		elseif char:GetAttribute("IsAirborne") == true or hum.FloorMaterial == Enum.Material.Air then
 			isActionActive = true
-			targetPose = PlayerActionPoseConfigs.GetJumpPose()
+			local vy = hrp.AssemblyLinearVelocity.Y
+			targetPose = PlayerActionPoseConfigs.GetJumpPose(vy)
 
-		-- PRIORITY 10: Realistic Soccer Locomotion Athletic Posture (Forward lean, bank into turns, head level)
+		-- PRIORITY 10: Authored Locomotion (A01 Idle, A02 Walk, A03 Sprint, A05 Shift Lock 8-Way Strafe)
 		else
-			local moveSpeed = hrp.AssemblyLinearVelocity.Magnitude
-			local isMovingOnGround = moveSpeed > 1.2 and hum.FloorMaterial ~= Enum.Material.Air
-			if isMovingOnGround then
-				isActionActive = true
-				local speedRatio = math.clamp(moveSpeed / Constants.SPRINT_SPEED, 0, 1.0)
-				local isSprinting = moveSpeed > 22
-				local forwardLeanDeg = if isSprinting then 12.0 else 7.5
-				local localVel = hrp.CFrame:VectorToObjectSpace(hrp.AssemblyLinearVelocity)
-				local strafeRatio = math.clamp(localVel.X / Constants.WALK_SPEED, -1, 1)
-				local bankRollDeg = -strafeRatio * 5.0 -- bank into turns
-
-				targetPose = {
-					RootJoint = CFrame.Angles(math.rad(forwardLeanDeg * speedRatio), 0, math.rad(bankRollDeg)),
-					Neck = CFrame.Angles(math.rad(-forwardLeanDeg * speedRatio * 0.75), 0, 0),
-					RightShoulder = CFrame.identity,
-					LeftShoulder = CFrame.identity,
-					RightHip = CFrame.identity,
-					LeftHip = CFrame.identity,
-				}
+			if hum.FloorMaterial ~= Enum.Material.Air then
+				local moveSpeed = hrp.AssemblyLinearVelocity.Magnitude
+				if moveSpeed <= 1.2 then
+					-- A01: Idle / Ready athletic stance
+					isActionActive = true
+					local idlePhase = (now / 1.60) % 1.0
+					targetPose = PlayerActionPoseConfigs.SampleAuthoredPose("A01", idlePhase)
+				else
+					-- A02/A03/A05: Moving on pitch
+					isActionActive = true
+					local isSprinting = moveSpeed > 22
+					local strideDuration = if isSprinting then 0.38 else 0.48
+					locomotionStridePhase = (locomotionStridePhase + dt / strideDuration) % 1.0
+					local localVel = hrp.CFrame:VectorToObjectSpace(hrp.AssemblyLinearVelocity)
+					local isShiftLock = char:GetAttribute("IsShiftLock") == true or math.abs(localVel.X) > 2.5 or localVel.Z > 2.0
+					if isShiftLock then
+						targetPose = PlayerActionPoseConfigs.Get8WayStrafePose(localVel, locomotionStridePhase * 2 * math.pi)
+					else
+						if isSprinting then
+							targetPose = PlayerActionPoseConfigs.SampleAuthoredPose("A03", locomotionStridePhase)
+						else
+							targetPose = PlayerActionPoseConfigs.SampleAuthoredPose("A02", locomotionStridePhase)
+						end
+					end
+				end
 			end
 		end
 
 		if isActionActive then
 			wasCustomPoseActive = true
+			char:SetAttribute("IsCustomPoseActive", true)
 			local lerpRate = if isDashing then 36.0 elseif isCharging or currentActionState == "Holding" then 30.0 else 22.0
 			local minAlpha = if isDashing then 0.35 elseif isCharging or currentActionState == "Holding" then 0.25 else 0.15
 			local alpha = math.clamp(dt * lerpRate, minAlpha, 1.0)
@@ -685,6 +714,7 @@ function R6ActionPoseController.Init()
 
 			if isSettled then
 				wasCustomPoseActive = false
+				char:SetAttribute("IsCustomPoseActive", false)
 				resetAllJoints(char)
 			end
 		end
