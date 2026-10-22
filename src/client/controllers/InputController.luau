@@ -223,7 +223,7 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 		local duration = if finalAction == "BicycleKick" then 0.52
 			elseif finalAction == "Volley" then 0.44
 			elseif finalAction == "CurveShoot" then 0.44
-			elseif finalAction == "Pass" or finalAction == "GroundPass" then 0.24
+			elseif finalAction == "Pass" or finalAction == "GroundPass" then 0.32
 			elseif finalAction == "LobPass" then 0.36
 			else 0.32
 		local kickCurveStyle: string? = nil
@@ -670,11 +670,13 @@ local function commitJumpDirection(char: Model)
 	isAirborneLocked = true
 	currentFlightState = "takeoff"
 	CameraShiftLockController.SetAirborneJumpLock(true, commitDir)
-	hum.AutoRotate = false
-	hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + commitDir)
 
-	-- Disable Humanoid jumping state so Roblox's C++ controller cannot trigger repeat jumps while held
-	hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+	-- If Shift Lock is OFF, face jump direction at takeoff
+	if not CameraShiftLockController.IsEnabled() then
+		hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + commitDir)
+	end
+
+	-- Consume immediate jump flag so it does not auto-repeat
 	hum.Jump = false
 
 	-- Apply horizontal velocity with boosted vertical jump height per owner request
@@ -772,16 +774,13 @@ function InputController.Init()
 						jumpConsumedUntilRelease = true
 						commitJumpDirection(char)
 					else
-						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 						hum.Jump = false
 					end
 				elseif newState == Enum.HumanoidStateType.Landed then
-					if not isSpacebarHeld then
-						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-						jumpConsumedUntilRelease = false
-					else
-						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+					if isSpacebarHeld then
 						hum.Jump = false
+					else
+						jumpConsumedUntilRelease = false
 					end
 					if isAcrobaticInFlight then
 						isAcrobaticInFlight = false
@@ -885,15 +884,20 @@ function InputController.Init()
 		end
 	end)
 
-	-- Space key direction commitment handled cleanly via StateChanged and JumpRequest
+	-- Discrete single jump per Space press (never auto-repeat while Space is held)
 	UserInputService.JumpRequest:Connect(function()
 		if jumpConsumedUntilRelease or isSpacebarHeld then
+			local char = localPlayer and localPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.Jump = false
+			end
 			return
 		end
 		local char = localPlayer and localPlayer.Character
 		if char then
 			local hum = char:FindFirstChildOfClass("Humanoid")
-			if hum and hum.FloorMaterial ~= Enum.Material.Air and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
+			if hum and hum.FloorMaterial ~= Enum.Material.Air and hum.Health > 0 and not isSlidingClient then
 				jumpConsumedUntilRelease = true
 				commitJumpDirection(char)
 			end
@@ -909,7 +913,7 @@ function InputController.Init()
 
 		local char = localPlayer and localPlayer.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if isSpacebarHeld and jumpConsumedUntilRelease and hum then
+		if isSpacebarHeld and hum then
 			hum.Jump = false
 		end
 
@@ -947,12 +951,10 @@ function InputController.Init()
 				local isLanded = (vy <= 2.0 and isGrounded and timeSinceJump > 0.08) or (hum.FloorMaterial ~= Enum.Material.Air and timeSinceJump > 0.30)
 
 				if isLanded then
-					if not isSpacebarHeld then
-						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-						jumpConsumedUntilRelease = false
-					else
-						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+					if isSpacebarHeld then
 						hum.Jump = false
+					else
+						jumpConsumedUntilRelease = false
 					end
 					currentFlightState = "landed"
 					isAirborneLocked = false
@@ -969,13 +971,8 @@ function InputController.Init()
 					end
 					currentFlightState = "idle"
 				else
-					if isSpacebarHeld and jumpConsumedUntilRelease then
+					if isSpacebarHeld then
 						hum.Jump = false
-					end
-					if isAirborneLocked then
-						hum.AutoRotate = false
-						local curPos = hrp.Position
-						hrp.CFrame = CFrame.lookAt(curPos, curPos + jumpCommitDir)
 					end
 				end
 			else
@@ -1109,17 +1106,6 @@ function InputController.Init()
 			local char = localPlayer and localPlayer.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			if hum then
-				hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-				hum.Jump = false
-			end
-		end
-	end)
-
-	UserInputService.JumpRequest:Connect(function()
-		if isSpacebarHeld and jumpConsumedUntilRelease then
-			local char = localPlayer and localPlayer.Character
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			if hum then
 				hum.Jump = false
 			end
 		end
@@ -1133,7 +1119,6 @@ function InputController.ReleaseJumpKey()
 	local char = localPlayer and localPlayer.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 		hum.Jump = false
 	end
 end

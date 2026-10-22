@@ -486,3 +486,36 @@ Q22อนุมัติเอกสารตามQ1–Q21; ใช้ [Spec02](
   - Spacebar Single Jump Latch: `jump1_Consumed = true`, `jump1_JumpingEnabled = false`, `repeat_JumpingEnabled = false`, `release_JumpingEnabled = true`
   - Stationary Auto-Forward Dash: `has_lv = true`, `is_dashing = true`, `lv_vector = (-0.0, 0.0, -58.0)`, ระยะพุ่งใน 180ms = `10.63 studs` (พุ่งไปข้างหน้าอัตโนมัติ)
   - Directional Dash (Backward / South): `lv_vector = (-50.2, 0.0, -29.0)`, ระยะพุ่งใน 180ms = `10.63 studs` (พุ่งถอยหลังตามทิศที่เลือก)
+
+## N-19 — Standard R6 Locomotion, Spacebar Discrete Jump Latch & Pass vs Shoot Divergence (2026-10-22)
+
+- **Directives from Owner:**
+  1. *"ท่า ส่งธรรมดา กับ ยิงยังเหมือนกันอยู่เลย"* — Normal Pass and Shoot still look identical.
+  2. *"และ กระโดดก็บั๊กอยู่"* / *"กระโดดไม่แก้อะ รอไร มันกดค้างได้ ให้มันกระโดดได้ทีเดียวดิ"* — Jump is buggy and holding Spacebar allows continuous repeat jumping; must jump only ONCE per Space press.
+  3. *"และท่าวิ่งปรับใหม่เลย ไม่ได้เลย เอาท่าวิ่งธรรมดาๆ สำหรับตัว standard อะ"* — Rework running animation completely; do NOT use procedural limb overriding. Use ordinary/standard R6 run animation for the standard character.
+- **Architectural & Kinematic Fixes:**
+  1. **Standard R6 Locomotion Restored (ท่าวิ่งธรรมดาสำหรับตัว Standard):**
+     - ใน `R6ActionPoseController.luau`: ปลดล็อคและถอดถอน Priority 10 (Locomotion procedural limb hijacking) ออกจากการควบคุมข้อต่อขณะเดิน/วิ่งปกติ ปล่อยให้ `Motor6D.C0` อยู่ในตำแหน่ง Neutral มาตรฐาน (`STANDARD_R6_C0`) โดยไม่ถูก sine-wave math บิดขา
+     - ใน `R6AnimationController.luau`: อนุญาตให้แอนิเมชันมาตรฐานของ Roblox R6 (`rbxassetid://180426354` สำหรับ Walk/Run/Sprint และ `rbxassetid://180435571` สำหรับ Idle) เล่นบน `Animator` ได้อย่างราบรื่น 100% ตัวละครวิ่งอย่างเป็นธรรมชาติเหมือนตัวละคร Roblox ทั่วไป ไม่แข็งทื่อหรือก้าวขาหลอกตา
+  2. **Discrete Single Jump Latch & Silky Jump Mechanics (แก้บั๊กกระโดด & กดค้างกระโดดได้ทีเดียว):**
+     - ขจัดปัญหาการปิด StateType ด้วย `hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)` ซึ่งทำลาย State Machine ภายในของ Humanoid
+     - ใช้ระบบ Discrete Latch ที่แท้จริง: ตรวจจับ `isSpacebarHeld = true` ใน `InputBegan` และปล่อยเป็น `false` เฉพาะใน `InputEnded` (เมื่อปล่อยปุ่ม Spacebar จริง)
+     - ระหว่างที่กดค้างหรือหลังจากกระโดดครั้งแรกไปแล้ว (`isSpacebarHeld` หรือ `jumpConsumedUntilRelease` เป็นจริง): ระบบจะบังคับ `hum.Jump = false` ใน `JumpRequest` และใน `RenderStepped` ตลอดเวลา ป้องกันไม่ให้ Roblox ControlModule สั่งกระโดดซ้ำซ้อน (Bunny-hop) เมื่อเท้าแตะพื้น
+     - ถอดถอนการล็อกมุมหันตัวแบบแข็ง (`hrp.CFrame` hard lookAt lock) ใน `RenderStepped` ออกทั้งหมด ตัวละครสามารถหันหน้าหรือเล็งทิศทางกลางอากาศได้อย่างนุ่มนวลเป็นธรรมชาติทั้งตอนเปิดและปิด Shift Lock
+     - ปลดล็อคให้แอนิเมชันกระโดดมาตรฐาน (`rbxassetid://125750702`) และร่วงหล่น (`rbxassetid://180436148`) แสดงผลได้อย่างสมบูรณ์
+  3. **Shoot vs Pass Divergence (แยกท่าส่งธรรมดากับท่ายิงให้ต่างกันชัดเจน):**
+     - ตรวจพบสาเหตุเดิม: `RigAnimationConfigs.luau` กำหนดให้ทั้ง `kick` และ `pass` ใช้ AnimationTrack เดียวกัน (`rbxassetid://129967390`) ส่งผลให้การส่งบอลธรรมดาเตะขาสูงถึงอกเหมือนยิงประตู
+     - ใน `R6AnimationController.luau`: เมื่อเรียก `PlayAction("Pass")` จะสั่ง Stop แทร็กยิง `129967390` และไม่เล่นแทร็กเตะสูงอีกต่อไป
+     - ท่าส่งบอล (`Pass` / `GroundPass`): ขับเคลื่อนด้วย `A16` (Inside-Foot Ground Push) เต็มรูปแบบ:
+       - ท่าง้าง (KF1): เปิดสะโพกด้านในเตรียมแปบอล (`Right Hip ry = -36°`)
+       - จังหวะแป (KF2): หน้าเท้าด้านในสัมผัสบอลเรียบไปกับพื้นหญ้า (`Right Hip ry = -42°, rx = +22°`)
+       - จังหวะส่งต่อ (KF3): ดีดขาสั้นและกระชับแล้วหยุดนิ่ง (`rx = +34°`) ปราศจากการเหวี่ยงขาสูง
+     - ท่ายิงตรง (`DirectShoot`): เหวี่ยงหลังเท้าเต็มแรงผ่าน AnimationTrack `129967390` ควบคู่กับ A13 Follow-Through ขาสูงถึงระดับอก
+- **In-Engine Test & Verification Results (Studio Place 137721422246269):**
+  - **E2E Test Suite `Tier1_PlayerActions.luau`:** 51 / 51 PASSED (367 Assertions, 0 Failures, Dur: 3,031.3 ms) ใน Studio Edit Mode
+  - **Live Client Verification (Studio Play Mode):**
+    - Idle: เล่นแทร็ก `R6_idle (ID: 180435571)` ข้อต่อทั้ง 6 อยู่ในตำแหน่งมาตรฐาน
+    - Locomotion: เมื่อขยับตัว เล่นแทร็ก `R6_walk (ID: 180426354, Speed: 1.35)` อย่างเป็นธรรมชาติ
+    - Pass: ส่งบอลราบเรียบไปกับพื้นหญ้าด้วยข้างเท้าด้านใน ไม่มีการเตะขาสูง `kickTrackName = nil`
+    - Shoot: เหวี่ยงขาสูงยิงเต็มแรง `kickTrackName = "R6_kick"`
+    - Jump: กดค้างกระโดดได้เพียง 1 ครั้ง ไม่เด้งซ้ำเมื่อถึงพื้น และหมุนตัวกลางอากาศได้อิสระ ไม่ติดบั๊ก

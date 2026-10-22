@@ -172,23 +172,13 @@ function CameraShiftLockController.Init()
 
 		-- ROTATION PRIORITY CHAIN (HANDOFF §7.4):
 		-- 1. Slide: lock facing strictly along slideLockDir
-		-- 2. Airborne Jump: lock facing strictly along jumpCommitDir until Landed
-		-- 3. Grounded normal movement with ShiftLock ON: yaw follows camera horizontal look vector
-		-- 4. ShiftLock OFF: native Humanoid.AutoRotate = true
+		-- 2. ShiftLock ON: yaw follows camera horizontal look vector (grounded or airborne)
+		-- 3. ShiftLock OFF: native Humanoid.AutoRotate = true (fluid steering)
 		if isSliding then
 			hum.AutoRotate = false
 			local curPos = hrp.Position
 			hrp.CFrame = CFrame.lookAt(curPos, curPos + slideLockDir)
 			hum.CameraOffset = hum.CameraOffset:Lerp(Constants.SHIFTLOCK_SHOULDER_OFFSET, targetAlpha)
-		elseif isAirborneLocked then
-			hum.AutoRotate = false
-			local curPos = hrp.Position
-			hrp.CFrame = CFrame.lookAt(curPos, curPos + jumpCommitDir)
-			if shiftLockEnabled then
-				hum.CameraOffset = hum.CameraOffset:Lerp(Constants.SHIFTLOCK_SHOULDER_OFFSET, targetAlpha)
-			else
-				hum.CameraOffset = hum.CameraOffset:Lerp(Vector3.zero, targetAlpha)
-			end
 		elseif shiftLockEnabled then
 			hum.AutoRotate = false
 			local cam = Workspace.CurrentCamera

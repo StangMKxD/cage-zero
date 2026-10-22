@@ -624,54 +624,6 @@ function R6ActionPoseController.Init()
 			else
 				isLanding = false
 			end
-
-		-- PRIORITY 9: Mid-Air Jump Pose (A06 Flight Trajectory: Ascent -> Apex -> Descent)
-		elseif char:GetAttribute("IsAirborne") == true or hum.FloorMaterial == Enum.Material.Air then
-			isActionActive = true
-			local vy = hrp.AssemblyLinearVelocity.Y
-			targetPose = PlayerActionPoseConfigs.GetJumpPose(vy)
-
-		-- PRIORITY 10: Authored Locomotion (A01 Idle, A02 Walk, A03 Sprint, A05 Shift Lock 8-Way Strafe)
-		else
-			if hum.FloorMaterial ~= Enum.Material.Air then
-				local moveSpeed = hrp.AssemblyLinearVelocity.Magnitude
-				if moveSpeed <= 1.2 then
-					-- A01: Idle / Ready athletic stance
-					isActionActive = true
-					local idlePhase = (now / 1.60) % 1.0
-					targetPose = PlayerActionPoseConfigs.SampleAuthoredPose("A01", idlePhase)
-				else
-					-- A02/A03/A05: Moving on pitch
-					isActionActive = true
-					local strideDist = if moveSpeed > 22 then 11.2 else 8.4
-					locomotionStridePhase = (locomotionStridePhase + (moveSpeed * dt) / strideDist) % 1.0
-					local localVel = hrp.CFrame:VectorToObjectSpace(hrp.AssemblyLinearVelocity)
-					local isShiftLock = char:GetAttribute("IsShiftLock") == true or math.abs(localVel.X) > 2.5 or localVel.Z > 2.0
-					if isShiftLock then
-						targetPose = PlayerActionPoseConfigs.Get8WayStrafePose(localVel, locomotionStridePhase * 2 * math.pi)
-					else
-						local sprintWeight = math.clamp((moveSpeed - 18.0) / 8.0, 0, 1.0)
-						local poseA02 = PlayerActionPoseConfigs.SampleAuthoredPose("A02", locomotionStridePhase)
-						local poseA03 = PlayerActionPoseConfigs.SampleAuthoredPose("A03", locomotionStridePhase)
-						local blendedPose: PlayerActionPoseConfigs.R6JointPoseOffsets = {
-							RootJoint     = poseA02.RootJoint:Lerp(poseA03.RootJoint, sprintWeight),
-							Neck          = poseA02.Neck:Lerp(poseA03.Neck, sprintWeight),
-							RightShoulder = poseA02.RightShoulder:Lerp(poseA03.RightShoulder, sprintWeight),
-							LeftShoulder  = poseA02.LeftShoulder:Lerp(poseA03.LeftShoulder, sprintWeight),
-							RightHip      = poseA02.RightHip:Lerp(poseA03.RightHip, sprintWeight),
-							LeftHip       = poseA02.LeftHip:Lerp(poseA03.LeftHip, sprintWeight),
-						}
-						-- Athletic banking roll and counter-yaw into turns
-						local strafeRatio = math.clamp(localVel.X / math.max(1, moveSpeed), -1, 1)
-						local bankRoll = -strafeRatio * math.rad(6.0)
-						local bankYaw = strafeRatio * math.rad(4.0)
-						if math.abs(bankRoll) > 0.001 then
-							blendedPose.RootJoint = blendedPose.RootJoint * CFrame.Angles(0, bankYaw, bankRoll)
-						end
-						targetPose = blendedPose
-					end
-				end
-			end
 		end
 
 		if isActionActive then

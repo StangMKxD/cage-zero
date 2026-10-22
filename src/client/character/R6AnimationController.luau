@@ -99,7 +99,6 @@ local function isProceduralCustomPoseActive(char: Model?): boolean
 		return false
 	end
 	if char:GetAttribute("IsCustomPoseActive") == true
-		or char:GetAttribute("IsAirborne") == true
 		or char:GetAttribute("IsSliding") == true
 		or char:GetAttribute("IsDashing") == true
 	then
@@ -734,6 +733,16 @@ function R6AnimationController.PlayAction(actionName: string, customFade: number
 	elseif actionName == "Sprint" then
 		mapped = "sprint"
 	end
+
+	if mapped == "pass" then
+		-- Pass is an authentic low inside-foot push driven authoritatively by R6ActionPoseController (A16).
+		-- Stop any high-kick animation track so it does not distort the inside-foot pass.
+		if activeTracks["kick"] and activeTracks["kick"].IsPlaying then
+			activeTracks["kick"]:Stop(0.05)
+		end
+		return nil
+	end
+
 	return playAction(mapped, customFade, customSpeed)
 end
 
