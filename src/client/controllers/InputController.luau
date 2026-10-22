@@ -220,7 +220,12 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 			isAcrobaticInFlight = true
 		end
 		R6AnimationController.PlayAction(if finalAction == "BicycleKick" or finalAction == "Volley" then "kick" else finalAction)
-		local duration = if finalAction == "BicycleKick" then 0.52 elseif finalAction == "Volley" then 0.44 else 0.28
+		local duration = if finalAction == "BicycleKick" then 0.52
+			elseif finalAction == "Volley" then 0.44
+			elseif finalAction == "CurveShoot" then 0.44
+			elseif finalAction == "Pass" or finalAction == "GroundPass" then 0.24
+			elseif finalAction == "LobPass" then 0.36
+			else 0.32
 		local kickCurveStyle: string? = nil
 		local kickFoot: string? = nil
 		if finalAction == "CurveShoot" then
@@ -322,6 +327,20 @@ local function cancelSlidePrediction()
 	end
 end
 
+local function cancelDashPhysics(char: Model?)
+	local c = char or (Players.LocalPlayer and Players.LocalPlayer.Character)
+	if not c then return end
+	local hrp = c:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hrp then
+		local lv = hrp:FindFirstChild("PlayerDashLV")
+		if lv then lv:Destroy() end
+		local att = hrp:FindFirstChild("PlayerDashAtt")
+		if att then att:Destroy() end
+	end
+	c:SetAttribute("IsDashing", false)
+	R6ActionPoseController.SetDashing(false)
+end
+
 function InputController.RequestSlide(chargeRatio: number?)
 	local localPlayer = Players.LocalPlayer
 	local char = localPlayer and localPlayer.Character
@@ -349,6 +368,7 @@ function InputController.RequestSlide(chargeRatio: number?)
 	end
 
 	lastSlideTime = now
+	cancelDashPhysics(char)
 
 	local charge = math.clamp(chargeRatio or Constants.CHARGE_MIN_POWER, Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 	local speedScale = 0.75 + charge * 0.50
@@ -501,7 +521,7 @@ function InputController.RequestSprint(sprintActive: boolean)
 	end
 end
 
-function InputController.RequestDash()
+function InputController.RequestDash(overrideDir: Vector3?)
 	local localPlayer = Players.LocalPlayer
 	local char = localPlayer and localPlayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -509,8 +529,16 @@ function InputController.RequestDash()
 	if not char or not hrp or not hum or hum.Health <= 0 then
 		return
 	end
-	if hum.FloorMaterial == Enum.Material.Air or isAirborneLocked or isSlidingClient then
+	if hum.FloorMaterial == Enum.Material.Air or isSlidingClient then
 		return
+	end
+	if isAirborneLocked then
+		if hum.FloorMaterial ~= Enum.Material.Air then
+			isAirborneLocked = false
+			currentFlightState = "idle"
+		else
+			return
+		end
 	end
 
 	local now = os.clock()
@@ -534,16 +562,45 @@ function InputController.RequestDash()
 
 	lastDashTime = now
 
+	-- Direction resolution:
+	-- If programmatic/custom direction provided: use overrideDir
+	-- If player picked a direction via movement keys (WASD / diagonals): dash in that direction
+	-- If player did NOT pick a direction (standing still): automatically dash forward in the direction the character is currently facing
 	local dashDir: Vector3
-	if hum.MoveDirection.Magnitude > 0.05 then
-		dashDir = hum.MoveDirection.Unit
+	if overrideDir and overrideDir.Magnitude > 0.05 then
+		dashDir = Vector3.new(overrideDir.X, 0, overrideDir.Z).Unit
+	elseif hum.MoveDirection.Magnitude > 0.05 then
+		dashDir = Vector3.new(hum.MoveDirection.X, 0, hum.MoveDirection.Z).Unit
 	else
-		local cam = Workspace.CurrentCamera
-		local camLook = if cam then cam.CFrame.LookVector else hrp.CFrame.LookVector
-		local flatCam = Vector3.new(camLook.X, 0, camLook.Z)
-		dashDir = if flatCam.Magnitude > 0.05 then flatCam.Unit else hrp.CFrame.LookVector
+		local charFacing = hrp.CFrame.LookVector
+		local flatFacing = Vector3.new(charFacing.X, 0, charFacing.Z)
+		dashDir = if flatFacing.Magnitude > 0.05 then flatFacing.Unit else Vector3.new(0, 0, -1)
 	end
-	dashDir = Vector3.new(dashDir.X, 0, dashDir.Z).Unit
+
+	-- Instantly orient character to face the chosen dash direction
+	hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + dashDir)
+
+	-- Apply active LinearVelocity constraint so the character bursts across the pitch without being braked in-place by Humanoid friction
+	local att = hrp:FindFirstChild("PlayerDashAtt") :: Attachment?
+	if not att then
+		att = Instance.new("Attachment")
+		att.Name = "PlayerDashAtt"
+		att.Parent = hrp
+	end
+	local lv = hrp:FindFirstChild("PlayerDashLV") :: LinearVelocity?
+	if not lv then
+		lv = Instance.new("LinearVelocity")
+		lv.Name = "PlayerDashLV"
+		lv.MaxForce = 200000
+		lv.Attachment0 = att
+		lv.RelativeTo = Enum.ActuatorRelativeTo.World
+		lv.Parent = hrp
+	end
+	lv.VectorVelocity = Vector3.new(
+		dashDir.X * Constants.DASH_SPEED_BURST,
+		0,
+		dashDir.Z * Constants.DASH_SPEED_BURST
+	)
 
 	-- Client immediately applies dash velocity burst & WalkSpeed so there is zero input lag
 	speedRestoreToken += 1
@@ -556,10 +613,16 @@ function InputController.RequestDash()
 	)
 
 	char:SetAttribute("IsDashing", true)
-	R6ActionPoseController.SetDashing(true, 0.32)
+	R6ActionPoseController.SetDashing(true, Constants.DASH_DURATION_SEC)
 	R6AnimationController.PlayAction("dash")
 
 	task.delay(Constants.DASH_DURATION_SEC, function()
+		if hrp then
+			local dlv = hrp:FindFirstChild("PlayerDashLV")
+			if dlv then dlv:Destroy() end
+			local datt = hrp:FindFirstChild("PlayerDashAtt")
+			if datt then datt:Destroy() end
+		end
 		if speedRestoreToken == myToken and hum and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
 			hum.WalkSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
 		end
@@ -588,6 +651,7 @@ local function commitJumpDirection(char: Model)
 	if isSlidingClient then
 		return
 	end
+	cancelDashPhysics(char)
 
 	local moveDir = hum.MoveDirection
 	local flatMove = Vector3.new(moveDir.X, 0, moveDir.Z)
@@ -608,6 +672,10 @@ local function commitJumpDirection(char: Model)
 	CameraShiftLockController.SetAirborneJumpLock(true, commitDir)
 	hum.AutoRotate = false
 	hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + commitDir)
+
+	-- Disable Humanoid jumping state so Roblox's C++ controller cannot trigger repeat jumps while held
+	hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+	hum.Jump = false
 
 	-- Apply horizontal velocity with boosted vertical jump height per owner request
 	local horizSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
@@ -689,6 +757,7 @@ function InputController.Init()
 		isAcrobaticInFlight = false
 		CameraShiftLockController.SetSlideLock(false)
 		CameraShiftLockController.SetAirborneJumpLock(false)
+		cancelDashPhysics(char)
 		R6ActionPoseController.ResetPoses(char)
 
 		local hum = char:WaitForChild("Humanoid", 5) :: Humanoid?
@@ -702,8 +771,18 @@ function InputController.Init()
 					if not jumpConsumedUntilRelease then
 						jumpConsumedUntilRelease = true
 						commitJumpDirection(char)
+					else
+						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+						hum.Jump = false
 					end
 				elseif newState == Enum.HumanoidStateType.Landed then
+					if not isSpacebarHeld then
+						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+						jumpConsumedUntilRelease = false
+					else
+						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+						hum.Jump = false
+					end
 					if isAcrobaticInFlight then
 						isAcrobaticInFlight = false
 						R6ActionPoseController.TriggerAirborneRecovery(0.32)
@@ -736,10 +815,12 @@ function InputController.Init()
 				isAirborneLocked = false
 				isSpacebarHeld = false
 				jumpConsumedUntilRelease = false
+				hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 				currentFlightState = "idle"
 				isAcrobaticInFlight = false
 				CameraShiftLockController.SetSlideLock(false)
 				CameraShiftLockController.SetAirborneJumpLock(false)
+				cancelDashPhysics(char)
 				R6ActionPoseController.ResetPoses(char)
 			end)
 
@@ -826,10 +907,14 @@ function InputController.Init()
 			InputController.EndSlide()
 		end
 
+		local char = localPlayer and localPlayer.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if isSpacebarHeld and jumpConsumedUntilRelease and hum then
+			hum.Jump = false
+		end
+
 		if isAirborneLocked or isAcrobaticInFlight or (currentFlightState ~= "idle" and currentFlightState ~= "landed") then
-			local char = localPlayer and localPlayer.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			if hrp and hum and hum.Health > 0 then
 				local timeSinceJump = now - jumpTakeoffTime
 				local vy = hrp.AssemblyLinearVelocity.Y
@@ -858,10 +943,17 @@ function InputController.Init()
 
 				local rayOrigin = hrp.Position - Vector3.new(0, 1.5, 0)
 				local rayResult = Workspace:Raycast(rayOrigin, Vector3.new(0, -1.7, 0), rayParams)
-				local isGrounded = (rayResult ~= nil) or (hum.FloorMaterial ~= Enum.Material.Air and timeSinceJump > 0.10)
-				local isLanded = (vy <= 1.0) and isGrounded and (timeSinceJump > 0.10)
+				local isGrounded = (rayResult ~= nil) or (hum.FloorMaterial ~= Enum.Material.Air and timeSinceJump > 0.08)
+				local isLanded = (vy <= 2.0 and isGrounded and timeSinceJump > 0.08) or (hum.FloorMaterial ~= Enum.Material.Air and timeSinceJump > 0.30)
 
 				if isLanded then
+					if not isSpacebarHeld then
+						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+						jumpConsumedUntilRelease = false
+					else
+						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+						hum.Jump = false
+					end
 					currentFlightState = "landed"
 					isAirborneLocked = false
 					CameraShiftLockController.SetAirborneJumpLock(false)
@@ -877,6 +969,9 @@ function InputController.Init()
 					end
 					currentFlightState = "idle"
 				else
+					if isSpacebarHeld and jumpConsumedUntilRelease then
+						hum.Jump = false
+					end
 					if isAirborneLocked then
 						hum.AutoRotate = false
 						local curPos = hrp.Position
@@ -1011,6 +1106,22 @@ function InputController.Init()
 		elseif input.KeyCode == Enum.KeyCode.Space then
 			isSpacebarHeld = false
 			jumpConsumedUntilRelease = false
+			local char = localPlayer and localPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+				hum.Jump = false
+			end
+		end
+	end)
+
+	UserInputService.JumpRequest:Connect(function()
+		if isSpacebarHeld and jumpConsumedUntilRelease then
+			local char = localPlayer and localPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.Jump = false
+			end
 		end
 	end)
 end
@@ -1018,6 +1129,13 @@ end
 function InputController.ReleaseJumpKey()
 	isSpacebarHeld = false
 	jumpConsumedUntilRelease = false
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+		hum.Jump = false
+	end
 end
 
 function InputController.IsJumpConsumed(): boolean

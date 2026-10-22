@@ -443,3 +443,46 @@ Q22อนุมัติเอกสารตามQ1–Q21; ใช้ [Spec02](
   - Checkpoint 1 (WIP): commit `4d1ba7a` pushed to `origin/codex/plan02-animation-rework`
   - Checkpoint 2 (Final Rework): commit & push ตามสิทธิที่ได้รับมอบหมาย
   - แผนงาน 00, 01, 02 ยังคงเปิดอยู่ตามกติกา ไม่มีการ merge เข้า `main` หรือ deploy
+
+## N-18 — Refinements: Character Grounding, Spacebar Single Jump Latch, Shoot vs Pass Distinction, Running Kinematics & Directional Dash (2026-10-22)
+
+- **Owner Feedback & Directives:**
+  1. *"ตัวมันลอยอะ"* — ตัวละครลอยสูงเหนือพื้นสนาม
+  2. *"และ animation ยิงกับส่งให้ไม่เหมือนกันสิ"* — ท่ายิงกับท่าส่งแยกกันให้ชัดเจน ไม่เหมือนกัน
+  3. *"ท่าวิ่ง ปรับใหม่ด้วย ให้มันสมจริงเหมือนนักบอลอะ"* — จูนการวิ่งให้ติดพื้น สปีดเท้าตรงกับความเร็วจริง และมีน้ำหนักแบบนักฟุตบอล
+  4. *"กระโดดไม่แก้อะ รอไร มันกดค้างได้ ให้มันกระโดดได้ทีเดียวดิ"* — การกด Spacebar ค้างไว้ทำให้กระโดดรัวต่อเนื่อง (Bunny-hop); ต้องกระโดดได้เพียง 1 ครั้งต่อการกดทางกายภาพ 1 ครั้ง
+  5. *"แล้วแดช ถ้า player ไม่ได้เลือกทิศทาง ให้แดชไปหน้าที่หันอยู่อัติโนมัติ เลย ไม่ใช่แดชอยู่กับที่ตอนนี้ เลือกทิศแดชได้ ถอยหลัง ซ้ายขวาหน้า เฉียงงี้"* — หากไม่กดปุ่มเคลื่อนที่ ให้แดชพุ่งไปข้างหน้าตามทิศทางที่ตัวละครหันอยู่โดยอัตโนมัติ (ไม่แดชอยู่กับที่) และเลือกทิศทางแดชได้รอบทิศ (หน้า หลัง ซ้าย ขวา เฉียง)
+- **การแก้ไขเชิงลึก (Deep Kinematic & Control System Resolutions):**
+  1. **Character Grounding (ขจัดอาการตัวลอย):**
+     - ใน `PlayerActionPoseConfigs.ApplyClearanceOffset`: โค้ดเดิมนำ relative Motor6D offset (`Position.Y = 0`) เข้า `GetPartMinY` โดยตรงโดยไม่ผ่าน R6 Forward Kinematics ส่งผลให้ได้ค่า Deficit เท็จ $+1.09 \dots +1.23$ studs ยก RootJoint ลอยฟ้าทุกท่า
+     - แก้ไขเป็น Forward Kinematics แท้: คำนวณพิกัดสัมบูรณ์ของขาขวา ขาซ้าย และลำตัว เทียบกับจุดกึ่งกลาง HRP ที่ความสูง $Y = 3.0$ studs
+     - **ผลลัพธ์ใน Live Client:** ค่า $C0$ ของ `RootJoint` ลดลงจาก $1.233$ studs เหลือเพียง $0.065 \dots 0.129$ studs เท้าแตะพื้นสนามหญ้าแนบสนิท 100%
+  2. **Spacebar Discrete Jump Latch (ป้องกัน Bunny-Hopping):**
+     - ใน `InputController.luau`: ปิดกั้นการสั่งกระโดดซ้ำของ Roblox C++ Humanoid State Machine ขณะกดปุ่ม Spacebar ค้างไว้
+     - เมื่อผู้เล่นกระโดด (`commitJumpDirection`): สั่ง `hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)` และ `hum.Jump = false` ทันที
+     - เมื่อเท้าแตะพื้น (`Landed` / `isLanded` ใน `RenderStepped`): หาก Spacebar ยังถูกกดค้างอยู่ จะคงสถานะ Disabled และบังคับ `hum.Jump = false` อย่างต่อเนื่อง
+     - ปลดล็อกคืนค่า `hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)` เฉพาะเมื่อผู้เล่นปล่อยปุ่ม Spacebar จริง (`InputEnded` หรือ `ReleaseJumpKey()`)
+     - **ผลลัพธ์ใน Live Client:** `jump1_JumpingEnabled = false` -> `repeat_JumpingEnabled = false` -> `release_JumpingEnabled = true` (กดค้างกระโดดได้ทีเดียว ไม่เกิด Bunny-hopping ซ้ำซ้อน 100%)
+  3. **Shoot vs Pass Visual Distinction (แยกท่ายิงกับท่าส่งอย่างชัดเจน):**
+     - ใน `PlayerActionPoseConfigs.GetChargePose`: เพิ่ม branch สำหรับ `"Pass"`, `"GroundPass"`, `"LobPass"` เรียกใช้ `SampleAuthoredPose("A16", phase, variant)` แทนที่จะตกลงไปใช้ท่ายิงตรง A12
+     - **ท่าง้างส่ง (Pass Wind-up):** ใช้ A16 Keyframe 1 เป็นท่าเปิดหน้าเท้าด้านในเตรียมแปบอล (Open-hip push prep: `Right Hip: rx=-28°, ry=-36°, rz=12°`)
+     - **ท่าง้างยิง (Direct Shoot Wind-up):** ใช้ A12 ท่าง้างหลังเต็มแรงสำหรับยิงหลังเท้า (Deep rear backswing: `Right Hip: rx=-58°, ry=-6°, rz=8°`)
+     - **จังหวะปล่อยบอล (Follow-Through):** ท่าส่ง A16 มีระยะดีดขาสั้นและกระชับ (0.24s, $rx = +34^\circ$), ท่ายิงตรง A13 เหวี่ยงส่งแรงเต็มเหยียด (0.32s, $rx = +94^\circ$), ท่ายิงโค้ง A15 ตวัดขาเฉียงพาดลำตัว (0.44s, $rx = +72^\circ, ry = -38^\circ$)
+  4. **Running Kinematics (ปรับการวิ่งให้สมจริงแบบนักฟุตบอล):**
+     - ใน `R6ActionPoseController.luau` (Priority 10):
+       - เปลี่ยนจากการขยับ Stride Phase ด้วยเวลาคงที่ มาเป็นการคำนวณตามระยะก้าวที่ผูกกับความเร็วจริงบนพื้น: `locomotionStridePhase = (locomotionStridePhase + (moveSpeed * dt) / strideDist) % 1.0` โดยใช้ `strideDist = 8.4` studs (Walk) และ `11.2` studs (Sprint) ขจัดปัญหาเท้าสไลด์หลอกตา
+       - ผสมผสานอย่างนุ่มนวลระหว่างท่าเดิน `A02` และท่าสปรินต์ `A03` ตามความเร็วผู้เล่น (`sprintWeight = clamp((moveSpeed - 18.0) / 8.0, 0, 1.0)`)
+       - เพิ่มการเอียงลำตัวถ่ายน้ำหนักเข้าหาโค้ง (Athletic Banking Roll): `bankRoll = -strafeRatio * 6.0 deg` และ `bankYaw = strafeRatio * 4.0 deg` เมื่อวิ่งเลี้ยวหรือสลับทิศ
+  5. **Directional Dash & Auto-Forward Burst (ระบบแดชตามทิศและพุ่งไปข้างหน้าเมื่ออยู่นิ่ง):**
+     - ใน `InputController.RequestDash(overrideDir: Vector3?)`:
+       - **กรณีอยู่นิ่ง (ไม่ได้เลือกทิศทาง):** คำนวณจากทิศทางที่ตัวละครกำลังหันหน้าอยู่จริง (`hrp.CFrame.LookVector`) แดชพุ่งไปข้างหน้าโดยอัตโนมัติ ไม่แดชอยู่กับที่
+       - **กรณีเคลื่อนที่ (กดปุ่ม WASD):** คำนวณจาก `hum.MoveDirection` รองรับครบทุกทิศทาง: หน้า, หลัง, ซ้าย, ขวา, และทแยงมุมทั้ง 4 ทิศ (WA, WD, SA, SD)
+       - หันหน้าตัวละครไปตามทิศทางแดชทันที: `hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + dashDir)`
+       - ติดตั้ง `PlayerDashLV` (`LinearVelocity`, MaxForce 200,000, VectorVelocity = $58.0 \times \text{dashDir}$) ขับเคลื่อนตัวละครพุ่งทะยานผ่านพื้นสนามตลอดช่วง $0.22$s โดยไม่ถูกแรงเสียดทานของ Humanoid เบรกหยุดอยู่กับที่
+       - เพิ่มระบบกวาดล้าง `cancelDashPhysics(char)` เพื่อทำลาย `PlayerDashLV` และ `PlayerDashAtt` เมื่อแดชสิ้นสุด, สไลด์, กระโดด หรือตัวละครตาย
+- **ผลการทดสอบ Live Client (Roblox Studio Place 137721422246269 / Mode: Play):**
+  - Grounding C0 Y Offset: `0.1290 studs` (เท้าแตะพื้นคอนกรีต/หญ้าสมบูรณ์แบบ)
+  - Pass Chamber: `(22.0°, -42.0°, 8.0°)` vs Shoot Chamber: `(-58.0°, -6.0°, 8.0°)` (Distinct = `true`)
+  - Spacebar Single Jump Latch: `jump1_Consumed = true`, `jump1_JumpingEnabled = false`, `repeat_JumpingEnabled = false`, `release_JumpingEnabled = true`
+  - Stationary Auto-Forward Dash: `has_lv = true`, `is_dashing = true`, `lv_vector = (-0.0, 0.0, -58.0)`, ระยะพุ่งใน 180ms = `10.63 studs` (พุ่งไปข้างหน้าอัตโนมัติ)
+  - Directional Dash (Backward / South): `lv_vector = (-50.2, 0.0, -29.0)`, ระยะพุ่งใน 180ms = `10.63 studs` (พุ่งถอยหลังตามทิศที่เลือก)

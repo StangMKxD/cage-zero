@@ -643,19 +643,32 @@ function R6ActionPoseController.Init()
 				else
 					-- A02/A03/A05: Moving on pitch
 					isActionActive = true
-					local isSprinting = moveSpeed > 22
-					local strideDuration = if isSprinting then 0.38 else 0.48
-					locomotionStridePhase = (locomotionStridePhase + dt / strideDuration) % 1.0
+					local strideDist = if moveSpeed > 22 then 11.2 else 8.4
+					locomotionStridePhase = (locomotionStridePhase + (moveSpeed * dt) / strideDist) % 1.0
 					local localVel = hrp.CFrame:VectorToObjectSpace(hrp.AssemblyLinearVelocity)
 					local isShiftLock = char:GetAttribute("IsShiftLock") == true or math.abs(localVel.X) > 2.5 or localVel.Z > 2.0
 					if isShiftLock then
 						targetPose = PlayerActionPoseConfigs.Get8WayStrafePose(localVel, locomotionStridePhase * 2 * math.pi)
 					else
-						if isSprinting then
-							targetPose = PlayerActionPoseConfigs.SampleAuthoredPose("A03", locomotionStridePhase)
-						else
-							targetPose = PlayerActionPoseConfigs.SampleAuthoredPose("A02", locomotionStridePhase)
+						local sprintWeight = math.clamp((moveSpeed - 18.0) / 8.0, 0, 1.0)
+						local poseA02 = PlayerActionPoseConfigs.SampleAuthoredPose("A02", locomotionStridePhase)
+						local poseA03 = PlayerActionPoseConfigs.SampleAuthoredPose("A03", locomotionStridePhase)
+						local blendedPose: PlayerActionPoseConfigs.R6JointPoseOffsets = {
+							RootJoint     = poseA02.RootJoint:Lerp(poseA03.RootJoint, sprintWeight),
+							Neck          = poseA02.Neck:Lerp(poseA03.Neck, sprintWeight),
+							RightShoulder = poseA02.RightShoulder:Lerp(poseA03.RightShoulder, sprintWeight),
+							LeftShoulder  = poseA02.LeftShoulder:Lerp(poseA03.LeftShoulder, sprintWeight),
+							RightHip      = poseA02.RightHip:Lerp(poseA03.RightHip, sprintWeight),
+							LeftHip       = poseA02.LeftHip:Lerp(poseA03.LeftHip, sprintWeight),
+						}
+						-- Athletic banking roll and counter-yaw into turns
+						local strafeRatio = math.clamp(localVel.X / math.max(1, moveSpeed), -1, 1)
+						local bankRoll = -strafeRatio * math.rad(6.0)
+						local bankYaw = strafeRatio * math.rad(4.0)
+						if math.abs(bankRoll) > 0.001 then
+							blendedPose.RootJoint = blendedPose.RootJoint * CFrame.Angles(0, bankYaw, bankRoll)
 						end
+						targetPose = blendedPose
 					end
 				end
 			end

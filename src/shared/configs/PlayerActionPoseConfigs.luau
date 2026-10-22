@@ -256,14 +256,26 @@ function PlayerActionPoseConfigs.ApplyClearanceOffset(
 	targetClearance: number?
 ): R6JointPoseOffsets
 	local target = targetClearance or PlayerActionPoseConfigs.TARGET_CLEARANCE
-	local rMin = PlayerActionPoseConfigs.GetPartMinY(pose.RightHip, PlayerActionPoseConfigs.PART_HALF_EXTENTS.RightLeg)
-	local lMin = PlayerActionPoseConfigs.GetPartMinY(pose.LeftHip, PlayerActionPoseConfigs.PART_HALF_EXTENTS.LeftLeg)
-	local tMin = PlayerActionPoseConfigs.GetPartMinY(pose.RootJoint, PlayerActionPoseConfigs.PART_HALF_EXTENTS.Torso)
+	local rootCF = pose.RootJoint or CFrame.identity
+	local rHipCF = pose.RightHip or CFrame.identity
+	local lHipCF = pose.LeftHip or CFrame.identity
+
+	local rLegCF = rootCF * CFrame.new(1, -1, 0) * rHipCF * CFrame.new(-0.5, -1, 0)
+	local lLegCF = rootCF * CFrame.new(-1, -1, 0) * lHipCF * CFrame.new(0.5, -1, 0)
+
+	local function partMinY(cf: CFrame, hx: number, hy: number, hz: number): number
+		local extY = math.abs(cf.RightVector.Y) * hx + math.abs(cf.UpVector.Y) * hy + math.abs(cf.LookVector.Y) * hz
+		return cf.Position.Y - extY + 3.0
+	end
+
+	local rMin = partMinY(rLegCF, 0.5, 1.0, 0.5)
+	local lMin = partMinY(lLegCF, 0.5, 1.0, 0.5)
+	local tMin = partMinY(rootCF, 1.0, 1.0, 0.5)
 	local lowestY = math.min(rMin, lMin, tMin)
 	local deficit = target - lowestY
 	if deficit > 0 then
 		return {
-			RootJoint     = CFrame.new(0, deficit, 0) * pose.RootJoint,
+			RootJoint     = CFrame.new(0, deficit, 0) * (pose.RootJoint or CFrame.identity),
 			Neck          = pose.Neck,
 			RightShoulder = pose.RightShoulder,
 			LeftShoulder  = pose.LeftShoulder,
@@ -520,6 +532,11 @@ function PlayerActionPoseConfigs.GetChargePose(chargeAction: string, elapsed: nu
 			pose.LeftHip = CFrame.new(lh.Position) * CFrame.Angles(lrx, -lry, -lrz)
 		end
 		return pose
+	elseif chargeAction == "Pass" or chargeAction == "GroundPass" or chargeAction == "LobPass" then
+		-- A16: Single 3D Pass Wind-up / Open-hip Push Chamber (Hold Lock at Keyframe 1, t in [0.0, 0.32])
+		local phase = math.clamp(pullAlpha * 0.32, 0, 0.32)
+		local variant = if chargeAction == "LobPass" or curveStyle == "lob" then "lob" else "ground"
+		return PlayerActionPoseConfigs.SampleAuthoredPose("A16", phase, variant)
 	else
 		-- DirectShoot (A12): Direct Shoot Wind-up / Hold. Samples KF1 -> KF3 (t = 0.50 HOLD LOCK)
 		local phase = math.clamp(pullAlpha * 0.50, 0, 0.50)
