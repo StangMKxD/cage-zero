@@ -1,40 +1,648 @@
 --!strict
 -- src/client/controllers/InputController.luau
--- Module 02: Client Input Handler for Pass (Q), Shoot (E), Sprint (LeftShift), and Parry (F)
+-- Module 02: Client Input Handler for Continuous Football Actions per Spec 02 & HANDOFF Contract
+-- Handles contextual actions: Attacking (Shoot, Pass, Curve) vs Defending, Sprint, Dash, and Directional Jump
+-- Adapted from prototype3 with silky-smooth directional jump, instant dash burst, and authoritative charge state.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Constants = require(Shared:WaitForChild("Constants"))
 local Network = require(Shared:WaitForChild("Network"))
 local Types = require(Shared:WaitForChild("Types"))
+local Configs = Shared:WaitForChild("configs")
+local PlayerActionPoseConfigs = require(Configs:WaitForChild("PlayerActionPoseConfigs"))
+
+local CharacterFolder = script.Parent.Parent:WaitForChild("character")
+local R6AnimationController = require(CharacterFolder:WaitForChild("R6AnimationController"))
+local R6ActionPoseController = require(CharacterFolder:WaitForChild("R6ActionPoseController"))
+local CameraShiftLockController = require(script.Parent:WaitForChild("CameraShiftLockController"))
 
 local isInitialized = false
 local InputController = {}
 
+local isSprinting = false
+local chargeStartTime: number? = nil
+local currentIntentId: string? = nil
+local currentChargeAction: Types.ChargeActionType? = nil
+local currentChargeContext: Types.TeamActionContext? = nil
+local lastDashTime = -10.0
+local lastSlideTime = -10.0
+
+-- Client Slide Tackle State & Prediction Reconciliation (F-22)
+local isSlidingClient = false
+local slideEndTimeClient = 0
+local clientSlideDir = Vector3.new(0, 0, 1)
+local originalHipHeight: number? = nil
+local currentSlideIntentId: string? = nil
+local speedRestoreToken = 0
+
+-- Smooth Direction-Locked Aerial Jump (adapted from prototype3, zero stutter)
+local isAirborneLocked = false
+local jumpCommitDir: Vector3 = Vector3.new(0, 0, 1)
+local jumpTakeoffTime = 0
+
+-- Discrete Spacebar Jump Release Guard (F-28)
+local isSpacebarHeld = false
+local jumpConsumedUntilRelease = false
+
+-- Flight Lifecycle State (F-28)
+type FlightState = "idle" | "takeoff" | "ascent" | "apex" | "descent" | "landed"
+local currentFlightState: FlightState = "idle"
+local isAcrobaticInFlight = false
+
+local charContextConn: RBXScriptConnection? = nil
+local charDiedConn: RBXScriptConnection? = nil
+local charStateConn: RBXScriptConnection? = nil
+local charActionStatusConn: RBXScriptConnection? = nil
+local charResolvedActionConn: RBXScriptConnection? = nil
+
+local intentCounter = 0
+local function generateIntentId(prefix: string): string
+	intentCounter += 1
+	return string.format("%s_%d_%d", prefix, math.floor(os.clock() * 1000), intentCounter)
+end
+
+local function getCharacterGeneration(): number
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	return if char then (char:GetAttribute("PlayerActionGeneration") :: number?) or 1 else 1
+end
+
+local function getActionContextVersion(): number
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	return if char then (char:GetAttribute("ActionContextVersion") :: number?) or 1 else 1
+end
+
 local function getAimDirection(): Vector3
+	local cam = Workspace.CurrentCamera
+	if cam then
+		local look = cam.CFrame.LookVector
+		return look
+	end
 	local localPlayer = Players.LocalPlayer
 	if localPlayer and localPlayer.Character and localPlayer.Character.PrimaryPart then
 		return localPlayer.Character.PrimaryPart.CFrame.LookVector
 	end
-	local cam = Workspace.CurrentCamera
-	if cam then
-		return cam.CFrame.LookVector
+	return Vector3.new(0, 0, 1)
+end
+
+local function getMovementVector(): Vector3
+	local localPlayer = Players.LocalPlayer
+	if localPlayer and localPlayer.Character and localPlayer.Character.PrimaryPart then
+		local humanoid = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.MoveDirection.Magnitude > 0.1 then
+			return humanoid.MoveDirection
+		end
+		return localPlayer.Character.PrimaryPart.CFrame.LookVector
 	end
 	return Vector3.new(0, 0, 1)
 end
 
-function InputController.RequestBallAction(actionType: Types.BallActionType, customAim: Vector3?)
-	local aimDir = customAim or getAimDirection()
-	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
-	remote:FireServer(actionType, aimDir)
+local function getLocalActionContext(): Types.TeamActionContext
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	if char then
+		local ctx = char:GetAttribute("ActionContext")
+		if ctx == "Defending" then
+			return "Defending"
+		end
+	end
+	return "Attacking"
 end
 
-function InputController.RequestParryAttempt()
-	local remote = Network.GetRemoteEvent(Network.Names.ParryAttemptRequest)
-	remote:FireServer(os.clock())
+local function setLocalWalkSpeed(speed: number)
+	speedRestoreToken += 1
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.WalkSpeed = speed
+	end
+end
+
+local function isCharacterAirborne(char: Model?, hum: Humanoid?, hrp: BasePart?): boolean
+	if isAirborneLocked or isAcrobaticInFlight then
+		return true
+	end
+	if currentFlightState ~= "idle" and currentFlightState ~= "landed" then
+		return true
+	end
+	if char and char:GetAttribute("IsAirborne") == true then
+		return true
+	end
+	if hum and hum.FloorMaterial == Enum.Material.Air then
+		return true
+	end
+	if char and hrp then
+		local rayParams = RaycastParams.new()
+		rayParams.FilterDescendantsInstances = { char }
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude
+		local rayOrigin = hrp.Position - Vector3.new(0, 1.5, 0)
+		local rayResult = Workspace:Raycast(rayOrigin, Vector3.new(0, -1.7, 0), rayParams)
+		if not rayResult then
+			return true
+		end
+	end
+	return false
+end
+
+function InputController.RequestKick(actionType: Types.KickActionType, charge: number?, intentId: string?)
+	local aimDir = getAimDirection()
+	local resolvedIntentId = intentId or generateIntentId("kick")
+
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local isAir = isCharacterAirborne(char, hum, hrp)
+
+	local finalAction: Types.KickActionType = actionType
+	if isAir then
+		if actionType == "CurveShoot" then
+			finalAction = "BicycleKick"
+		elseif actionType == "DirectShoot" or actionType == "Shoot" then
+			finalAction = "Volley"
+		end
+	end
+
+	if finalAction == "BicycleKick" then
+		isAcrobaticInFlight = true
+	end
+
+	local cAct: Types.ChargeActionType = if finalAction == "CurveShoot" or finalAction == "BicycleKick"
+		then "CurveShoot"
+		elseif finalAction == "Pass" or finalAction == "GroundPass"
+		then "Pass"
+		else "DirectShoot"
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = finalAction,
+		intentId = resolvedIntentId,
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "release",
+		chargeAction = cAct,
+		aimDirection = aimDir,
+		charge = charge,
+	})
+	R6ActionPoseController.SetCharging(false)
+
+	local distToBall = 999.0
+	local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+	if ballPart and hrp then
+		distToBall = (hrp.Position - ballPart.Position).Magnitude
+	end
+	local isPossessor = (char ~= nil and (char:GetAttribute("HasBall") == true or char:GetAttribute("IsPossessor") == true))
+	local isOutOfReach = not isPossessor and distToBall > Constants.BALL_TOUCH_RADIUS
+
+	if isOutOfReach then
+		-- Missed shot / Whiff recovery immediate feedback (Image 2 Row 3)
+		R6ActionPoseController.TriggerWhiff(finalAction == "CurveShoot", Constants.WHIFF_RECOVERY_SEC)
+		speedRestoreToken += 1
+		local myToken = speedRestoreToken
+		if hum and hum.Health > 0 then
+			hum.WalkSpeed = Constants.WALK_SPEED * 0.45
+			task.delay(Constants.WHIFF_RECOVERY_SEC, function()
+				if speedRestoreToken == myToken and hum and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
+					hum.WalkSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+				end
+			end)
+		end
+	else
+		if finalAction == "BicycleKick" then
+			isAcrobaticInFlight = true
+		end
+		R6AnimationController.PlayAction(if finalAction == "BicycleKick" or finalAction == "Volley" then "kick" else finalAction)
+		local duration = if finalAction == "BicycleKick" then 0.52 elseif finalAction == "Volley" then 0.44 else 0.28
+		local kickCurveStyle: string? = nil
+		local kickFoot: string? = nil
+		if finalAction == "CurveShoot" then
+			if hrp then
+				local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position)
+				kickCurveStyle = curveRes.style
+				kickFoot = curveRes.foot
+			end
+		end
+		R6ActionPoseController.TriggerAction(finalAction, duration, kickCurveStyle, nil, kickFoot)
+	end
+end
+
+function InputController.RequestStartCharge(chargeAction: Types.ChargeActionType)
+	if chargeStartTime ~= nil then
+		return
+	end
+	local ctx = getLocalActionContext()
+	currentIntentId = generateIntentId("chg")
+	chargeStartTime = os.clock()
+	currentChargeAction = chargeAction
+	currentChargeContext = ctx
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = "StartCharge",
+		intentId = currentIntentId,
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "start",
+		chargeAction = chargeAction,
+	})
+	local chargeCurveStyle: string? = nil
+	local chargeFoot: string? = nil
+	if chargeAction == "CurveShoot" then
+		local aimDir = getAimDirection()
+		local localPlayer = Players.LocalPlayer
+		local char = localPlayer and localPlayer.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+		if hrp then
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position)
+			chargeCurveStyle = curveRes.style
+			chargeFoot = curveRes.foot
+		end
+	end
+	setLocalWalkSpeed(Constants.WALK_SPEED * 0.5)
+	R6ActionPoseController.SetCharging(true, chargeAction, chargeCurveStyle, chargeFoot)
+end
+
+function InputController.RequestCancelCharge()
+	if currentIntentId ~= nil then
+		local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+		remote:FireServer({
+			action = "CancelCharge",
+			intentId = currentIntentId,
+			characterGeneration = getCharacterGeneration(),
+			contextVersion = getActionContextVersion(),
+			phase = "cancel",
+			chargeAction = currentChargeAction,
+		})
+	end
+	chargeStartTime = nil
+	currentChargeAction = nil
+	currentChargeContext = nil
+	currentIntentId = nil
+	R6ActionPoseController.SetCharging(false)
+	setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+end
+
+local function cancelSlidePrediction()
+	if not isSlidingClient then
+		return
+	end
+	isSlidingClient = false
+	slideEndTimeClient = 0
+	currentSlideIntentId = nil
+
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hrp then
+		local lv = hrp:FindFirstChild("PlayerSlideLV")
+		if lv then lv:Destroy() end
+		local att = hrp:FindFirstChild("PlayerSlideAtt")
+		if att then att:Destroy() end
+	end
+	R6ActionPoseController.SetSliding(false)
+	CameraShiftLockController.SetSlideLock(false)
+	if hum and hum.Health > 0 then
+		if not CameraShiftLockController.IsEnabled() and not isAirborneLocked then
+			hum.AutoRotate = true
+		end
+		if originalHipHeight then
+			hum.HipHeight = originalHipHeight
+		end
+		setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+	end
+end
+
+function InputController.RequestSlide(chargeRatio: number?)
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not char or not hrp or not hum or hum.Health <= 0 then
+		InputController.RequestCancelCharge()
+		return
+	end
+	if hum.FloorMaterial == Enum.Material.Air or isAirborneLocked or isSlidingClient then
+		InputController.RequestCancelCharge()
+		return
+	end
+
+	local now = os.clock()
+	if now - lastSlideTime < Constants.SLIDE_COOLDOWN_SEC then
+		InputController.RequestCancelCharge()
+		return
+	end
+
+	local curStam = (char:GetAttribute("Stamina") :: number?) or 1.0
+	if curStam < Constants.SLIDE_STAMINA_COST then
+		InputController.RequestCancelCharge()
+		return
+	end
+
+	lastSlideTime = now
+
+	local charge = math.clamp(chargeRatio or Constants.CHARGE_MIN_POWER, Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+	local speedScale = 0.75 + charge * 0.50
+	local durationScale = 0.85 + charge * 0.30
+
+	local slideDir: Vector3
+	if hum.MoveDirection.Magnitude > 0.05 then
+		slideDir = hum.MoveDirection.Unit
+	else
+		local cam = Workspace.CurrentCamera
+		local camLook = if cam then cam.CFrame.LookVector else hrp.CFrame.LookVector
+		local flatCam = Vector3.new(camLook.X, 0, camLook.Z)
+		slideDir = if flatCam.Magnitude > 0.05 then flatCam.Unit else hrp.CFrame.LookVector
+	end
+	slideDir = Vector3.new(slideDir.X, 0, slideDir.Z).Unit
+
+	isSlidingClient = true
+	slideEndTimeClient = now + (Constants.SLIDE_DURATION_SEC * durationScale)
+	clientSlideDir = slideDir
+
+	if originalHipHeight == nil then
+		originalHipHeight = hum.HipHeight
+	end
+	hum.HipHeight = 0.55
+	hum.AutoRotate = false
+	hum.WalkSpeed = 0
+
+	local att = hrp:FindFirstChild("PlayerSlideAtt") :: Attachment?
+	if not att then
+		att = Instance.new("Attachment")
+		att.Name = "PlayerSlideAtt"
+		att.Parent = hrp
+	end
+	local lv = hrp:FindFirstChild("PlayerSlideLV") :: LinearVelocity?
+	if not lv then
+		lv = Instance.new("LinearVelocity")
+		lv.Name = "PlayerSlideLV"
+		lv.MaxForce = 150000
+		lv.Attachment0 = att
+		lv.RelativeTo = Enum.ActuatorRelativeTo.World
+		lv.Parent = hrp
+	end
+	local curSlideSpeed = Constants.SLIDE_SPEED * speedScale
+	lv.VectorVelocity = slideDir * curSlideSpeed
+	hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + slideDir)
+
+	R6AnimationController.PlayAction("Slide")
+	R6ActionPoseController.SetSliding(true)
+	CameraShiftLockController.SetSlideLock(true, slideDir)
+
+	local slideIntentId = currentIntentId or generateIntentId("slide")
+	currentSlideIntentId = slideIntentId
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = "Slide",
+		intentId = slideIntentId,
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "release",
+		chargeAction = "Slide",
+		aimDirection = slideDir,
+		charge = charge,
+	})
+	chargeStartTime = nil
+	currentChargeAction = nil
+	currentChargeContext = nil
+	currentIntentId = nil
+	R6ActionPoseController.SetCharging(false)
+end
+
+function InputController.EndSlide()
+	if not isSlidingClient then
+		return
+	end
+	isSlidingClient = false
+	slideEndTimeClient = 0
+	currentSlideIntentId = nil
+
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hrp then
+		local lv = hrp:FindFirstChild("PlayerSlideLV")
+		if lv then lv:Destroy() end
+		local att = hrp:FindFirstChild("PlayerSlideAtt")
+		if att then att:Destroy() end
+	end
+	R6ActionPoseController.SetSliding(false)
+	CameraShiftLockController.SetSlideLock(false)
+
+	if hum and hum.Health > 0 then
+		speedRestoreToken += 1
+		local myToken = speedRestoreToken
+
+		local recoveryRemaining = if char then (char:GetAttribute("RecoveryRemaining") :: number?) or 0 else 0
+		if recoveryRemaining > 0 then
+			-- Whiffed: apply recovery dampening & play slide recovery push-up pose (Image 3 Row 1 Step 4)
+			R6ActionPoseController.TriggerSlideRecovery(Constants.SLIDE_RECOVERY_SEC)
+			hum.WalkSpeed = Constants.WALK_SPEED * Constants.SLIDE_WHIFF_SPEED_RATIO
+			task.delay(Constants.SLIDE_RECOVERY_SEC, function()
+				if speedRestoreToken == myToken and hum and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
+					if not CameraShiftLockController.IsEnabled() then
+						hum.AutoRotate = true
+					end
+					if originalHipHeight then
+						hum.HipHeight = originalHipHeight
+					end
+					hum.WalkSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+				end
+			end)
+		else
+			-- Successful tackle or no whiff penalty
+			if not CameraShiftLockController.IsEnabled() and not isAirborneLocked then
+				hum.AutoRotate = true
+			end
+			if originalHipHeight then
+				hum.HipHeight = originalHipHeight
+			end
+			hum.WalkSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+		end
+	end
+end
+
+function InputController.RequestSprint(sprintActive: boolean)
+	isSprinting = sprintActive
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = if sprintActive then "Sprint" else "StopSprint",
+		intentId = generateIntentId("spr"),
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "start",
+		isSprinting = sprintActive,
+	})
+	if chargeStartTime == nil and not isSlidingClient then
+		local localPlayer = Players.LocalPlayer
+		local char = localPlayer and localPlayer.Character
+		local curStam = if char then (char:GetAttribute("Stamina") :: number?) or 1.0 else 1.0
+		local recRemaining = if char then (char:GetAttribute("RecoveryRemaining") :: number?) or 0 else 0
+		if recRemaining <= 0 then
+			if sprintActive and curStam > 0.05 then
+				setLocalWalkSpeed(Constants.SPRINT_SPEED)
+				R6AnimationController.PlayAction("sprint")
+			else
+				setLocalWalkSpeed(Constants.WALK_SPEED)
+			end
+		end
+	end
+end
+
+function InputController.RequestDash()
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not char or not hrp or not hum or hum.Health <= 0 then
+		return
+	end
+	if hum.FloorMaterial == Enum.Material.Air or isAirborneLocked or isSlidingClient then
+		return
+	end
+
+	local now = os.clock()
+	-- F-23: Reject Dash during Slide and Slide Recovery window
+	if (now - lastSlideTime) < (Constants.SLIDE_DURATION_SEC + Constants.SLIDE_RECOVERY_SEC) then
+		return
+	end
+	local recRemaining = (char:GetAttribute("RecoveryRemaining") :: number?) or 0
+	if recRemaining > 0 then
+		return
+	end
+
+	if now - lastDashTime < Constants.DASH_COOLDOWN_SEC then
+		return
+	end
+
+	local curStam = (char:GetAttribute("Stamina") :: number?) or 1.0
+	if curStam < Constants.DASH_STAMINA_COST then
+		return
+	end
+
+	lastDashTime = now
+
+	local dashDir: Vector3
+	if hum.MoveDirection.Magnitude > 0.05 then
+		dashDir = hum.MoveDirection.Unit
+	else
+		local cam = Workspace.CurrentCamera
+		local camLook = if cam then cam.CFrame.LookVector else hrp.CFrame.LookVector
+		local flatCam = Vector3.new(camLook.X, 0, camLook.Z)
+		dashDir = if flatCam.Magnitude > 0.05 then flatCam.Unit else hrp.CFrame.LookVector
+	end
+	dashDir = Vector3.new(dashDir.X, 0, dashDir.Z).Unit
+
+	-- Client immediately applies dash velocity burst & WalkSpeed so there is zero input lag
+	speedRestoreToken += 1
+	local myToken = speedRestoreToken
+	hum.WalkSpeed = Constants.DASH_SPEED_BURST
+	hrp.AssemblyLinearVelocity = Vector3.new(
+		dashDir.X * Constants.DASH_SPEED_BURST,
+		hrp.AssemblyLinearVelocity.Y,
+		dashDir.Z * Constants.DASH_SPEED_BURST
+	)
+
+	char:SetAttribute("IsDashing", true)
+	R6ActionPoseController.SetDashing(true, 0.32)
+	R6AnimationController.PlayAction("dash")
+
+	task.delay(Constants.DASH_DURATION_SEC, function()
+		if speedRestoreToken == myToken and hum and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
+			hum.WalkSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+		end
+		if char then
+			char:SetAttribute("IsDashing", false)
+		end
+	end)
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = "Dash",
+		intentId = generateIntentId("dash"),
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "start",
+		aimDirection = dashDir,
+	})
+end
+
+local function commitJumpDirection(char: Model)
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hum or not hrp or hum.Health <= 0 then
+		return
+	end
+	if isSlidingClient then
+		return
+	end
+
+	local moveDir = hum.MoveDirection
+	local flatMove = Vector3.new(moveDir.X, 0, moveDir.Z)
+	local commitDir: Vector3
+	if flatMove.Magnitude > 0.08 then
+		commitDir = flatMove.Unit
+	else
+		local cam = Workspace.CurrentCamera
+		local camLook = if cam then cam.CFrame.LookVector else hrp.CFrame.LookVector
+		local flatLook = Vector3.new(camLook.X, 0, camLook.Z)
+		commitDir = if flatLook.Magnitude > 0.08 then flatLook.Unit else Vector3.new(0, 0, 1)
+	end
+
+	jumpCommitDir = commitDir
+	jumpTakeoffTime = os.clock()
+	isAirborneLocked = true
+	currentFlightState = "takeoff"
+	CameraShiftLockController.SetAirborneJumpLock(true, commitDir)
+	hum.AutoRotate = false
+	hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + commitDir)
+
+	-- Apply horizontal velocity with boosted vertical jump height per owner request
+	local horizSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+	local vertSpeed = math.max(hrp.AssemblyLinearVelocity.Y, Constants.DIRECTIONAL_JUMP_VERTICAL_SPEED)
+	hrp.AssemblyLinearVelocity = Vector3.new(
+		commitDir.X * horizSpeed,
+		vertSpeed,
+		commitDir.Z * horizSpeed
+	)
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = "DirectionalJump",
+		intentId = generateIntentId("jump"),
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "start",
+		aimDirection = commitDir,
+	})
+	R6AnimationController.PlayAction("jump")
+end
+
+function InputController.RequestDirectionalJump()
+	if jumpConsumedUntilRelease then
+		return
+	end
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	if char then
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 and hum.FloorMaterial ~= Enum.Material.Air and not isAirborneLocked and not isSlidingClient then
+			jumpConsumedUntilRelease = true
+			commitJumpDirection(char)
+		end
+	end
 end
 
 function InputController.Init()
@@ -43,20 +651,389 @@ function InputController.Init()
 	end
 	isInitialized = true
 
-	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
-		if gameProcessed then
-			return
+	local localPlayer = Players.LocalPlayer
+
+	local function bindChar(char: Model)
+		if charContextConn then
+			charContextConn:Disconnect()
+			charContextConn = nil
 		end
-		if input.KeyCode == Enum.KeyCode.Q then
-			InputController.RequestBallAction("Pass")
-		elseif input.KeyCode == Enum.KeyCode.E then
-			InputController.RequestBallAction("Shoot")
-		elseif input.KeyCode == Enum.KeyCode.LeftShift then
-			InputController.RequestBallAction("Sprint")
-		elseif input.KeyCode == Enum.KeyCode.F then
-			InputController.RequestParryAttempt()
+		if charDiedConn then
+			charDiedConn:Disconnect()
+			charDiedConn = nil
+		end
+		if charStateConn then
+			charStateConn:Disconnect()
+			charStateConn = nil
+		end
+		if charActionStatusConn then
+			charActionStatusConn:Disconnect()
+			charActionStatusConn = nil
+		end
+		if charResolvedActionConn then
+			charResolvedActionConn:Disconnect()
+			charResolvedActionConn = nil
+		end
+
+		isSprinting = false
+		chargeStartTime = nil
+		currentChargeAction = nil
+		currentChargeContext = nil
+		currentIntentId = nil
+		currentSlideIntentId = nil
+		isAirborneLocked = false
+		isSlidingClient = false
+		isSpacebarHeld = false
+		jumpConsumedUntilRelease = false
+		currentFlightState = "idle"
+		isAcrobaticInFlight = false
+		CameraShiftLockController.SetSlideLock(false)
+		CameraShiftLockController.SetAirborneJumpLock(false)
+		R6ActionPoseController.ResetPoses(char)
+
+		local hum = char:WaitForChild("Humanoid", 5) :: Humanoid?
+		local hrp = char:WaitForChild("HumanoidRootPart", 5) :: BasePart?
+		if hum and hrp then
+			hum.UseJumpPower = true
+			hum.JumpPower = Constants.HIGH_JUMP_POWER or 72.0
+
+			charStateConn = hum.StateChanged:Connect(function(_oldState, newState)
+				if newState == Enum.HumanoidStateType.Jumping then
+					if not jumpConsumedUntilRelease then
+						jumpConsumedUntilRelease = true
+						commitJumpDirection(char)
+					end
+				elseif newState == Enum.HumanoidStateType.Landed then
+					if isAcrobaticInFlight then
+						isAcrobaticInFlight = false
+						R6ActionPoseController.TriggerAirborneRecovery(0.32)
+					elseif isAirborneLocked then
+						R6ActionPoseController.TriggerLandingRecovery(Constants.LANDING_RECOVERY_SEC)
+					end
+					isAirborneLocked = false
+					currentFlightState = "idle"
+					CameraShiftLockController.SetAirborneJumpLock(false)
+					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
+						hum.AutoRotate = true
+					end
+				elseif newState == Enum.HumanoidStateType.Running and isAirborneLocked then
+					isAirborneLocked = false
+					currentFlightState = "idle"
+					CameraShiftLockController.SetAirborneJumpLock(false)
+					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
+						hum.AutoRotate = true
+					end
+				end
+			end)
+
+			charDiedConn = hum.Died:Connect(function()
+				if chargeStartTime ~= nil then
+					InputController.RequestCancelCharge()
+				end
+				if isSlidingClient then
+					cancelSlidePrediction()
+				end
+				isAirborneLocked = false
+				isSpacebarHeld = false
+				jumpConsumedUntilRelease = false
+				currentFlightState = "idle"
+				isAcrobaticInFlight = false
+				CameraShiftLockController.SetSlideLock(false)
+				CameraShiftLockController.SetAirborneJumpLock(false)
+				R6ActionPoseController.ResetPoses(char)
+			end)
+
+			local function onActionOutcomeReconciled()
+				local status = char:GetAttribute("LastActionStatus")
+				local actionIntent = char:GetAttribute("LastActionIntentId")
+				if status == "Accepted" then
+					local resolvedAction = char:GetAttribute("LastResolvedAction") :: string?
+					local resolvedFoot = char:GetAttribute("ResolvedKickFoot") :: string?
+					local resolvedStyle = char:GetAttribute("ResolvedCurveStyle") :: string?
+
+					if resolvedAction and resolvedAction ~= "" then
+						if resolvedAction == "Header" then
+							R6AnimationController.PlayAction("header")
+							R6ActionPoseController.TriggerAction("Header", 0.35, nil, nil, resolvedFoot)
+						elseif resolvedAction == "Volley" then
+							R6AnimationController.PlayAction("volley")
+							R6ActionPoseController.TriggerAction("Volley", 0.44, nil, nil, resolvedFoot)
+						elseif resolvedAction == "BicycleKick" then
+							isAcrobaticInFlight = true
+							R6AnimationController.PlayAction("kick")
+							R6ActionPoseController.TriggerAction("BicycleKick", 0.52, nil, nil, resolvedFoot)
+						elseif resolvedAction == "CurveShoot" then
+							R6AnimationController.PlayAction("kick")
+							R6ActionPoseController.TriggerAction("CurveShoot", 0.28, resolvedStyle, nil, resolvedFoot)
+						end
+					end
+				elseif status == "Rejected" and currentSlideIntentId ~= nil and (actionIntent == currentSlideIntentId or not actionIntent) then
+					cancelSlidePrediction()
+				end
+			end
+
+			charActionStatusConn = char:GetAttributeChangedSignal("LastActionStatus"):Connect(onActionOutcomeReconciled)
+			charResolvedActionConn = char:GetAttributeChangedSignal("LastResolvedAction"):Connect(onActionOutcomeReconciled)
+		end
+
+		charContextConn = char:GetAttributeChangedSignal("ActionContext"):Connect(function()
+			local ctx = char:GetAttribute("ActionContext")
+			-- Context switch while holding charge cancels old intent immediately per §6.3
+			if chargeStartTime ~= nil and currentChargeContext ~= nil and ctx ~= currentChargeContext then
+				InputController.RequestCancelCharge()
+			end
+		end)
+	end
+
+	if localPlayer then
+		if localPlayer.Character then
+			bindChar(localPlayer.Character)
+		end
+		localPlayer.CharacterAdded:Connect(bindChar)
+	end
+
+	-- Window Focus Lost cancels charging and active slide prediction cleanly (F-22)
+	UserInputService.WindowFocusReleased:Connect(function()
+		isSpacebarHeld = false
+		jumpConsumedUntilRelease = false
+		if chargeStartTime ~= nil then
+			InputController.RequestCancelCharge()
+		end
+		if isSlidingClient then
+			cancelSlidePrediction()
 		end
 	end)
+
+	-- Space key direction commitment handled cleanly via StateChanged and JumpRequest
+	UserInputService.JumpRequest:Connect(function()
+		if jumpConsumedUntilRelease or isSpacebarHeld then
+			return
+		end
+		local char = localPlayer and localPlayer.Character
+		if char then
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum and hum.FloorMaterial ~= Enum.Material.Air and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
+				jumpConsumedUntilRelease = true
+				commitJumpDirection(char)
+			end
+		end
+	end)
+
+	-- RenderStepped maintains smooth orientation lock, handles slide expiration, and physical flight lifecycle
+	RunService.RenderStepped:Connect(function()
+		local now = os.clock()
+		if isSlidingClient and now >= slideEndTimeClient then
+			InputController.EndSlide()
+		end
+
+		if isAirborneLocked or isAcrobaticInFlight or (currentFlightState ~= "idle" and currentFlightState ~= "landed") then
+			local char = localPlayer and localPlayer.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hrp and hum and hum.Health > 0 then
+				local timeSinceJump = now - jumpTakeoffTime
+				local vy = hrp.AssemblyLinearVelocity.Y
+
+				-- Flight lifecycle transitions
+				if currentFlightState == "takeoff" then
+					if timeSinceJump >= 0.06 or vy > 1.0 then
+						currentFlightState = "ascent"
+					end
+				elseif currentFlightState == "ascent" then
+					if vy <= 2.0 and vy >= -2.0 then
+						currentFlightState = "apex"
+					elseif vy < -2.0 then
+						currentFlightState = "descent"
+					end
+				elseif currentFlightState == "apex" then
+					if vy < -2.0 then
+						currentFlightState = "descent"
+					end
+				end
+
+				-- Ground contact raycast under feet
+				local rayParams = RaycastParams.new()
+				rayParams.FilterDescendantsInstances = { char }
+				rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+				local rayOrigin = hrp.Position - Vector3.new(0, 1.5, 0)
+				local rayResult = Workspace:Raycast(rayOrigin, Vector3.new(0, -1.7, 0), rayParams)
+				local isGrounded = (rayResult ~= nil) or (hum.FloorMaterial ~= Enum.Material.Air and timeSinceJump > 0.10)
+				local isLanded = (vy <= 1.0) and isGrounded and (timeSinceJump > 0.10)
+
+				if isLanded then
+					currentFlightState = "landed"
+					isAirborneLocked = false
+					CameraShiftLockController.SetAirborneJumpLock(false)
+					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
+						hum.AutoRotate = true
+					end
+
+					if isAcrobaticInFlight then
+						isAcrobaticInFlight = false
+						R6ActionPoseController.TriggerAirborneRecovery(0.32)
+					else
+						R6ActionPoseController.TriggerLandingRecovery(Constants.LANDING_RECOVERY_SEC)
+					end
+					currentFlightState = "idle"
+				else
+					if isAirborneLocked then
+						hum.AutoRotate = false
+						local curPos = hrp.Position
+						hrp.CFrame = CFrame.lookAt(curPos, curPos + jumpCommitDir)
+					end
+				end
+			else
+				isAirborneLocked = false
+				isAcrobaticInFlight = false
+				currentFlightState = "idle"
+				CameraShiftLockController.SetAirborneJumpLock(false)
+			end
+		end
+	end)
+
+	-- Key Press (InputBegan)
+	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
+		if gameProcessed or UserInputService:GetFocusedTextBox() ~= nil then
+			return
+		end
+
+		local ctx = getLocalActionContext()
+
+		if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+			InputController.RequestSprint(true)
+		elseif input.KeyCode == Enum.KeyCode.Q or input.KeyCode == Enum.KeyCode.F then
+			InputController.RequestDash()
+		elseif input.KeyCode == Enum.KeyCode.Space then
+			isSpacebarHeld = true
+			if not jumpConsumedUntilRelease then
+				InputController.RequestDirectionalJump()
+			end
+		elseif input.KeyCode == Enum.KeyCode.E or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			if ctx == "Attacking" then
+				InputController.RequestStartCharge("DirectShoot")
+			elseif ctx == "Defending" then
+				InputController.RequestStartCharge("Slide")
+			end
+		elseif input.KeyCode == Enum.KeyCode.C or input.KeyCode == Enum.KeyCode.G or input.UserInputType == Enum.UserInputType.MouseButton3 then
+			if ctx == "Attacking" then
+				InputController.RequestStartCharge("Pass")
+			end
+		elseif input.KeyCode == Enum.KeyCode.R or input.KeyCode == Enum.KeyCode.V or input.UserInputType == Enum.UserInputType.MouseButton2 then
+			if ctx == "Attacking" then
+				InputController.RequestStartCharge("CurveShoot")
+			end
+		elseif input.KeyCode == Enum.KeyCode.X then
+			local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+			remote:FireServer({
+				action = "ResetBall",
+				intentId = generateIntentId("rst"),
+				characterGeneration = getCharacterGeneration(),
+				contextVersion = getActionContextVersion(),
+				phase = "start",
+			})
+		end
+	end)
+
+	-- Key Release (InputEnded)
+	UserInputService.InputEnded:Connect(function(input: InputObject, gameProcessed: boolean)
+		if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+			InputController.RequestSprint(false)
+		elseif input.KeyCode == Enum.KeyCode.E or input.UserInputType == Enum.UserInputType.MouseButton1 then
+			if chargeStartTime ~= nil then
+				local ctx = getLocalActionContext()
+				local now = os.clock()
+				local elapsed = now - chargeStartTime
+				local finalCharge = if elapsed < 0.12
+					then Constants.CHARGE_MIN_POWER
+					else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+
+				if currentChargeAction == "DirectShoot" then
+					if ctx ~= "Attacking" then
+						InputController.RequestCancelCharge()
+					else
+						local prevIntentId = currentIntentId
+						chargeStartTime = nil
+						currentChargeAction = nil
+						currentChargeContext = nil
+						currentIntentId = nil
+						setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+						InputController.RequestKick("DirectShoot", finalCharge, prevIntentId)
+					end
+				elseif currentChargeAction == "Slide" then
+					if ctx ~= "Defending" then
+						InputController.RequestCancelCharge()
+					else
+						InputController.RequestSlide(finalCharge)
+					end
+				end
+			end
+		elseif input.KeyCode == Enum.KeyCode.C or input.KeyCode == Enum.KeyCode.G or input.UserInputType == Enum.UserInputType.MouseButton3 then
+			if chargeStartTime ~= nil and currentChargeAction == "Pass" then
+				local ctx = getLocalActionContext()
+				if ctx ~= "Attacking" then
+					InputController.RequestCancelCharge()
+				else
+					local now = os.clock()
+					local elapsed = now - chargeStartTime
+					local finalCharge = if elapsed < 0.12
+						then Constants.CHARGE_MIN_POWER
+						else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+					local prevIntentId = currentIntentId
+					chargeStartTime = nil
+					currentChargeAction = nil
+					currentChargeContext = nil
+					currentIntentId = nil
+					setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+					InputController.RequestKick("Pass", finalCharge, prevIntentId)
+				end
+			end
+		elseif input.KeyCode == Enum.KeyCode.R or input.KeyCode == Enum.KeyCode.V or input.UserInputType == Enum.UserInputType.MouseButton2 then
+			if chargeStartTime ~= nil and currentChargeAction == "CurveShoot" then
+				local ctx = getLocalActionContext()
+				if ctx ~= "Attacking" then
+					InputController.RequestCancelCharge()
+				else
+					local now = os.clock()
+					local elapsed = now - chargeStartTime
+					local finalCharge = if elapsed < 0.12
+						then Constants.CHARGE_MIN_POWER
+						else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+					local prevIntentId = currentIntentId
+					chargeStartTime = nil
+					currentChargeAction = nil
+					currentChargeContext = nil
+					currentIntentId = nil
+					setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+					InputController.RequestKick("CurveShoot", finalCharge, prevIntentId)
+				end
+			end
+		elseif input.KeyCode == Enum.KeyCode.Space then
+			isSpacebarHeld = false
+			jumpConsumedUntilRelease = false
+		end
+	end)
+end
+
+function InputController.ReleaseJumpKey()
+	isSpacebarHeld = false
+	jumpConsumedUntilRelease = false
+end
+
+function InputController.IsJumpConsumed(): boolean
+	return jumpConsumedUntilRelease
+end
+
+function InputController.IsSpacebarHeld(): boolean
+	return isSpacebarHeld
+end
+
+function InputController.GetFlightState(): string
+	return currentFlightState
+end
+
+function InputController.IsAcrobaticInFlight(): boolean
+	return isAcrobaticInFlight
 end
 
 return table.freeze(InputController)

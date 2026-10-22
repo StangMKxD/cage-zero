@@ -182,35 +182,60 @@ function TestHarness.Expect(actual: any)
 
 		toBeCloseTo = function(expected: number, tolerance: number?, customMsg: string?)
 			local tol = tolerance or 1e-4
-			if typeof(actual) ~= "number" or math.abs(actual - expected) > tol then
+			if typeof(actual) ~= "number" or actual ~= actual or expected ~= expected or typeof(expected) ~= "number" then
+				local msg = customMsg or string.format("Expected valid number comparison but got actual=%s, expected=%s (NaN or non-number)", tostring(actual), tostring(expected))
+				recordFailure(msg, expected, actual)
+				return
+			end
+			if math.abs(actual - expected) > tol then
 				local msg = customMsg or string.format("Expected %f to be close to %f (tol: %f)", actual, expected, tol)
 				recordFailure(msg, expected, actual)
 			end
 		end,
 
 		toBeGreaterThan = function(expected: number, customMsg: string?)
-			if typeof(actual) ~= "number" or actual <= expected then
+			if typeof(actual) ~= "number" or actual ~= actual or expected ~= expected or typeof(expected) ~= "number" then
+				local msg = customMsg or string.format("Expected valid number comparison but got actual=%s, expected=%s (NaN or non-number)", tostring(actual), tostring(expected))
+				recordFailure(msg, "> " .. tostring(expected), actual)
+				return
+			end
+			if actual <= expected then
 				local msg = customMsg or string.format("Expected %s > %s", tostring(actual), tostring(expected))
 				recordFailure(msg, "> " .. tostring(expected), actual)
 			end
 		end,
 
 		toBeGreaterThanOrEqual = function(expected: number, customMsg: string?)
-			if typeof(actual) ~= "number" or actual < expected then
+			if typeof(actual) ~= "number" or actual ~= actual or expected ~= expected or typeof(expected) ~= "number" then
+				local msg = customMsg or string.format("Expected valid number comparison but got actual=%s, expected=%s (NaN or non-number)", tostring(actual), tostring(expected))
+				recordFailure(msg, ">= " .. tostring(expected), actual)
+				return
+			end
+			if actual < expected then
 				local msg = customMsg or string.format("Expected %s >= %s", tostring(actual), tostring(expected))
 				recordFailure(msg, ">= " .. tostring(expected), actual)
 			end
 		end,
 
 		toBeLessThan = function(expected: number, customMsg: string?)
-			if typeof(actual) ~= "number" or actual >= expected then
+			if typeof(actual) ~= "number" or actual ~= actual or expected ~= expected or typeof(expected) ~= "number" then
+				local msg = customMsg or string.format("Expected valid number comparison but got actual=%s, expected=%s (NaN or non-number)", tostring(actual), tostring(expected))
+				recordFailure(msg, "< " .. tostring(expected), actual)
+				return
+			end
+			if actual >= expected then
 				local msg = customMsg or string.format("Expected %s < %s", tostring(actual), tostring(expected))
 				recordFailure(msg, "< " .. tostring(expected), actual)
 			end
 		end,
 
 		toBeLessThanOrEqual = function(expected: number, customMsg: string?)
-			if typeof(actual) ~= "number" or actual > expected then
+			if typeof(actual) ~= "number" or actual ~= actual or expected ~= expected or typeof(expected) ~= "number" then
+				local msg = customMsg or string.format("Expected valid number comparison but got actual=%s, expected=%s (NaN or non-number)", tostring(actual), tostring(expected))
+				recordFailure(msg, "<= " .. tostring(expected), actual)
+				return
+			end
+			if actual > expected then
 				local msg = customMsg or string.format("Expected %s <= %s", tostring(actual), tostring(expected))
 				recordFailure(msg, "<= " .. tostring(expected), actual)
 			end
@@ -218,12 +243,16 @@ function TestHarness.Expect(actual: any)
 
 		toBeVector3CloseTo = function(expected: Vector3, tolerance: number?, customMsg: string?)
 			local tol = tolerance or 1e-3
-			if typeof(actual) ~= "Vector3" then
-				recordFailure("Actual value is not a Vector3: " .. typeof(actual), expected, actual)
+			if typeof(actual) ~= "Vector3" or typeof(expected) ~= "Vector3" then
+				recordFailure("Actual or expected value is not a Vector3: actual=" .. typeof(actual) .. ", expected=" .. typeof(expected), expected, actual)
+				return
+			end
+			if actual.X ~= actual.X or actual.Y ~= actual.Y or actual.Z ~= actual.Z or expected.X ~= expected.X or expected.Y ~= expected.Y or expected.Z ~= expected.Z then
+				recordFailure("Vector3 contains NaN coordinates: actual=" .. tostring(actual), expected, actual)
 				return
 			end
 			local diff = (actual - expected).Magnitude
-			if diff > tol then
+			if diff > tol or diff ~= diff then
 				local msg = customMsg or string.format(
 					"Expected Vector3(%f, %f, %f) close to (%f, %f, %f), diff = %f > tol %f",
 					actual.X, actual.Y, actual.Z,
@@ -235,8 +264,12 @@ function TestHarness.Expect(actual: any)
 		end,
 
 		toBeWithinBounds = function(minVec: Vector3, maxVec: Vector3, customMsg: string?)
-			if typeof(actual) ~= "Vector3" then
-				recordFailure("Actual value is not a Vector3", minVec, actual)
+			if typeof(actual) ~= "Vector3" or typeof(minVec) ~= "Vector3" or typeof(maxVec) ~= "Vector3" then
+				recordFailure("Actual, min, or max value is not a Vector3", minVec, actual)
+				return
+			end
+			if actual.X ~= actual.X or actual.Y ~= actual.Y or actual.Z ~= actual.Z then
+				recordFailure("Vector3 contains NaN coordinates: " .. tostring(actual), { min = minVec, max = maxVec }, actual)
 				return
 			end
 			local inX = actual.X >= minVec.X and actual.X <= maxVec.X

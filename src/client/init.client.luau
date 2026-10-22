@@ -38,7 +38,38 @@ assert(ControllerModule ~= nil, "[Client.Init] R6AnimationController module time
 
 local R6AnimationController = require(ControllerModule)
 
--- 3. Initialize R6 Animation Controller within remaining budget
+-- 3. Initialize R6 Animation Controller & Action Pose Controller within remaining budget
 remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
 assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before R6AnimationController.Init")
 R6AnimationController.Init(remaining)
+
+local ActionPoseModule = CharacterFolder:FindFirstChild("R6ActionPoseController")
+if ActionPoseModule and ActionPoseModule:IsA("ModuleScript") then
+	local R6ActionPoseController = require(ActionPoseModule)
+	R6ActionPoseController.Init()
+end
+
+-- 4. Initialize CameraShiftLockController, InputController & TrainingHUD (Module 02)
+remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
+if remaining > 0 then
+	local ControllersFolder = script:FindFirstChild("controllers")
+	if ControllersFolder and ControllersFolder:IsA("Folder") then
+		local ShiftLockModule = ControllersFolder:FindFirstChild("CameraShiftLockController")
+		if ShiftLockModule and ShiftLockModule:IsA("ModuleScript") then
+			local CameraShiftLockController = require(ShiftLockModule)
+			CameraShiftLockController.Init()
+		end
+
+		local InputCtrlModule = ControllersFolder:FindFirstChild("InputController")
+		if InputCtrlModule and InputCtrlModule:IsA("ModuleScript") then
+			local InputController = require(InputCtrlModule)
+			InputController.Init()
+		end
+
+		local HudModule = ControllersFolder:FindFirstChild("TrainingHUD")
+		if HudModule and HudModule:IsA("ModuleScript") then
+			local TrainingHUD = require(HudModule)
+			TrainingHUD.Init()
+		end
+	end
+end

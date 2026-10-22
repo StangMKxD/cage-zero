@@ -1,0 +1,70 @@
+================================================================================
+ROBLOX R6 FOOTBALL ANIMATION PACK — IMAGE GENERATION & RENDERING PROMPTS
+================================================================================
+
+1. MASTER CONCEPT & RIG SHEET PROMPT (Used with image_generation tool)
+--------------------------------------------------------------------------------
+Technical character animation reference sheet for a classic blocky Roblox R6 football (soccer) player, strictly adhering to R6 proportions (Torso 2x2x1 studs, Head 2x1x1, rigid rectangular block arms and legs 1x2x1 with zero elbow, knee, wrist, or ankle bends—limbs rotate strictly as solid single-piece blocks at the shoulders and hips). Clean studio technical blueprint background with a crisp ground line (Y=0) and a true-scale soccer ball (radius 1.25 studs). Shows dynamic, grounded football poses: explosive sprint drive, coiled power shot wind-up, mid-air scissor volley, and overhead bicycle kick with rigid blocky limbs, clear weight transfer, and center-of-gravity lines, clean composition, text-free, no labels, no watermarks.
+
+2. DETERMINISTIC 3D FK TECHNICAL SHEET PROMPTS & SPECIFICATIONS (rig-reference.png & A01-A18)
+--------------------------------------------------------------------------------
+Sheet 00 — rig-reference.png:
+  Orthographic 3-view technical blueprint (Front -Z View, Right Side +X View, Back +Z View) + 3/4 Isometric View of Classic Roblox R6 Rig at Scale = 1. Shows exact stud dimensions (Torso 2x2x1, Head 2x1x1, Arms/Legs 1x2x1, HumanoidRootPart 2x2x1 wireframe at World Y=3.0), all 6 Motor6D pivot markers (RootJoint, Neck, Right Shoulder, Left Shoulder, Right Hip, Left Hip), Character Reference Axes (+X Right, +Y Up, -Z Forward, +Z Back), Ground Line Y=0, and true-scale Football (Radius = 1.25 studs, Center Y = 1.25 studs).
+
+Sheet A01 — A01.png (Idle / Ready):
+  Full-body R6 keyframe sequence sheet (5 keyframes, Mode: Loop, Duration: 1.60s). Primary camera: Side (-X View); Auxiliary inset camera: Front (-Z View). Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A02 — A02.png (Walk (Forward & Backward)):
+  Full-body R6 keyframe sequence sheet (5 keyframes, Mode: Loop, Duration: 0.48s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Left 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A03 — A03.png (Sprint):
+  Full-body R6 keyframe sequence sheet (5 keyframes, Mode: Loop, Duration: 0.38s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A04 — A04.png (Dash Burst):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot, Duration: 0.22s). Primary camera: Side (-X View); Auxiliary inset camera: Top-Front 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A05 — A05.png (Shift Lock 8-Way Strafe):
+  Full-body R6 keyframe sequence sheet (5 keyframes, Mode: Loop (2D Directional Blend Space: F, B, L, R, FL, FR, BL, BR), Duration: 0.44s). Primary camera: Front (-Z Shift-Lock View); Auxiliary inset camera: Top-Front 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A06 — A06.png (Directional Jump / Fall):
+  Full-body R6 keyframe sequence sheet (5 keyframes, Mode: One-shot / State-driven Airborne, Duration: 0.72s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A07 — A07.png (Landing Cushion):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot (Additive / Interruptible), Duration: 0.24s). Primary camera: Side (-X View); Auxiliary inset camera: Front (-Z View). Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A08 — A08.png (Header):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot, Duration: 0.48s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Left 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A09 — A09.png (Aerial Block):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot, Duration: 0.52s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A10 — A10.png (Mid-Air Volley):
+  Full-body R6 keyframe sequence sheet (5 keyframes, Mode: One-shot, Duration: 0.56s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A11 — A11.png (Bicycle Kick):
+  Full-body R6 keyframe sequence sheet (6 keyframes, Mode: One-shot, Duration: 0.88s). Primary camera: Side (-X View); Auxiliary inset camera: Back-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A12 — A12.png (Direct Shoot Wind-up / Hold):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: Hold (Enter t=0.00..0.50 [0.18s] -> Freeze at t=0.50 -> Release to A13 or Cancel t=0.50..1.00 [0.16s]), Duration: 0.34s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A13 — A13.png (Direct Shoot Follow-Through):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot, Duration: 0.42s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Left 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A14 — A14.png (Curve Shoot Wind-up / Hold):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: Hold (Enter t=0.00..0.50 [0.20s] -> Freeze at t=0.50 -> Release to A15 [Finesse/Trivela] or Cancel t=0.50..1.00 [0.16s]), Duration: 0.36s). Primary camera: Side (-X View); Auxiliary inset camera: Front (-Z View). Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A15 — A15.png (Curve Shoot Follow-Through (Finesse & Trivela Variants)):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot (2 Visual Variants: 'finesse' and 'trivela'), Duration: 0.44s). Primary camera: Front (-Z View); Auxiliary inset camera: Top-Front 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+  Variant Sheet A15-finesse.png: Full-body 4-keyframe technical sheet for A15 variant 'finesse'.
+  Variant Sheet A15-trivela.png: Full-body 4-keyframe technical sheet for A15 variant 'trivela'.
+
+Sheet A16 — A16.png (Single 3D Pass (Parametric Ground & Lob Pass)):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot (Parametric over passPower ∈ [0,1] and passElevation ∈ [0°, 45°]), Duration: 0.36s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+  Variant Sheet A16-ground.png: Full-body 4-keyframe technical sheet for A16 variant 'ground'.
+  Variant Sheet A16-lob.png: Full-body 4-keyframe technical sheet for A16 variant 'lob'.
+
+Sheet A17 — A17.png (Slide Tackle):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot, Duration: 0.55s). Primary camera: Side (-X View); Auxiliary inset camera: Top-Front 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.
+
+Sheet A18 — A18.png (Slide Recovery (Hit & Miss Visual Variants)):
+  Full-body R6 keyframe sequence sheet (4 keyframes, Mode: One-shot (Shared KF1/KF4 with 'hit' and 'miss' visual mid-phase variants at KF2/KF3), Duration: 0.44s). Primary camera: Side (-X View); Auxiliary inset camera: Front-Right 3/4 View. Displays ground line Y=0, phase t in [0,1], force vector arrows, OBB ground clearance readout, and exact 6-joint angle badges matching R6FootballPoseData.luau.

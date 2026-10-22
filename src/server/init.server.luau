@@ -12,6 +12,7 @@ local Network = require(Shared:WaitForChild("Network"))
 local Services = script:WaitForChild("services")
 local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
 local RigAndCardService = require(Services:WaitForChild("RigAndCardService"))
+local BallService = require(Services:WaitForChild("BallService"))
 
 -- 1. Initialize all 12 RemoteEvents/RemoteFunctions with deadline budget (10s)
 Network.Init(10.0)
@@ -22,3 +23,6 @@ CagePhysicsService.RetireBootstrapFixtures(Workspace)
 
 -- 3. Initialize RigAndCardService (Single Custom R6 lifecycle spawning on Workspace.HexCageArena.CageFloor)
 RigAndCardService.Init()
+
+-- 4. Initialize BallService (Module 02: Server-authoritative match ball, possession, movement & continuous football actions)
+BallService.Init()

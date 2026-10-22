@@ -33,6 +33,66 @@ local currentAnimator: Animator? = nil
 local currentState: string = "idle"
 local isReady = false
 local lastError: string? = nil
+local currentEvaluateLocomotion: ((speed: number) -> ())? = nil
+
+-- Lazy action pose controller resolution & charging dual-guard
+local actionPoseController: any = nil
+
+local function getActionPoseController(): any?
+	if actionPoseController ~= nil then
+		return actionPoseController
+	end
+
+	local parent = script.Parent
+	if parent then
+		local mod = parent:FindFirstChild("R6ActionPoseController")
+		if mod and mod:IsA("ModuleScript") then
+			local ok, res = pcall(require, mod)
+			if ok and res then
+				actionPoseController = res
+				return actionPoseController
+			end
+		end
+	end
+
+	local starterPlayer = game:GetService("StarterPlayer")
+	local spScripts = starterPlayer:FindFirstChild("StarterPlayerScripts")
+	if spScripts then
+		local client = spScripts:FindFirstChild("Client")
+		if client then
+			local charFolder = client:FindFirstChild("character")
+			if charFolder then
+				local mod = charFolder:FindFirstChild("R6ActionPoseController")
+				if mod and mod:IsA("ModuleScript") then
+					local ok, res = pcall(require, mod)
+					if ok and res then
+						actionPoseController = res
+						return actionPoseController
+					end
+				end
+			end
+		end
+	end
+
+	return nil
+end
+
+local function isCharacterCharging(char: Model?): boolean
+	if not char then
+		return false
+	end
+	if char:GetAttribute("IsCharging") == true then
+		return true
+	end
+	local apc = getActionPoseController()
+	if apc and type(apc.IsCharging) == "function" then
+		local ok, result = pcall(apc.IsCharging)
+		if ok and result == true then
+			return true
+		end
+	end
+	return false
+end
 
 -- Lazy / budget-bounded config resolution (F-14)
 local resolvedConfigs: any = nil
@@ -131,6 +191,7 @@ local function cleanupCurrentCharacter(targetGen: number?)
 	currentCharacter = nil
 	currentHumanoid = nil
 	currentAnimator = nil
+	currentEvaluateLocomotion = nil
 end
 
 local function isSetupValid(token: SetupToken): boolean
@@ -157,6 +218,9 @@ local function playState(newState: string, customFade: number?, customSpeed: num
 	if not isReady then
 		return
 	end
+	if isCharacterCharging(currentCharacter) and (newState == "walk" or newState == "sprint" or newState == "run" or newState == "idle") then
+		return
+	end
 	if currentState == newState and activeTracks[newState] and activeTracks[newState].IsPlaying then
 		return
 	end
@@ -174,12 +238,35 @@ local function playState(newState: string, customFade: number?, customSpeed: num
 	-- Fade out other non-action tracks if transitioning between movement/idle
 	for stateName, track in pairs(activeTracks) do
 		if stateName ~= newState and track.IsPlaying then
-			track:Stop(fade)
+			local prof = configs.GetProfile(stateName)
+			local isAction = prof and (prof.priority.Value >= Enum.AnimationPriority.Action.Value) and (stateName ~= "jump")
+			if not isAction then
+				track:Stop(fade)
+			end
 		end
 	end
 
 	targetTrack:Play(fade, targetProfile.weight, speed)
 	currentState = newState
+end
+
+local function playAction(actionName: string, customFade: number?, customSpeed: number?): AnimationTrack?
+	if not isReady then
+		return nil
+	end
+	local track = activeTracks[actionName]
+	if not track then
+		return nil
+	end
+
+	local configs = getRigAnimationConfigs()
+	local profile = configs.GetProfile(actionName)
+	local fade = customFade or (if profile then profile.fadeTime else 0.05)
+	local speed = customSpeed or (if profile then profile.speed else 1.0)
+	local weight = if profile then profile.weight else 1.0
+
+	track:Play(fade, weight, speed)
+	return track
 end
 
 local function setupCharacter(character: Model)
@@ -384,20 +471,42 @@ local function setupCharacter(character: Model)
 			return
 		end
 
+		-- Do not layer walk/run/sprint/idle over charging kick stance!
+		if isCharacterCharging(character) then
+			if activeTracks["walk"] and activeTracks["walk"].IsPlaying then
+				activeTracks["walk"]:Stop(0.08)
+			end
+			if activeTracks["sprint"] and activeTracks["sprint"].IsPlaying then
+				activeTracks["sprint"]:Stop(0.08)
+			end
+			if activeTracks["run"] and activeTracks["run"].IsPlaying then
+				activeTracks["run"]:Stop(0.08)
+			end
+			if activeTracks["idle"] and activeTracks["idle"].IsPlaying then
+				activeTracks["idle"]:Stop(0.08)
+			end
+			return
+		end
+
 		if speed > 0.5 then
-			local targetState = if (speed > 18 and activeTracks["run"] ~= nil) then "run" else "walk"
+			local targetState = "walk"
+			if speed > 22 and activeTracks["sprint"] ~= nil then
+				targetState = "sprint"
+			elseif speed > 18 and activeTracks["run"] ~= nil then
+				targetState = "run"
+			end
 			playState(targetState)
 			local track = activeTracks[targetState]
 			if track and track.IsPlaying then
-				local profile = configs.GetProfile(targetState)
-				local baseSpeed = if profile then profile.speed else 1.0
-				local speedRatio = math.clamp(speed / 16.0, 0.5, 2.0)
-				track:AdjustSpeed(baseSpeed * speedRatio)
+				local targetPlaySpeed = if targetState == "sprint" then 1.85 elseif targetState == "run" then 1.45 else 1.35
+				track:AdjustSpeed(targetPlaySpeed)
 			end
 		else
 			playState("idle")
 		end
 	end
+
+	currentEvaluateLocomotion = evaluateLocomotion
 
 	local runningConn = humanoid.Running:Connect(function(speed: number)
 		evaluateLocomotion(speed)
@@ -455,6 +564,30 @@ local function setupCharacter(character: Model)
 		cleanupCurrentCharacter(thisGen)
 	end)
 	table.insert(activeConnections, diedConn)
+
+	local chargingConn = character:GetAttributeChangedSignal("IsCharging"):Connect(function()
+		if not isReady or not isSetupValid(token) then
+			return
+		end
+		local isChg = isCharacterCharging(character)
+		if isChg then
+			if activeTracks["walk"] and activeTracks["walk"].IsPlaying then
+				activeTracks["walk"]:Stop(0.08)
+			end
+			if activeTracks["sprint"] and activeTracks["sprint"].IsPlaying then
+				activeTracks["sprint"]:Stop(0.08)
+			end
+			if activeTracks["run"] and activeTracks["run"].IsPlaying then
+				activeTracks["run"]:Stop(0.08)
+			end
+			if activeTracks["idle"] and activeTracks["idle"].IsPlaying then
+				activeTracks["idle"]:Stop(0.08)
+			end
+		else
+			evaluateLocomotion(humanoid.MoveDirection.Magnitude > 0 and humanoid.WalkSpeed or 0)
+		end
+	end)
+	table.insert(activeConnections, chargingConn)
 
 	local ancestryConn = character.AncestryChanged:Connect(function(_, parent)
 		if parent == nil then
@@ -524,6 +657,79 @@ end
 
 function R6AnimationController.GetRequiredStates(): { string }
 	return REQUIRED_STATES
+end
+
+function R6AnimationController.PlayAction(actionName: string, customFade: number?, customSpeed: number?): AnimationTrack?
+	local mapped = actionName
+	if actionName == "DirectShoot" or actionName == "CurveShoot" then
+		mapped = "kick"
+	elseif actionName == "Pass" or actionName == "GroundPass" then
+		mapped = "pass"
+	elseif actionName == "Slide" or actionName == "SlideTackle" then
+		mapped = "slide"
+	elseif actionName == "Header" then
+		mapped = "header"
+	elseif actionName == "Volley" then
+		mapped = "volley"
+	elseif actionName == "Dash" then
+		mapped = "dash"
+	elseif actionName == "Sprint" then
+		mapped = "sprint"
+	end
+	return playAction(mapped, customFade, customSpeed)
+end
+
+function R6AnimationController.PlayState(stateName: string, customFade: number?, customSpeed: number?)
+	playState(stateName, customFade, customSpeed)
+end
+
+function R6AnimationController.StopAction(actionName: string, customFade: number?)
+	local track = activeTracks[actionName]
+	if track and track.IsPlaying then
+		track:Stop(customFade or 0.1)
+	end
+end
+
+function R6AnimationController.GetTrack(stateName: string): AnimationTrack?
+	return activeTracks[stateName]
+end
+
+function R6AnimationController.IsActionPlaying(actionName: string): boolean
+	local track = activeTracks[actionName]
+	return track ~= nil and track.IsPlaying
+end
+
+function R6AnimationController.RestoreLocomotion()
+	if not isReady or not currentCharacter or not currentHumanoid then
+		return
+	end
+	if isCharacterCharging(currentCharacter) then
+		return
+	end
+	if currentEvaluateLocomotion then
+		local speed = if currentHumanoid.MoveDirection.Magnitude > 0 then currentHumanoid.WalkSpeed else 0
+		currentEvaluateLocomotion(speed)
+	else
+		playState(if currentHumanoid.MoveDirection.Magnitude > 0 then "walk" else "idle", 0.15)
+	end
+end
+
+function R6AnimationController.IsCharging(): boolean
+	return isCharacterCharging(currentCharacter)
+end
+
+function R6AnimationController.SetChargingSuppressed(suppressed: boolean)
+	if not isReady or not currentCharacter or not currentHumanoid then
+		return
+	end
+	if suppressed then
+		if activeTracks["walk"] and activeTracks["walk"].IsPlaying then activeTracks["walk"]:Stop(0.08) end
+		if activeTracks["sprint"] and activeTracks["sprint"].IsPlaying then activeTracks["sprint"]:Stop(0.08) end
+		if activeTracks["run"] and activeTracks["run"].IsPlaying then activeTracks["run"]:Stop(0.08) end
+		if activeTracks["idle"] and activeTracks["idle"].IsPlaying then activeTracks["idle"]:Stop(0.08) end
+	else
+		R6AnimationController.RestoreLocomotion()
+	end
 end
 
 return table.freeze(R6AnimationController)

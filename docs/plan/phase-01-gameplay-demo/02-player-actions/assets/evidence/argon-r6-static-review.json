@@ -1,0 +1,263 @@
+{
+  "date": "2026-10-22 Asia/Bangkok",
+  "kind": "Independent static mathematical review; no supplied Luau executed; no Roblox application tests",
+  "zipSha256": "c82ef41b057e2a1a0675fd9b2771670a428f3f5720254cee13a8676177b46d49",
+  "reviewedHead": "617f523bb2529a2ec40bfb1107de5f6a32a208ae plus dirty working tree",
+  "method": "Parse literal keyframes. Scale1 rest rig. FK Part0*C0*Transform*C1 inverse. OBB8 corners. 201 phases per profile using linear Transform translation, shortest-path SO3 rotation and linear authored hrpRefY; no smoothing. Native CFrame interpolation parity and live physics NOT VERIFIED.",
+  "staticStoredKeyframes": {
+    "obbMismatchToleranceStuds": 0.003,
+    "obbClaimMismatches": [],
+    "maxContactWorldPointErrorStuds": 0.000811,
+    "count": 104
+  },
+  "profileSummary": [
+    {
+      "id": "A01",
+      "mode": "Loop",
+      "duration": 1.6,
+      "frames": 5,
+      "variants": []
+    },
+    {
+      "id": "A02",
+      "mode": "Loop",
+      "duration": 0.48,
+      "frames": 5,
+      "variants": []
+    },
+    {
+      "id": "A03",
+      "mode": "Loop",
+      "duration": 0.38,
+      "frames": 5,
+      "variants": []
+    },
+    {
+      "id": "A04",
+      "mode": "OneShot",
+      "duration": 0.22,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A05",
+      "mode": "Loop",
+      "duration": 0.44,
+      "frames": 5,
+      "variants": []
+    },
+    {
+      "id": "A06",
+      "mode": "StateAirborne",
+      "duration": 0.72,
+      "frames": 5,
+      "variants": []
+    },
+    {
+      "id": "A07",
+      "mode": "OneShot",
+      "duration": 0.24,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A08",
+      "mode": "OneShot",
+      "duration": 0.48,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A09",
+      "mode": "OneShot",
+      "duration": 0.52,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A10",
+      "mode": "OneShot",
+      "duration": 0.56,
+      "frames": 5,
+      "variants": []
+    },
+    {
+      "id": "A11",
+      "mode": "OneShot",
+      "duration": 0.88,
+      "frames": 6,
+      "variants": []
+    },
+    {
+      "id": "A12",
+      "mode": "Hold",
+      "duration": 0.34,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A13",
+      "mode": "OneShot",
+      "duration": 0.42,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A14",
+      "mode": "Hold",
+      "duration": 0.36,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A15",
+      "mode": "OneShot",
+      "duration": 0.44,
+      "frames": 4,
+      "variants": [
+        "finesse",
+        "trivela"
+      ]
+    },
+    {
+      "id": "A16",
+      "mode": "OneShot",
+      "duration": 0.36,
+      "frames": 4,
+      "variants": [
+        "ground",
+        "lob"
+      ]
+    },
+    {
+      "id": "A17",
+      "mode": "OneShot",
+      "duration": 0.55,
+      "frames": 4,
+      "variants": []
+    },
+    {
+      "id": "A18",
+      "mode": "OneShot",
+      "duration": 0.44,
+      "frames": 4,
+      "variants": [
+        "hit",
+        "miss"
+      ]
+    }
+  ],
+  "interpolationModelCounterexamples": [
+    {
+      "id": "A02",
+      "variant": "base",
+      "minInterpolatedY": -0.02195,
+      "phase": 0.14,
+      "part": "Left Leg"
+    },
+    {
+      "id": "A03",
+      "variant": "base",
+      "minInterpolatedY": -0.02392,
+      "phase": 0.04,
+      "part": "Right Leg"
+    },
+    {
+      "id": "A04",
+      "variant": "base",
+      "minInterpolatedY": -0.05299,
+      "phase": 0.95,
+      "part": "Left Leg"
+    },
+    {
+      "id": "A05",
+      "variant": "base",
+      "minInterpolatedY": -0.03906,
+      "phase": 0.62,
+      "part": "Right Leg"
+    },
+    {
+      "id": "A11",
+      "variant": "base",
+      "minInterpolatedY": -0.43978,
+      "phase": 0.935,
+      "part": "Left Leg"
+    },
+    {
+      "id": "A14",
+      "variant": "base",
+      "minInterpolatedY": -0.04273,
+      "phase": 0.885,
+      "part": "Right Leg"
+    },
+    {
+      "id": "A15",
+      "variant": "trivela",
+      "minInterpolatedY": -0.27509,
+      "phase": 0.85,
+      "part": "Right Leg"
+    },
+    {
+      "id": "A16",
+      "variant": "base",
+      "minInterpolatedY": -0.07899,
+      "phase": 0.1,
+      "part": "Right Leg"
+    },
+    {
+      "id": "A16",
+      "variant": "ground",
+      "minInterpolatedY": -0.07899,
+      "phase": 0.1,
+      "part": "Right Leg"
+    },
+    {
+      "id": "A16",
+      "variant": "lob",
+      "minInterpolatedY": -0.03371,
+      "phase": 0.11,
+      "part": "Right Leg"
+    },
+    {
+      "id": "A17",
+      "variant": "base",
+      "minInterpolatedY": -0.38473,
+      "phase": 0.18,
+      "part": "Left Leg"
+    },
+    {
+      "id": "A18",
+      "variant": "base",
+      "minInterpolatedY": -0.24866,
+      "phase": 0.145,
+      "part": "Left Leg"
+    },
+    {
+      "id": "A18",
+      "variant": "hit",
+      "minInterpolatedY": -0.24866,
+      "phase": 0.145,
+      "part": "Left Leg"
+    },
+    {
+      "id": "A18",
+      "variant": "miss",
+      "minInterpolatedY": -0.42462,
+      "phase": 0.24,
+      "part": "Right Leg"
+    }
+  ],
+  "a05IndependentFk": {
+    "hrpY": 3,
+    "leftStrafeMinY": -0.252314,
+    "note": "Runtime synthesized target formula at settled directions, not authored sheet profile; no smoothing",
+    "rightStrafeMinY": -0.223653,
+    "phase": 0
+  },
+  "limits": [
+    "Static model measurements are not engine/runtime results",
+    "No application tests or Studio Play run by Codex",
+    "Keyframe clearance does not verify final smoothed interpolation",
+    "Visual feel and Owner acceptance remain incomplete"
+  ]
+}

@@ -219,5 +219,103 @@ export type ReboundStepResult = {
 	appliedRampLift: boolean,
 }
 
+-- Module 02: 02-player-actions (Continuous Football, Possession, Actions & Movement)
+export type TeamSide = "North" | "South"
+export type TeamActionContext = "Attacking" | "Defending"
+
+export type KickActionType =
+	| "DirectShoot"
+	| "CurveShoot"
+	| "Pass"
+	| "GroundPass"
+	| "Header"
+	| "Volley"
+	| "BicycleKick"
+	| "AcrobaticFinishing"
+
+export type ChargeActionType = "DirectShoot" | "CurveShoot" | "Pass" | "Slide"
+
+export type ActionIntentName =
+	| "Sprint"
+	| "Dash"
+	| "DirectionalJump"
+	| "StartCharge"
+	| "CancelCharge"
+	| "DirectShoot"
+	| "CurveShoot"
+	| "Pass"
+	| "GroundPass"
+	| "Slide"
+	| "ResetBall"
+	| "Volley"
+	| "BicycleKick"
+
+export type ActionStatus = "Accepted" | "Rejected" | "Cancelled"
+
+export type ActionRejectReason =
+	| "InvalidPayload"
+	| "StaleIntent"
+	| "WrongContext"
+	| "NotAlive"
+	| "OutOfReach"
+	| "InsufficientStamina"
+	| "Cooldown"
+	| "Recovery"
+	| "RateLimited"
+	| "RemovedAction"
+
+export type ActionIntentPayload = {
+	action: ActionIntentName,
+	intentId: string?,
+	characterGeneration: number?,
+	contextVersion: number?,
+	phase: ("start" | "release" | "cancel")?,
+	chargeAction: ChargeActionType?,
+	aimDirection: Vector3?,
+	isSprinting: boolean?,
+	charge: number?,
+}
+
+export type BallPossessionState =
+	| "Free"
+	| "Possessed"
+	| "InFlight"
+
+export type BallSnapshot = {
+	ballId: string,
+	position: Vector3,
+	velocity: Vector3,
+	state: BallPossessionState,
+	possessorUserId: number?,
+	lastPossessingTeam: TeamSide?,
+	lastKickerUserId: number?,
+	curveImpulse: Vector3?,
+	inFlightAction: KickActionType?,
+}
+
+export type PlayerMovementSnapshot = {
+	userId: number,
+	teamSide: TeamSide,
+	stamina: number,
+	isSprinting: boolean,
+	isDashing: boolean,
+	dashCooldownRemaining: number,
+	isAirborne: boolean,
+	jumpLockedVelocity: Vector3?,
+	actionContext: TeamActionContext,
+	isCharging: boolean?,
+	chargePower: number?,
+	isSliding: boolean?,
+	slideCooldownRemaining: number?,
+	recoveryRemaining: number?,
+	characterGeneration: number?,
+	contextVersion: number?,
+	chargeAction: ChargeActionType?,
+	lastResolvedAction: string?,
+	actionSequence: number?,
+	resolvedKickFoot: ("Left" | "Right")?,
+	resolvedCurveStyle: ("Finesse" | "Trivela")?,
+}
+
 local Types = {}
 return table.freeze(Types)

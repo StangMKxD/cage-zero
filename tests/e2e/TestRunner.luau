@@ -17,8 +17,40 @@ local Tier1 = require(script.Parent:WaitForChild("Tier1_FeatureCoverage"))
 local Tier2 = require(script.Parent:WaitForChild("Tier2_BoundaryCornerCases"))
 local Tier3 = require(script.Parent:WaitForChild("Tier3_CrossFeatureCombos"))
 local Tier4 = require(script.Parent:WaitForChild("Tier4_RealWorldRallyScenarios"))
+local PlayerActions = require(script.Parent:WaitForChild("Tier1_PlayerActions"))
 
 local TestRunner = {}
+
+function TestRunner.RunPlayerActions(): any
+	TestHarness.Reset()
+	local startTime = os.clock()
+
+	print("================================================================================")
+	print("                 CAGE ZERO E2E: MODULE 02 PLAYER ACTIONS                        ")
+	print("================================================================================")
+	PlayerActions(TestHarness)
+
+	local durationMs = (os.clock() - startTime) * 1000.0
+	local summary = TestHarness.GetSummary(durationMs)
+
+	print("\n================================================================================")
+	print(string.format("PLAYER ACTIONS STATUS: %s", summary.status))
+	print(string.format("Total Tests:      %d", summary.totalTests))
+	print(string.format("Passed Tests:     %d", summary.passedTests))
+	print(string.format("Failed Tests:     %d", summary.failedTests))
+	print(string.format("Total Assertions: %d", summary.totalAssertions))
+	print(string.format("Execution Time:   %.2f ms", summary.durationMs))
+	print("================================================================================")
+
+	if summary.failedTests > 0 then
+		print("\nFAILED TEST DETAILS:")
+		for i, failure in ipairs(summary.failures) do
+			print(string.format("[%d] %s > %s: %s", i, failure.suiteName, failure.testName, failure.message))
+		end
+	end
+
+	return summary
+end
 
 function TestRunner.RunAll(): any
 	TestHarness.Reset()
