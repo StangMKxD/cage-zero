@@ -36,6 +36,10 @@ Ownerdelta2026-10-22: ใช้ArgonR6Packเป็นต้นแบบvisual�
 - fix-00240/40/243assertionsเป็นAGYreportedEdit; freshLivePlay/visual/01regressionหลังportยังไม่ยืนยัน ไม่ใช้fix-001ผลเก่าแทน
 - fix-001/fix-002และreview-001/review-002คงhistorical ห้ามแก้คำตัดสินย้อนหลัง
 
+## Owner delta — right-foot dominant / fix-011
+
+- [x] T-12: Implement HANDOFF §18: Plan02 right-foot character; A/left Finesse inside right foot, D/right Trivela outside right foot. Remove ball-side auto-left selection from active preview/server/animation flow. Verify left/center/right ball positions and movement intent with camera/yaw variations; preserve §17 aiming and airborne Volley. Completed in fix-011; Plan02 remains OPEN.
+
 ## Protection
 - ปกป้องdirtyworkingtreeทั้งหมด; ไม่มีcommit/reset/revertอัตโนมัติ 00 OPEN / PAUSED_BY_OWNER,01 OPEN / PENDING_TECHNICAL_REVIEW
 - Sandbox/reference/rig00/physics01/Network/.gitignore/notes01ที่encodingเสียยังread-only

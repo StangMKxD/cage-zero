@@ -805,15 +805,15 @@ function PlayerActionPoseConfigs.ResolveCurveShot(
 		style = "Finesse"
 	end
 
-	-- Foot is strictly decided by ball side relative to character
-	local foot: "Right" | "Left" = if ballSide == "Left" then "Left" else "Right"
+	-- Owner Delta §18: Plan02 character is right-foot dominant.
+	-- A / left = Finesse inside of RIGHT foot; D / right = Trivela outside of RIGHT foot; Neutral = Finesse inside of RIGHT foot.
+	-- Ball position (left/center/right) does NOT change dominant foot or style, and does not mirror the right-foot pose.
+	-- ballSide is retained purely as useful contact metadata.
+	local foot: "Right" | "Left" = "Right"
 
 	local speed = if style == "Finesse" then Constants.SHOOT_FINESSE_SPEED else Constants.SHOOT_TRIVELA_SPEED
 	local upwardBias = if style == "Finesse" then 0.20 else 0.18
 	local spinY = if style == "Finesse" then Constants.SHOOT_FINESSE_SPIN_Y else Constants.SHOOT_TRIVELA_SPIN_Y
-	if foot == "Left" then
-		spinY = -spinY
-	end
 	local magnus = if style == "Finesse" then 1.95 else 2.05
 
 	return {
