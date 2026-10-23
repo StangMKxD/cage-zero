@@ -14,6 +14,8 @@ $testFiles = @(
     "Tier2_BoundaryCornerCases.luau",
     "Tier3_CrossFeatureCombos.luau",
     "Tier4_RealWorldRallyScenarios.luau",
+    "Tier1_PlayerActions.luau",
+    "Tier1_AirLeanPhysics.luau",
     "TestRunner.luau",
     "BundledTestRunner.luau"
 )

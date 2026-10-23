@@ -1294,42 +1294,49 @@ local function runPlayerActionsTests(TestHarness: any)
 			BallService.SetPlayerTeamSide(1052, "North")
 			BallService.SetPossessor(1052)
 
-			-- Case A: Right foot, Finesse (ball at X = +1.5, aiming left)
+			-- Case A: Right foot, Finesse (ball at X = +1.5, left side intent A)
 			BallService.SetBallPositionAndVelocity(Vector3.new(1.5, 1.25, 0), Vector3.zero)
 			local aimLeft = Vector3.new(-0.6, 0, -1).Unit
-			local okFinesseR = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimLeft, 0.75, "intent_fin_r")
+			local okFinesseR = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimLeft, 0.75, "intent_fin_r", "Left")
 			Expect(okFinesseR).toBeTrue()
 			Expect(charC:GetAttribute("LastResolvedAction")).toBe("CurveShoot")
 			Expect(charC:GetAttribute("ResolvedKickFoot")).toBe("Right")
 			Expect(charC:GetAttribute("ResolvedCurveStyle")).toBe("Finesse")
 
-			-- Case B: Right foot, Trivela (ball at X = +1.5, aiming right)
+			-- Case B: Right foot, Trivela (ball at X = +1.5, right side intent D)
 			BallService.SetPossessor(1052)
 			BallService.SetBallPositionAndVelocity(Vector3.new(1.5, 1.25, 0), Vector3.zero)
 			local aimRight = Vector3.new(0.6, 0, -1).Unit
-			local okTrivelaR = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimRight, 0.75, "intent_triv_r")
+			local okTrivelaR = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimRight, 0.75, "intent_triv_r", "Right")
 			Expect(okTrivelaR).toBeTrue()
 			Expect(charC:GetAttribute("LastResolvedAction")).toBe("CurveShoot")
 			Expect(charC:GetAttribute("ResolvedKickFoot")).toBe("Right")
 			Expect(charC:GetAttribute("ResolvedCurveStyle")).toBe("Trivela")
 
-			-- Case C: Left foot, Finesse (ball at X = -1.5, aiming right)
+			-- Case C: Left foot, Finesse (ball at X = -1.5, left side intent A)
 			BallService.SetPossessor(1052)
 			BallService.SetBallPositionAndVelocity(Vector3.new(-1.5, 1.25, 0), Vector3.zero)
-			local okFinesseL = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimRight, 0.75, "intent_fin_l")
+			local okFinesseL = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimRight, 0.75, "intent_fin_l", "Left")
 			Expect(okFinesseL).toBeTrue()
 			Expect(charC:GetAttribute("LastResolvedAction")).toBe("CurveShoot")
 			Expect(charC:GetAttribute("ResolvedKickFoot")).toBe("Left")
 			Expect(charC:GetAttribute("ResolvedCurveStyle")).toBe("Finesse")
 
-			-- Case D: Left foot, Trivela (ball at X = -1.5, aiming left)
+			-- Case D: Left foot, Trivela (ball at X = -1.5, right side intent D)
 			BallService.SetPossessor(1052)
 			BallService.SetBallPositionAndVelocity(Vector3.new(-1.5, 1.25, 0), Vector3.zero)
-			local okTrivelaL = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimLeft, 0.75, "intent_triv_l")
+			local okTrivelaL = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimLeft, 0.75, "intent_triv_l", "Right")
 			Expect(okTrivelaL).toBeTrue()
 			Expect(charC:GetAttribute("LastResolvedAction")).toBe("CurveShoot")
 			Expect(charC:GetAttribute("ResolvedKickFoot")).toBe("Left")
 			Expect(charC:GetAttribute("ResolvedCurveStyle")).toBe("Trivela")
+
+			-- Case E: Neutral side intent defaults to Finesse regardless of aim or ball position
+			BallService.SetPossessor(1052)
+			BallService.SetBallPositionAndVelocity(Vector3.new(1.5, 1.25, 0), Vector3.zero)
+			local okNeutral = BallService.ExecuteKick(pCurver :: any, "CurveShoot", aimLeft, 0.75, "intent_neutral", "Neutral")
+			Expect(okNeutral).toBeTrue()
+			Expect(charC:GetAttribute("ResolvedCurveStyle")).toBe("Finesse")
 		end)
 
 		-- TC-P02-48: Acrobatic Bicycle Kick Resolution and Flight Lifecycle (F-28 & F-29)
@@ -1348,12 +1355,12 @@ local function runPlayerActionsTests(TestHarness: any)
 			rootA.CFrame = CFrame.lookAt(Vector3.new(0, 4.2, 0), Vector3.new(0, 4.2, 1.0))
 			BallService.SetBallPositionAndVelocity(Vector3.new(0, 4.5, 1.0), Vector3.zero)
 
-			-- 3. Airborne kicker executes BicycleKick
+			-- 3. Airborne kicker executes kick (resolves to Volley under §12.2 & §12.4)
 			local okBicycle = BallService.ExecuteKick(pAcro :: any, "BicycleKick", Vector3.new(0, 0, 1), 0.85, "intent_bike_01")
 			Expect(okBicycle).toBeTrue("Bicycle kick execution must succeed")
 			local stBike = BallService.GetBallState()
-			Expect(stBike.inFlightAction).toBe("BicycleKick")
-			Expect(charA:GetAttribute("LastResolvedAction")).toBe("BicycleKick")
+			Expect(stBike.inFlightAction).toBe("Volley")
+			Expect(charA:GetAttribute("LastResolvedAction")).toBe("Volley")
 
 			-- 4. Verify Bicycle Kick inverted pose properties
 			local bikePose = PlayerActionPoseConfigs.GetFollowThroughPose("BicycleKick", 0.5)
@@ -1481,6 +1488,157 @@ local function runPlayerActionsTests(TestHarness: any)
 			Expect(walkPose).toNotBeNil()
 			Expect(sprintPose).toNotBeNil()
 			Expect(strafePose).toNotBeNil()
+		end)
+
+		-- TC-P02-52: Single Physical Key Bindings and Removed Aliases (§12.2)
+		SafeTest("TC-P02-52_SinglePhysicalKeyBindingsAndRemovedAliases", function()
+			local dummyGui = Instance.new("ScreenGui")
+			dummyGui.Name = "TestGuiParent"
+			dummyGui.Parent = Workspace
+			local screenGui = TrainingHUD.CreateScreenGui(dummyGui)
+			Expect(screenGui).toNotBeNil("TrainingHUD must create ScreenGui cleanly")
+
+			local controlsLabel = dummyGui:FindFirstChild("ControlsLabel", true)
+			Expect(controlsLabel).toNotBeNil("ControlsLabel must exist in HUDContainer")
+			if controlsLabel and controlsLabel:IsA("TextLabel") then
+				local guideText = controlsLabel.Text
+				Expect(string.find(guideText, "LMB") ~= nil).toBeTrue("LMB must be in control guide")
+				Expect(string.find(guideText, "RMB") ~= nil).toBeTrue("RMB must be in control guide")
+				Expect(string.find(guideText, "MMB") ~= nil).toBeTrue("MMB must be in control guide")
+				Expect(string.find(guideText, "Q") ~= nil).toBeTrue("Q must be in control guide")
+				Expect(string.find(guideText, "Shift") ~= nil).toBeTrue("Shift must be in control guide")
+				Expect(string.find(guideText, "Space") ~= nil).toBeTrue("Space must be in control guide")
+				Expect(string.find(guideText, "Alt") ~= nil).toBeTrue("Alt must be in control guide")
+				Expect(string.find(guideText, "X") ~= nil).toBeTrue("X must be in control guide")
+
+				local forbiddenAliases = { " E ", " R ", " V ", " C ", " G ", " F ", "RightShift", " L ", "RightAlt" }
+				for _, alias in ipairs(forbiddenAliases) do
+					Expect(string.find(guideText, alias)).toBeNil(string.format("Removed alias '%s' must not appear in control guide", alias))
+				end
+			end
+			dummyGui:Destroy()
+		end)
+
+		-- TC-P02-53: Air LMB DirectShoot and Air RMB Volley Mapping (§12.4)
+		SafeTest("TC-P02-53_AirLMBDirectShootAndAirRMBVolleyMapping", function()
+			local pMock, charM, rootM = createMockPlayer(1060, "AirActionTester", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1060, "North")
+
+			-- 1. Ground LMB -> DirectShoot
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1060)
+			local okGroundLMB = BallService.ExecuteKick(pMock :: any, "DirectShoot", Vector3.new(0, 0, -1), 0.7, "intent_g_dir")
+			Expect(okGroundLMB).toBeTrue()
+			Expect(charM:GetAttribute("LastResolvedAction")).toBe("DirectShoot")
+			local stG = BallService.GetBallState()
+			Expect(stG.inFlightAction).toBe("DirectShoot")
+
+			-- 2. Ground RMB -> CurveShoot
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1060)
+			local okGroundRMB = BallService.ExecuteKick(pMock :: any, "CurveShoot", Vector3.new(0, 0, -1), 0.7, "intent_g_curv", "Left")
+			Expect(okGroundRMB).toBeTrue()
+			Expect(charM:GetAttribute("LastResolvedAction")).toBe("CurveShoot")
+			local stGC = BallService.GetBallState()
+			Expect(stGC.inFlightAction).toBe("CurveShoot")
+
+			-- 3. Transition to Airborne: jump up
+			local okJump = BallService.ExecuteDirectionalJump(pMock :: any, Vector3.new(0, 0, -1))
+			Expect(okJump).toBeTrue("Directional jump must succeed")
+			rootM.CFrame = CFrame.new(0, 5.0, 0)
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 5.2, -1.0), Vector3.zero)
+
+			-- 4. Air LMB -> DirectShoot (must NOT be converted to Volley or Header!)
+			local okAirLMB = BallService.ExecuteKick(pMock :: any, "DirectShoot", Vector3.new(0, 0, -1), 0.7, "intent_air_dir")
+			Expect(okAirLMB).toBeTrue()
+			Expect(charM:GetAttribute("LastResolvedAction")).toBe("DirectShoot")
+			local stAirDir = BallService.GetBallState()
+			Expect(stAirDir.inFlightAction).toBe("DirectShoot", "Air LMB must resolve to DirectShoot, not Volley/Header")
+
+			-- 5. Air RMB -> Volley (must NOT be converted to BicycleKick or Header!)
+			rootM.CFrame = CFrame.new(0, 5.0, 0)
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 5.2, -1.0), Vector3.zero)
+			local okAirRMB = BallService.ExecuteKick(pMock :: any, "Volley", Vector3.new(0, 0, -1), 0.7, "intent_air_vol")
+			Expect(okAirRMB).toBeTrue()
+			Expect(charM:GetAttribute("LastResolvedAction")).toBe("Volley")
+			local stAirVol = BallService.GetBallState()
+			Expect(stAirVol.inFlightAction).toBe("Volley", "Air RMB must resolve to Volley, not BicycleKick/Header")
+		end)
+
+		-- TC-P02-54: Legal Charge Conversion Across Ground and Air Boundary (§12.4)
+		SafeTest("TC-P02-54_LegalChargeConversionAcrossGroundAndAirBoundary", function()
+			local pMock, charM, rootM = createMockPlayer(1061, "ChargeCrossingPlayer", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1061, "North")
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, 0), Vector3.zero)
+			BallService.SetPossessor(1061)
+
+			-- 1. Start charging RMB on ground (chargeAction = "CurveShoot")
+			BallService.HandleActionRequest(pMock :: any, {
+				action = "StartCharge",
+				chargeAction = "CurveShoot",
+				intentId = "intent_cross_rmb_01",
+				characterGeneration = 1,
+				contextVersion = 1,
+			})
+			local snapG = BallService.GetPlayerMovementSnapshot(1061)
+			Expect(snapG.isCharging).toBeTrue()
+			Expect(snapG.chargeAction).toBe("CurveShoot")
+
+			-- 2. Character launches into air while holding RMB
+			local okJump = BallService.ExecuteDirectionalJump(pMock :: any, Vector3.new(0, 0, -1))
+			Expect(okJump).toBeTrue("Jump must succeed")
+			rootM.CFrame = CFrame.new(0, 5.0, 0)
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 5.2, -1.0), Vector3.zero)
+
+			-- 3. Release in air with action = "Volley" under same intentId:
+			-- Must be legally accepted as charge conversion CurveShoot <-> Volley without StaleIntent rejection!
+			BallService.HandleActionRequest(pMock :: any, {
+				action = "Volley",
+				phase = "release",
+				intentId = "intent_cross_rmb_01",
+				characterGeneration = 1,
+				contextVersion = 1,
+				aimDirection = Vector3.new(0, 0, -1),
+			})
+
+			Expect(charM:GetAttribute("LastActionStatus")).toBe("Accepted", "Cross-boundary RMB charge release must be Accepted")
+			Expect(charM:GetAttribute("LastResolvedAction")).toBe("Volley", "RMB charge crossing to air must resolve to Volley")
+
+			-- 4. Verify LMB charge crossing: Land on ground and start charging DirectShoot
+			task.wait(0.20)
+			rootM.CFrame = CFrame.new(0, 1.5, 0)
+			BallService.StepPhysics(0.05)
+			local snapLand = BallService.GetPlayerMovementSnapshot(1061)
+			Expect(snapLand.isAirborne).toBeFalse("Player must land on ground")
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, 0), Vector3.zero)
+			BallService.SetPossessor(1061)
+
+			BallService.HandleActionRequest(pMock :: any, {
+				action = "StartCharge",
+				chargeAction = "DirectShoot",
+				intentId = "intent_cross_lmb_01",
+				characterGeneration = snapLand.characterGeneration,
+				contextVersion = snapLand.contextVersion,
+			})
+
+			-- Launch into air
+			local okJump2 = BallService.ExecuteDirectionalJump(pMock :: any, Vector3.new(0, 0, -1))
+			Expect(okJump2).toBeTrue("Second jump must succeed")
+			rootM.CFrame = CFrame.new(0, 5.0, 0)
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 5.2, -1.0), Vector3.zero)
+
+			-- Release in air with action = "DirectShoot"
+			BallService.HandleActionRequest(pMock :: any, {
+				action = "DirectShoot",
+				phase = "release",
+				intentId = "intent_cross_lmb_01",
+				characterGeneration = snapLand.characterGeneration,
+				contextVersion = snapLand.contextVersion,
+				aimDirection = Vector3.new(0, 0, -1),
+			})
+
+			Expect(charM:GetAttribute("LastActionStatus")).toBe("Accepted")
+			Expect(charM:GetAttribute("LastResolvedAction")).toBe("DirectShoot")
 		end)
 	end)
 

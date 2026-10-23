@@ -1,5 +1,7 @@
 # 02-player-actions — บอล การเคลื่อนที่ และปุ่มตามทีม
 
+> **Owner delta 2026-10-23 (latest):** Plan02ยังOPEN; [HANDOFF§12](assets/HANDOFF.md)กำหนดหนึ่งปุ่มต่อaction,groundLMBยิงตรง/RMBปั่น,airLMBยิงตรง/RMBVolleyแทนHeader/Bicyclefallback;A/ซ้ายเลือกFinesse,D/ขวาเลือกTrivela. เพิ่มairbodyleanแบบWASDโดยคงyaw/ทิศบินเดิมและให้Serverคำนวณผลต่อballtrajectory/spinจากlockedfacing+aimpitch+lean. นี่เป็นscopeเพิ่มที่Ownerสั่งรอบนี้ ไม่ใช่ผลผ่านหรือของที่มีในSandboxอยู่แล้ว.
+
 > **Owner visual delta 2026-10-22:** ใช้ Argon R6 Football Animation Pack เป็นต้นแบบรูปลักษณ์ใหม่ของ A01–A18 ตาม [HANDOFF §8](assets/HANDOFF.md#8-owner-delta--argon-r6-football-animation-pack--2026-10-22) และ [review-003](assets/review-003.md). แทนเฉพาะการบังคับรูปลักษณ์จาก Sandbox ที่ขัดกับแบบใหม่ คง R6 schema/gameplay/physics/keymap/Shift Lock เดิม; ง้างค้างไม่สับขา. ZIP เป็น reference ไม่ใช่โค้ดพร้อมติดตั้งหรือผลผ่าน Runtime; ส่ง fix-004 โดยไม่ปิด findings เดิมหรือขยาย scope จาก preview timings.
 
 - **State:** IN_PROGRESS / CHANGES_REQUESTED — OWNER_VISUAL_REJECTED; [สถานะงาน](tasks.md)

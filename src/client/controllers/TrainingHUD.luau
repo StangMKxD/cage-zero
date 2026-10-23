@@ -136,7 +136,7 @@ function TrainingHUD.CreateScreenGui(targetParent: Instance): ScreenGui
 	controlsLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
 	controlsLabel.Font = Enum.Font.Gotham
 	controlsLabel.TextSize = 10
-	controlsLabel.Text = "[Shift] Sprint   [Q/F] Dash   [Space] Jump   [E/Click] Shoot/Slide   [R/RMB] Curve   [C/MMB] Pass   [L/Alt] Shift Lock   [X] Reset   [H] Codex"
+	controlsLabel.Text = "[Shift] Sprint   [Q] Dash   [Space] Jump   [LMB] Shoot/Slide   [RMB] Curve/Volley   [MMB] Pass   [Alt] Shift Lock   [X] Reset   [H] Codex"
 	controlsLabel.Parent = container
 
 	-- 2. Shift Lock Center Reticle
@@ -318,12 +318,12 @@ function TrainingHUD.CreateScreenGui(targetParent: Instance): ScreenGui
 	c1Title.Parent = col1
 
 	local c1Items = {
-		{ key = "W, A, S, D", desc = "เดินเคลื่อนที่ 4 ทิศทาง (Walk 18)" },
+		{ key = "W, A, S, D", desc = "เดินเคลื่อนที่พื้น (Walk 20) / เอนตัวกลางอากาศ (Air Lean)" },
 		{ key = "Left Shift", desc = "วิ่งสปรินต์เร็ว (Sprint 32, สตามินา 9%/s)" },
 		{ key = "Space", desc = "กระโดดพุ่งตัว (Directional Jump ล็อกทิศ 0.18s)" },
-		{ key = "Q / F", desc = "แดชพุ่งตัวเร็ว (Dash Burst 0.18s, CD 1.2s)" },
-		{ key = "E / LMB", desc = "สไลด์สกัดบอล [ฝ่ายรับ] (Slide Tackle 94)" },
-		{ key = "ค้างยิง (Hold)", desc = "ก้าวเหยาะตรึงท่ายิง ขาไม่แกว่งสลับไปมา" },
+		{ key = "Q", desc = "แดชพุ่งตัวเร็ว (Dash Burst 0.18s, CD 1.8s)" },
+		{ key = "LMB [ฝ่ายรับ]", desc = "สไลด์สกัดบอล [ฝ่ายรับ] (Slide Tackle 94)" },
+		{ key = "Left Alt", desc = "เปิด/ปิด Shift Lock เล็งเป้าบุคคลที่สาม" },
 	}
 	for i, item in ipairs(c1Items) do
 		local row = Instance.new("Frame")
@@ -398,13 +398,12 @@ function TrainingHUD.CreateScreenGui(targetParent: Instance): ScreenGui
 	c2Title.Parent = col2
 
 	local c2Items = {
-		{ key = "E / LMB", desc = "ยิงตรง (Direct Shoot 125, กดค้างชาร์จแรง)" },
-		{ key = "R / RMB", desc = "ปั่นไซด์โค้ง (Curve Shoot 95, กดค้างชาร์จ)" },
-		{ key = "E [กลางอากาศ]", desc = "วอลเล่ย์ยิงตรงกลางอากาศ (Volley 90)" },
-		{ key = "R [กลางอากาศ]", desc = "จักรยานอากาศ Acrobatic Finishing (125)" },
-		{ key = "C / MMB", desc = "ส่งบอล 3D (Pass 68, แท็ปเรียด / ค้างโด่ง)" },
-		{ key = "L / Left Alt", desc = "เปิด/ปิด Shift Lock เล็งเป้าบุคคลที่สาม" },
+		{ key = "LMB", desc = "ยิงตรงพื้น/กลางอากาศ (Direct Shoot 125, กดค้างชาร์จ)" },
+		{ key = "RMB [พื้น]", desc = "ปั่นไซด์โค้ง (Curve Shoot 95, A=Finesse / D=Trivela)" },
+		{ key = "RMB [อากาศ]", desc = "วอลเล่ย์กลางอากาศ (Volley 108, กดค้างชาร์จ)" },
+		{ key = "MMB", desc = "ส่งบอล 3D (Pass 68, แท็ปเรียด / ค้างโด่ง)" },
 		{ key = "X", desc = "รีเซ็ตตำแหน่งลูกบอลกลับมากลางสนาม" },
+		{ key = "H", desc = "เปิด/ปิดหน้าต่างแสดงปุ่มควบคุมนี้" },
 	}
 	for i, item in ipairs(c2Items) do
 		local row = Instance.new("Frame")

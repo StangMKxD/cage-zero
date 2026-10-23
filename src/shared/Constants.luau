@@ -153,6 +153,12 @@ local Constants = {
 	SHIFTLOCK_SHOULDER_OFFSET = Vector3.new(1.75, 0.45, 0),
 	SHIFTLOCK_SMOOTHING_ALPHA = 0.18,
 
+	-- Module 02 §12: Air Lean Body Tilt & Trajectory Modification Parameters
+	AIR_LEAN_MAX_ANGLE_DEG = 20.0,
+	AIR_LEAN_MAX_SLEW_DEG_PER_SEC = 120.0,
+	AIR_LEAN_RATE_LIMIT_HZ = 20,
+	AIR_LEAN_MIN_UPDATE_INTERVAL = 0.045,
+
 	-- Economy, Gacha & Trading Parameters (Section 4.6 & 4.7)
 	GACHA_PITY_LIMIT = 100,
 	MUTATION_CASH_MULTIPLIER_MIN = 1.5,

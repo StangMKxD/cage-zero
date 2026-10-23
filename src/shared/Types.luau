@@ -235,6 +235,8 @@ export type KickActionType =
 
 export type ChargeActionType = "DirectShoot" | "CurveShoot" | "Pass" | "Slide"
 
+export type CurveSideIntent = "Left" | "Right" | "Neutral"
+
 export type ActionIntentName =
 	| "Sprint"
 	| "Dash"
@@ -249,6 +251,7 @@ export type ActionIntentName =
 	| "ResetBall"
 	| "Volley"
 	| "BicycleKick"
+	| "SetAirLean"
 
 export type ActionStatus = "Accepted" | "Rejected" | "Cancelled"
 
@@ -274,6 +277,9 @@ export type ActionIntentPayload = {
 	aimDirection: Vector3?,
 	isSprinting: boolean?,
 	charge: number?,
+	curveSideIntent: CurveSideIntent?,
+	airLeanForward: number?,
+	airLeanRight: number?,
 }
 
 export type BallPossessionState =
@@ -315,6 +321,10 @@ export type PlayerMovementSnapshot = {
 	actionSequence: number?,
 	resolvedKickFoot: ("Left" | "Right")?,
 	resolvedCurveStyle: ("Finesse" | "Trivela")?,
+	airLeanForward: number?,
+	airLeanRight: number?,
+	airLeanTimestamp: number?,
+	jumpFacingF0: Vector3?,
 }
 
 local Types = {}

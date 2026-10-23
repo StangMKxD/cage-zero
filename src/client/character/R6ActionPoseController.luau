@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared:WaitForChild("Constants"))
+local AirLeanSolver = require(Shared:WaitForChild("AirLeanSolver"))
 local Configs = Shared:WaitForChild("configs")
 local PlayerActionPoseConfigs = require(Configs:WaitForChild("PlayerActionPoseConfigs"))
 
@@ -84,6 +85,9 @@ local airborneRecoveryDuration = 0.28
 
 local wasCustomPoseActive = false
 local lastObservedCharacter: Model? = nil
+
+local airLeanForward = 0.0
+local airLeanRight = 0.0
 
 type JointMap = {
 	RootJoint: Motor6D?,
@@ -364,6 +368,11 @@ function R6ActionPoseController.SetSliding(sliding: boolean)
 	end
 end
 
+function R6ActionPoseController.SetAirLean(forward: number, right: number)
+	airLeanForward = forward
+	airLeanRight = right
+end
+
 function R6ActionPoseController.IsCustomPoseActive(): boolean
 	return wasCustomPoseActive
 end
@@ -417,6 +426,8 @@ function R6ActionPoseController.ResetPoses(char: Model?)
 	isWhiffing = false
 	isSlideRecovering = false
 	isAirborneRecovering = false
+	airLeanForward = 0.0
+	airLeanRight = 0.0
 	wasCustomPoseActive = false
 	actionBlendWeight = 1.0
 	actionTargetWeight = 1.0
@@ -627,6 +638,11 @@ function R6ActionPoseController.Init()
 			end
 		end
 
+		local isAir = (char:GetAttribute("IsAirborne") == true) or (hum and hum.FloorMaterial == Enum.Material.Air)
+		if isAir and (math.abs(airLeanForward) > 0.01 or math.abs(airLeanRight) > 0.01) then
+			isActionActive = true
+		end
+
 		if isActionActive then
 			wasCustomPoseActive = true
 			char:SetAttribute("IsCustomPoseActive", true)
@@ -646,6 +662,11 @@ function R6ActionPoseController.Init()
 			local minY = calculateRigMinY(currentOffsets)
 			local deltaY = math.max(0, 0.010 - minY)
 			local effectiveRootCF = if deltaY > 0 then (CFrame.new(0, deltaY, 0) * currentOffsets.RootJoint) else currentOffsets.RootJoint
+
+			if isAir and (math.abs(airLeanForward) > 0.01 or math.abs(airLeanRight) > 0.01) then
+				local leanCF = AirLeanSolver.ComputeLeanCFrame(airLeanForward, airLeanRight)
+				effectiveRootCF = effectiveRootCF * leanCF
+			end
 
 			for name, joint in pairs(joints) do
 				if name == "RootJoint" then

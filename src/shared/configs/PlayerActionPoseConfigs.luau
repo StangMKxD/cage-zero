@@ -518,6 +518,10 @@ function PlayerActionPoseConfigs.GetChargePose(chargeAction: string, elapsed: nu
 
 	if chargeAction == "Slide" or chargeAction == "SlideKick" then
 		return PlayerActionPoseConfigs.SampleAuthoredPose("A17", 0.0)
+	elseif chargeAction == "Volley" or chargeAction == "AirDirectShoot" then
+		-- A10: Mid-air Volley / Air Shoot Chamber (Hold Lock at Keyframe 1)
+		local phase = math.clamp(pullAlpha * 0.35, 0, 0.35)
+		return PlayerActionPoseConfigs.SampleAuthoredPose("A10", phase)
 	elseif chargeAction == "CurveShoot" or chargeAction == "ShootCurve" or chargeAction == "ShootFinesse" or chargeAction == "ShootTrivela" then
 		-- A14: Curve Shoot Wind-up / Hold. Samples KF1 -> KF3 (t = 0.50 HOLD LOCK)
 		local phase = math.clamp(pullAlpha * 0.50, 0, 0.50)
@@ -767,7 +771,8 @@ end
 function PlayerActionPoseConfigs.ResolveCurveShot(
 	hrpCFrame: CFrame,
 	aimDir: Vector3,
-	ballPos: Vector3?
+	ballPos: Vector3?,
+	sideIntent: ("Left" | "Right" | "Neutral")?
 ): ResolvedCurveShot
 	local charForward = Vector3.new(hrpCFrame.LookVector.X, 0, hrpCFrame.LookVector.Z)
 	charForward = if charForward.Magnitude < 0.01 then Vector3.new(0, 0, -1) else charForward.Unit
@@ -788,34 +793,20 @@ function PlayerActionPoseConfigs.ResolveCurveShot(
 	end
 	local ballSide: "Right" | "Left" = if localBallX >= 0 then "Right" else "Left"
 
-	local isAimingLeft = angleDeg < -5
-	local isAimingRight = angleDeg > 5
+	-- Owner Delta §12.3: Side intent determines style directly regardless of ballSide or aim angle.
+	-- A / left = Finesse; D / right = Trivela; Neutral / neither = Finesse.
 	local style: "Finesse" | "Trivela" = "Finesse"
-	local foot: "Right" | "Left" = "Right"
-
-	if ballSide == "Right" then
-		if isAimingLeft then
-			style = "Finesse"
-			foot = "Right"
-		elseif isAimingRight then
-			style = "Trivela"
-			foot = "Right"
-		else
-			style = "Finesse"
-			foot = "Right"
-		end
+	if sideIntent == "Right" then
+		style = "Trivela"
+	elseif sideIntent == "Left" then
+		style = "Finesse"
 	else
-		if isAimingRight then
-			style = "Finesse"
-			foot = "Left"
-		elseif isAimingLeft then
-			style = "Trivela"
-			foot = "Left"
-		else
-			style = "Finesse"
-			foot = "Left"
-		end
+		-- Neutral (A+D pressed or neither): default to Finesse
+		style = "Finesse"
 	end
+
+	-- Foot is strictly decided by ball side relative to character
+	local foot: "Right" | "Left" = if ballSide == "Left" then "Left" else "Right"
 
 	local speed = if style == "Finesse" then Constants.SHOOT_FINESSE_SPEED else Constants.SHOOT_TRIVELA_SPEED
 	local upwardBias = if style == "Finesse" then 0.20 else 0.18

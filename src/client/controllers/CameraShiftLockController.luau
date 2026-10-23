@@ -137,7 +137,7 @@ function CameraShiftLockController.Init()
 			return
 		end
 
-		if input.KeyCode == Enum.KeyCode.L or input.KeyCode == Enum.KeyCode.LeftAlt or input.KeyCode == Enum.KeyCode.RightAlt then
+		if input.KeyCode == Enum.KeyCode.LeftAlt then
 			CameraShiftLockController.Toggle()
 		elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
 			-- Re-center mouse lock on click if active

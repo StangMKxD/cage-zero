@@ -449,6 +449,92 @@ Base HEAD e38e2f489fca522dbf0d12ea73894f2332e0118d+dirty; resume hashes Input712
 Ownerอนุญาตresumeผ่านpaneนี้รวมการตอบกลับCodexpaneที่ตรวจสด. ส่งackสั้นเมื่อเริ่มแล้วทำต่อ ไม่ถามย้ำสิทธิ์เก่า ไม่ปิดPlan02/03/04หรือfinding.
 ส่งassets/fix-006.mdฉบับเดียวพร้อมrepro/rootcause/freshchecksและvisualfallback,old/newsourcehash/runtimeparity,ข้อค้างรวม03ที่ยังไม่เริ่ม. GitอนุญาตเฉพาะPlan02ตาม§9แบบscopedcheckpoint/commit/pushไม่merge/deploy/force; ห้ามรวมงานPlan03ไว้ในcommitสิทธิ์Plan02. Plan03ยังไม่มีสิทธิ์Gitcommit/pushใหม่จากการอนุมัติimplementationเพียงอย่างเดียว.
 
+## 12. Owner delta — single bindings / curve side / airborne shot + lean (2026-10-23)
+
+**Authority:** Ownerบอกพอใช้ได้แต่ยังไม่ปิด Plan02 ขอหนึ่งปุ่มต่อaction, Finesseเมื่อเดินซ้าย/กดA และTrivelaเมื่อเดินขวา/กดD, แก้ท่าง้างขาปนกับท่ากลางอากาศ และเพิ่มเอนตัวที่ส่งผลต่อบอลโดยคงyaw lock. คำตอบล่าสุดยืนยัน **กลางอากาศ LMBยิงปกติ / RMBวอลเล่ย์** และ **ฐานยิง=ทิศหน้าที่ล็อกตอนขึ้น+มุมเล็งสูงต่ำ+ผลleanต่อวิถี/สปิน**.
+ข้อยืนยันนี้แทน temporaryHeader/Bicycle fallback ของ§11 ไม่ใช่ให้ทำHeaderต่อ. GroundRMBยังCurveShoot. Plan02คงOPEN/OWNER_TUNING_REQUESTED; Plan03ยังได้รับอนุมัติรอสัญญาและฐานร่วมที่นิ่ง; Plan04ยังPAUSED_BY_OWNER.
+ใช้ stang-solar-system สำหรับขอบเขตที่Ownerยืนยัน, stang-mercury Designสำหรับpayload validation และ stang-comet handoff; Codexไม่เขียนแอปหรืออ้างทดสอบผ่านแทนAGY. งานนี้เลือก/teamworkเพราะแยกinput,sharedphysics,visual/curve และtestsคนละไฟล์ได้ โดยLeadรวมsharedserver/schemaคนเดียว. ถ้าruntimeไม่รองรับใช้promptธรรมดาและรายงาน ไม่ต้องบังคับโหมด.
+
+### 12.1 Baseline / retained fixes / source of truth
+Actual HEADตอนสั่งงาน `2d3f1e63f3f9ff47cc20991ff1c13753d8a45fca` บนcodex/plan02-animation-rework + dirty docsและCagePhysicsServiceนอกงาน. fix006มีอยู่แล้วและเป็นImplementer-reported ไม่ใช่Codexsign-off. เก็บmovingjump/nativeimpulse/off-ball fixesจากฐานนี้; ห้ามย้อนกลับe38e2f4หรือแทรกการแก้CagePhysicsService.
+Resume hashes: Input a6ef9b4f23e6c16971086bbf7e3a143d39cd3c56d4a081a9701240563cb008be; PoseConfigs dfbcd078dd7456f48ed62979d279c85855062d4494a6bd4bf67399cc6203c75b; Ball c6cecc4d67511bff0d847015b4df4a759e4996bae80dc2bd7f3f43f5c86a3c4e; Types8341ba0ae2a34785ee33838e5a4483b3fe417f71ea3915926f7f301734593747. ตรวจใหม่และเก็บbefore-stateก่อนแก้
+เลือก behavior ของprototype3ที่ยังตรงscopeเป็นฐานอัปเกรด; ข้อยืนยัน§12 supersede เฉพาะส่วนที่เปลี่ยน ไม่ยกSandbox/physics/remote treeมาใหม่ทั้งชุด
+
+### 12.2 หนึ่ง physical binding ต่อactionบนkeyboard/mouse
+| Action/context | เหลือปุ่มเดียว |
+| --- | --- |
+| Shoot บนพื้นหรือกลางอากาศ | LMB — DirectShoot |
+| Secondary บนพื้น | RMB — CurveShoot |
+| Secondary กลางอากาศ | RMB — Volley |
+| Pass | MMB |
+| Dash | Q |
+| Sprint | LeftShift |
+| Jump | Space |
+| Shift Lock toggle | LeftAlt |
+| Training reset / controls help | X / H ตามactionเดิมอย่างละหนึ่งปุ่ม |
+| Movementบนพื้น / Air body lean | WASD แยกตามground/air context |
+
+ถอดaliases E/R/V/C/G/F/RightShift/L/RightAlt ของactionเหล่านี้จากInputBegan/InputEnded,HUD/guideและtestsให้ตรงกัน ไม่ให้callbackอีกชุดยังรับปุ่มเก่า. ไม่ให้keydownใหม่แต่keyupเก่าปลดchargeผิดaction. NativeJumpRequestเป็นplatformeventไม่ใช่physicalaliasและยังต้องidempotentกับSpace/onepress guard.
+contextทีมเดิมยังใช้ LMB=Slideเมื่อDefending; Poke/Shoulder/Skill slotsเป็นPlan03ยังไม่เปิดในรอบนี้. ไม่ยึดXเป็นSkill2ตามSandboxจนชนTrainingReset.
+การกดค้างต้องlatchintent/button/context/action familyและหนึ่งreleaseหรือcancelเท่านั้น. ถ้าholdข้ามground/airให้Leadล็อกlegalconversionและtestsใน§12ก่อนแก้ ไม่ทำให้client/serverคนละactionหรือคืนBicycleconversionเก่า; ไม่เปลี่ยนShootเป็นSlideกลางintentเมื่อteamcontextสลับ
+
+### 12.3 Finesse / Trivela — styleตามside intent ไม่ใช่มุมaimหรือฝั่งบอล
+- GroundA/left input หรือ lateral movementซ้าย → Finesse; D/right → Trivela ทั้งสองเท้า. A+Dพร้อมกันเป็นneutral; ไม่มีsideใช้neutral Finesseเดิม
+- inputsideต้องระบุจากgesture A/Dโดยตรงก่อน และfallbackmovementที่projectในreference frameที่ตกลง ไม่ใช้worldXหรือfoot-dependentstyleinversion. ปุ่มAตอนชนผนังยังเป็นleftintentได้แม้ความเร็ว0
+- Shared ResolveCurveShotเพิ่มnormalizedsideintentเป็นinput โดยคงfoot/contact geometryอีกเรื่องหนึ่ง. ballSideใช้เลือกเท้าและmirror/spinตามเท้าได้ แต่ไม่เปลี่ยนFinesseเป็นTrivelaกลับไปเมื่อบอลอยู่อีกฝั่ง
+- Serverคำนวณstyle/footจากvalidatedintent+ball state ไม่รับclientส่งstyle/speed/spinสำเร็จรูป. ClientpreviewและServerreleaseต้องเรียกsharedruleเดียวกัน; reconcileไม่กระตุกกลับอีกstyle
+- ตรวจA/Dกับballซ้าย/ขวา, ShiftLockON/OFF,wallblockedmovement,neutral/ทั้งสองปุ่มและaimหมุนข้ามซ้ายขวา; aimเปลี่ยนอย่างเดียวไม่ override sideที่Ownerกำหนด
+
+### 12.4 Shot/animation mapping ที่Ownerเปลี่ยนล่าสุด
+- AirLMBเป็นDirectShootปกติ ไม่แปลงเป็นVolleyเพียงเพราะIsAirborne; AirRMBเป็นVolley ไม่แปลงเป็นCurve/Bicycle/Header
+- เลือกairborneprepareตั้งแต่เริ่มกด/charge ไม่เล่นgroundcurvewindupหรือง้างขาแบบoldheaderก่อน แล้วค่อยเปลี่ยนท่าตอนrelease. DirectShootมีท่าเตะของDirectShootได้ตามaction ไม่บังคับเป็นโหม่ง
+- Remove temporaryHeader/Bicycle fallbackทั้งprediction,heldcharge,resolvedaction callbacks,profiledelegationและrecovery. ไม่ลบHeaderที่เป็นgenuinecontactpathอื่น แต่ห้ามใช้Header fallbackแทนmanualshotsสองปุ่มนี้
+- Serverresolverต้องตรงกับinputfamily ไม่แอบconvertmanualDirectShootเป็นVolley/Headerจากairflagหรือheightheuristicอย่างเดียว. Contactvalidationยังอยู่ ห้ามทำให้เตะโดนทุกลูก/ทุกระยะ
+- กันdoubletrack/posewriter,ไม่เรียกacrobaticbreakfallเมื่อไม่มีflip,รักษาจังหวะcontactและfixed moving-jump. คงหนึ่งchargeintentและone-shotrelease/cancel. Recordก่อน/หลังจากbegin→hold→release→landedครบ ไม่เช็กเฉพาะPlayActionตอนท้าย
+
+### 12.5 Air lean — เพิ่มbehaviorที่OwnerอนุญาตในPlan02
+- ขณะairborne: A/Dเอนซ้าย/ขวา (roll), W/Sเอนหน้า/หลัง (pitch), diagonalsผสมได้. เป็นbodyleanเท่านั้น ไม่หมุนyaw/ไม่เปลี่ยนทิศเดินทางของcharacterที่ล็อกไว้; ไม่ใช้HRP.CFrame/PivotToทำlean ไม่เติมVY/เปลี่ยนgravityหรือผลักตัวเพื่อให้ดูเอน
+- ตั้งframe F0=unit horizontal facingที่ระบบเดิมcommitตอนtakeoff; R0=F0 cross WorldUp. ไม่ใช้camera yawล่าสุด/WorldXแทนF0/R0. Stationary jumpก็ต้องมีF0ที่validโดยไม่บังคับพุ่งWalk20
+- normalizedleanRight+1หมายถึงD/เอนไปทางR0; normalizedleanForward+1หมายถึงW/เอนไปทางF0. อธิบายmatrixorder/เครื่องหมายของpitch-rollในPart0spaceให้ชัดก่อนmappingMotor6D R6. ไม่มีknee/elbow/waistใหม่
+- จำกัดมุมและslew rateผ่านconfig; initialtuningเสนอpitch/rollแต่ละแกนไม่เกิน20deg และอัตราเปลี่ยนไม่เกิน120deg/s โดยเป็นค่าจูนไม่ใช่finalbalance. รวมdiagonalต้องไม่ทำให้เอียงแรงขึ้นโดยไม่ตั้งใจ; returntoneutralนุ่มและล้างเมื่อlanded/death/reset/respawn/focuslost/rejected
+- Poseใช้singlewriterเดิม compositingกับshot/volleyตามjointmaskที่ตกลง ไม่ให้lean blendรีเซ็ตท่ายิงหรือclearanceทำให้rootเด้ง. Observervisualตรวจหากมีหลายclient ไม่ถือว่าMotor6D.Transformจากclientreplicateโดยอัตโนมัติ
+
+### 12.6 Shot physics / contract — server authoritative และdeterministic
+- Airbaseaim=Normalize(F0*cos(elevation)+WorldUp*sin(elevation)); elevationมาจากaimสูงต่ำที่finiteและboundedตามprofileเดิม. Cameraหมุนyawขณะairไม่ทำให้characterหรือbaseazimuthหมุนตาม
+- ให้bodylean/contactframeเปลี่ยนlaunch/spinอย่างมีเหตุผลทางฟิสิกส์ ไม่สุ่มspread ไม่ดึงลูกกลับเป้าหลังใช้lean. Neutralleanต้องไม่มีextraoffsetจากlean; บอลต้องไม่ตรงreticleทุกท่าโดยไม่สนใจbody
+- คำนวณจากbasevelocity/spinของaction,orientationและcontactleverarmในframeเดียวกัน; rollรอบlocalforwardอย่างเดียวจะไม่เปลี่ยนLookVector จึงห้ามอ้างว่าLookVectorหมุนอย่างเดียวพิสูจน์lateraldeviation. ใช้contact/tangential impulseและ/หรือrotatedspin axisที่อธิบายผลได้
+- ถ้าใช้Magnus ให้ระบุหน่วยและลำดับcrossproduct(spin cross velocity),coefficient/caps/energybounds. หมุนท่าต้องไม่ให้unboundedpowerboostและไม่บวกgravity/Magnusซ้ำกับsolverเดิม
+- Scope physicsเฉพาะairborne shot releaseและspin/force integrationของBallServiceเดิม; groundtrajectory/charge/cost/CD/ballradius/cagecollisionkernelคงเดิมเว้นdeltaที่Ownerกำหนดตรงๆ. ไม่ใช้leanเป็นair steeringของcharacter
+- Snapshotleanที่ServerยอมรับขณะreleaseผูกintentId/generation/context/actionsequence; delayedfeedbackไม่ใช้leanของcharacterใหม่หรือframeใหม่มาทับลูกที่ปล่อยแล้ว
+- ใช้existingBallActionRequestเป็นtransport เพิ่มได้เฉพาะaction SetAirLean และpayload normalizedairLeanRight/airLeanForward,curveSideIntent รวมTypes/validatedstate/snapshotจำเป็น. ไม่เพิ่มRemoteDefinitionใหม่/ไม่reuseDuel/Parry/Match remotesผิดความหมาย
+- Leanpacketมีmetadataเหมือนเดิม, finite/type/range[-1,1], actualairborne/lifecyclevalidation,maxrate/maxslewและstale/replayguard. Update/keepaliveแบบbounded ไม่ส่งทุกRenderSteppedหรือใช้ratebucketเดียวจนกินสิทธิ์Shoot/Jump; ระบุtimeoutกับkeepaliveให้สอดคล้องกัน
+- SetAirLeanไม่เริ่ม/ยกเลิกcharge ไม่เขียนLastResolvedAction/LastActionStatus/shotsequenceรัวจนfeedback shotสูญหาย. Clientส่งdesiredinputเท่านั้น ห้ามส่งfinalvelocity/spin/validatedstyleให้Serverเชื่อ
+- RefactorcommonlegacyKickActionType/ChargeActionTypeเฉพาะDirect/Curve/Volleyและlegalconversionที่จำเป็น คงmetadata validationและ12Networkdefinitions/gettersของ00. Leadเขียนfield schema/actiontransitionใน§12ก่อนworkersintegration; missingdataต้องมีเหตุผลและclearrejectionไม่fallbackเพิ่มสิทธิ์
+
+### 12.7 Disjoint team / allowlist / documentation
+| Owner | Files |
+| --- | --- |
+| Lead | BallService.luau, Types.luau, Constants.luau; bootstrapเฉพาะจำเป็น,primarydocsและStudio/Gitคนเดียว |
+| Input worker | InputController.luau, CameraShiftLockController.luau, TrainingHUD.luau: binding/intent/lean input/guide |
+| Visual + Curve worker | PlayerActionPoseConfigs.luau, R6ActionPoseController.luau, R6AnimationController.luau: side resolver/airprepare/Volley/noHeaderfallback/leancomposite |
+| Physics worker | new src/shared/configs/AirLeanConfigs.luau และ src/shared/AirLeanSolver.luau: pure deterministicmath/config ไม่เขียนบอล/ไม่มีframe loop |
+| Test Engineer | tests/e2e/Tier1_PlayerActions.luau และ new tests/e2e/Tier1_AirLeanPhysics.luau; runnerregistrationให้Leadทำ |
+| Challenger | read-onlycontract/counterexamples/nativefinalpose/packetabuse ไม่เขียนsharedfiles |
+
+ตกลงpureSolverAPI/unitsและvisualSetAirLeanAPIก่อนparallel;client/serverใช้solver/configเดียว ไม่copyสูตรสองชุด. ไม่มีsecondballwriter/physicsloopหรือframewriterใหม่.
+Plan/tasks/notes02และSpec02/PRD/TDD/architecture/glossaryแก้เฉพาะOwnerdeltaนี้พร้อมpointerแหล่งเดียว; ไม่ขยาย03/GK/FullUI/อีเวนต์. ความสามารถเอนที่มีผลต่อบอลเป็นscopeใหม่ที่Ownerสั่ง ไม่เขียนย้อนหลังว่าอยู่ในprototype3หรือผ่านแล้ว.
+CagePhysicsService/rigschema/RigAndCardService/CardConfigs/Sandbox/rollback/.gitignoreยังread-only. ปกป้องdirtyนอกงาน
+
+### 12.8 Acceptance / return
+- ปุ่มเก่าที่ถอดไม่มีผลทั้งเริ่ม/ปล่อย,ปุ่มใหม่หนึ่งpress→หนึ่งintent;HUDตรงbindings;focus/menu/cancelไม่ค้าง
+- GroundA→Finesse,D→Trivelaทุกballside/foot,preview=serverและno aim-only inversion; neutralและdiagonalมีผลแน่นอน
+- GroundLMB/RMB=Direct/Curve; AirLMB/RMB=Direct/Volleyทั้งbegin/hold/release/resolved ไม่มีheader/bicycleหรือgroundwindupปน. Verifycontext/holdcrossing/conversions/metadatareplay
+- AirWASDเปลี่ยนเฉพาะpitch/roll,YawF0และjumptrajectoryยังล็อก; walking/sprintjumpต้องไม่กลับไปVYdrop/stutter. Landed/death/focus/respawnคืนneutral
+- Resetfixtureเทียบneutral/left/right/front/back/diagonals,หลายaimpitch/chargeและmouseyaw. วัดinitialvelocity/spinและtrajectoryจริง ไม่อ่านexpectedจากสูตรเดียวมาassertกับตัวเอง; no automaticreticlecorrection/no RNG/no energyexploit
+- negativepayloadNaN/Inf/เกินrange/stalegeneration/context/replay/ส่งถี่/leanขณะground/releasewithfuturestateไม่mutationหรือไม่ข้ามvalidation. บันทึกratecapsและnormalshotไม่starve
+- Source→Edit→freshClientparityและrealinputtests/affected02regressionก่อนส่ง; ไม่อ้างfix006เป็นผลของsourceใหม่. Static/Edit/Live/Visual/NOTRUNแยกจริง
+- ส่งassets/fix-007.mdฉบับเดียวพร้อมbefore→after/mapping/approveddeltas/mathunits/trace/currentSHA+hashes/testcommands/resultsและข้อค้าง. ไม่แก้fix006ย้อนหลัง ไม่closePlan02หรือfindingเอง. Gitสิทธิ์Plan02§9ยังใช้แบบscopedcommit/pushไม่force/merge/deployและไม่รวมงาน03/04
+
 
 
 

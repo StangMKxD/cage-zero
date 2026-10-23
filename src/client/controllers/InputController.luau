@@ -14,6 +14,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared:WaitForChild("Constants"))
 local Network = require(Shared:WaitForChild("Network"))
 local Types = require(Shared:WaitForChild("Types"))
+local AirLeanSolver = require(Shared:WaitForChild("AirLeanSolver"))
 local Configs = Shared:WaitForChild("configs")
 local PlayerActionPoseConfigs = require(Configs:WaitForChild("PlayerActionPoseConfigs"))
 
@@ -21,6 +22,7 @@ local CharacterFolder = script.Parent.Parent:WaitForChild("character")
 local R6AnimationController = require(CharacterFolder:WaitForChild("R6AnimationController"))
 local R6ActionPoseController = require(CharacterFolder:WaitForChild("R6ActionPoseController"))
 local CameraShiftLockController = require(script.Parent:WaitForChild("CameraShiftLockController"))
+local TrainingHUD = require(script.Parent:WaitForChild("TrainingHUD"))
 
 local isInitialized = false
 local InputController = {}
@@ -32,6 +34,37 @@ local currentChargeAction: Types.ChargeActionType? = nil
 local currentChargeContext: Types.TeamActionContext? = nil
 local lastDashTime = -10.0
 local lastSlideTime = -10.0
+
+-- Physical Key Tracking for A/D Curve Side & Air WASD Lean (Owner Delta §12.2–12.5)
+local keyWDown = false
+local keySDown = false
+local keyADown = false
+local keyDDown = false
+
+local lastAirLeanSendTime = 0.0
+local lastSentLeanFwd = 0.0
+local lastSentLeanRgt = 0.0
+
+local function getCurveSideIntent(): Types.CurveSideIntent
+	if keyADown and not keyDDown then
+		return "Left"
+	elseif keyDDown and not keyADown then
+		return "Right"
+	end
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hum and hrp and hum.MoveDirection.Magnitude > 0.1 then
+		local localMove = hrp.CFrame:VectorToObjectSpace(hum.MoveDirection)
+		if localMove.X < -0.15 then
+			return "Left"
+		elseif localMove.X > 0.15 then
+			return "Right"
+		end
+	end
+	return "Neutral"
+end
 
 -- Client Slide Tackle State & Prediction Reconciliation (F-22)
 local isSlidingClient = false
@@ -174,19 +207,22 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 
 	local finalAction: Types.KickActionType = actionType
 	if isAir then
-		if actionType == "CurveShoot" then
-			finalAction = "BicycleKick"
-		elseif actionType == "DirectShoot" or actionType == "Shoot" then
+		if actionType == "CurveShoot" or actionType == "Volley" or actionType == "BicycleKick" then
 			finalAction = "Volley"
+		elseif actionType == "DirectShoot" or actionType == "Shoot" then
+			finalAction = "DirectShoot"
 		end
 	end
 
-
-	local cAct: Types.ChargeActionType = if finalAction == "CurveShoot" or finalAction == "BicycleKick"
+	local cAct: Types.ChargeActionType = if finalAction == "CurveShoot"
 		then "CurveShoot"
 		elseif finalAction == "Pass" or finalAction == "GroundPass"
 		then "Pass"
+		elseif finalAction == "Volley"
+		then "Volley"
 		else "DirectShoot"
+
+	local curveSide = getCurveSideIntent()
 
 	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
 	remote:FireServer({
@@ -198,6 +234,9 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 		chargeAction = cAct,
 		aimDirection = aimDir,
 		charge = charge,
+		curveSideIntent = curveSide,
+		airLeanForward = lastSentLeanFwd,
+		airLeanRight = lastSentLeanRgt,
 	})
 	R6ActionPoseController.SetCharging(false)
 
@@ -217,21 +256,15 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 		end
 	end
 
-	local isAirborneFallbackHeader = (finalAction == "BicycleKick") or (finalAction == "CurveShoot" and isAir)
-	local visualAction = if isAirborneFallbackHeader then "Header" else finalAction
-	local visualAnim = if isAirborneFallbackHeader then "header"
-		elseif visualAction == "Volley" then "kick"
+	local visualAction = finalAction
+	local visualAnim = if visualAction == "Volley" then "volley"
+		elseif visualAction == "DirectShoot" then "kick"
 		else visualAction
 
-	if visualAction == "BicycleKick" then
-		isAcrobaticInFlight = true
-	else
-		isAcrobaticInFlight = false
-	end
+	isAcrobaticInFlight = false
 
 	R6AnimationController.PlayAction(visualAnim)
 	local duration = if visualAction == "Header" then 0.35
-		elseif visualAction == "BicycleKick" then 0.52
 		elseif visualAction == "Volley" then 0.44
 		elseif visualAction == "CurveShoot" then 0.44
 		elseif visualAction == "Pass" or visualAction == "GroundPass" then 0.36
@@ -241,7 +274,7 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 	local kickFoot: string? = nil
 	if finalAction == "CurveShoot" then
 		if hrp then
-			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position)
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position, curveSide)
 			kickCurveStyle = curveRes.style
 			kickFoot = curveRes.foot
 		end
@@ -281,20 +314,34 @@ function InputController.RequestStartCharge(chargeAction: Types.ChargeActionType
 		phase = "start",
 		chargeAction = chargeAction,
 	})
+
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local isAir = isCharacterAirborne(char, hum, hrp)
+
 	local chargeCurveStyle: string? = nil
 	local chargeFoot: string? = nil
 	if chargeAction == "CurveShoot" then
 		local aimDir = getAimDirection()
-		local localPlayer = Players.LocalPlayer
-		local char = localPlayer and localPlayer.Character
-		local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
 		if hrp then
-			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position)
+			local curveSide = getCurveSideIntent()
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position, curveSide)
 			chargeCurveStyle = curveRes.style
 			chargeFoot = curveRes.foot
 		end
 	end
+
+	local visualChargeAct: string = chargeAction
+	if isAir and chargeAction == "DirectShoot" then
+		visualChargeAct = "AirDirectShoot"
+	end
+
+	setLocalWalkSpeed(Constants.WALK_SPEED * 0.5)
+	R6ActionPoseController.SetCharging(true, visualChargeAct, chargeCurveStyle, chargeFoot)
+end
 	setLocalWalkSpeed(Constants.WALK_SPEED * 0.5)
 	R6ActionPoseController.SetCharging(true, chargeAction, chargeCurveStyle, chargeFoot)
 end
@@ -851,28 +898,20 @@ function InputController.Init()
 					local resolvedStyle = char:GetAttribute("ResolvedCurveStyle") :: string?
 
 					if resolvedAction and resolvedAction ~= "" then
-						local isCharAir = (hum and hum.FloorMaterial == Enum.Material.Air) or char:GetAttribute("IsAirborne") == true
-						local isAirborneFallbackHeader = (resolvedAction == "BicycleKick") or (resolvedAction == "CurveShoot" and isCharAir)
-						local visualAction = if isAirborneFallbackHeader then "Header" else resolvedAction
-
-						if visualAction == "Header" then
-							isAcrobaticInFlight = false
+						isAcrobaticInFlight = false
+						if resolvedAction == "Header" then
 							R6AnimationController.PlayAction("header")
 							R6ActionPoseController.TriggerAction("Header", 0.35, nil, nil, resolvedFoot)
-						elseif visualAction == "Volley" then
+						elseif resolvedAction == "Volley" then
 							R6AnimationController.PlayAction("volley")
 							R6ActionPoseController.TriggerAction("Volley", 0.44, nil, nil, resolvedFoot)
-						elseif visualAction == "BicycleKick" then
-							isAcrobaticInFlight = true
-							R6AnimationController.PlayAction("kick")
-							R6ActionPoseController.TriggerAction("BicycleKick", 0.52, nil, nil, resolvedFoot)
-						elseif visualAction == "CurveShoot" then
+						elseif resolvedAction == "CurveShoot" then
 							R6AnimationController.PlayAction("kick")
 							R6ActionPoseController.TriggerAction("CurveShoot", 0.30, resolvedStyle, nil, resolvedFoot)
-						elseif visualAction == "DirectShoot" then
+						elseif resolvedAction == "DirectShoot" then
 							R6AnimationController.PlayAction("kick")
 							R6ActionPoseController.TriggerAction("DirectShoot", 0.34, nil, nil, resolvedFoot)
-						elseif visualAction == "Pass" then
+						elseif resolvedAction == "Pass" then
 							R6ActionPoseController.TriggerAction("Pass", 0.36, nil, nil, resolvedFoot)
 						end
 					end
@@ -933,17 +972,54 @@ function InputController.Init()
 		end
 	end)
 
-	-- RenderStepped maintains smooth orientation lock, handles slide expiration, and physical flight lifecycle
+	-- RenderStepped maintains smooth orientation lock, handles slide expiration, physical flight lifecycle, and air lean
 	RunService.RenderStepped:Connect(function()
 		local now = os.clock()
+		local char = localPlayer and localPlayer.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+
 		if isSlidingClient and now >= slideEndTimeClient then
 			InputController.EndSlide()
 		end
 
+		-- Air Lean update while airborne (Owner Delta §12.5)
+		local isAir = isCharacterAirborne(char, hum, hrp)
+		if isAir then
+			local fwd = (if keyWDown then 1.0 else 0.0) - (if keySDown then 1.0 else 0.0)
+			local rgt = (if keyDDown then 1.0 else 0.0) - (if keyADown then 1.0 else 0.0)
+			local cleanF, cleanR = AirLeanSolver.ClampLeanInput(fwd, rgt)
+
+			-- Visual local preview (smooth, no network latency)
+			R6ActionPoseController.SetAirLean(cleanF, cleanR)
+
+			-- Bounded 20Hz network update (Constants.AIR_LEAN_MIN_UPDATE_INTERVAL = 0.045)
+			if (now - lastAirLeanSendTime) >= 0.05 then
+				if cleanF ~= lastSentLeanFwd or cleanR ~= lastSentLeanRgt then
+					lastAirLeanSendTime = now
+					lastSentLeanFwd = cleanF
+					lastSentLeanRgt = cleanR
+					local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+					remote:FireServer({
+						action = "SetAirLean",
+						intentId = generateIntentId("lean"),
+						characterGeneration = getCharacterGeneration(),
+						contextVersion = getActionContextVersion(),
+						phase = "start",
+						airLeanForward = cleanF,
+						airLeanRight = cleanR,
+					})
+				end
+			end
+		else
+			if lastSentLeanFwd ~= 0.0 or lastSentLeanRgt ~= 0.0 then
+				lastSentLeanFwd = 0.0
+				lastSentLeanRgt = 0.0
+				R6ActionPoseController.SetAirLean(0.0, 0.0)
+			end
+		end
+
 		if isAirborneLocked or isAcrobaticInFlight or (currentFlightState ~= "idle" and currentFlightState ~= "landed") then
-			local char = localPlayer and localPlayer.Character
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if hrp and hum and hum.Health > 0 then
 				local timeSinceJump = now - jumpTakeoffTime
 				local vy = hrp.AssemblyLinearVelocity.Y
@@ -992,7 +1068,7 @@ function InputController.Init()
 		end
 	end)
 
-	-- Key Press (InputBegan)
+	-- Key Press (InputBegan) — Strictly Single Physical Key per Action (§12.2)
 	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
 		if gameProcessed or UserInputService:GetFocusedTextBox() ~= nil then
 			return
@@ -1000,28 +1076,47 @@ function InputController.Init()
 
 		local ctx = getLocalActionContext()
 
-		if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+		-- Movement & Air Lean WASD state tracking
+		if input.KeyCode == Enum.KeyCode.W then
+			keyWDown = true
+		elseif input.KeyCode == Enum.KeyCode.S then
+			keySDown = true
+		elseif input.KeyCode == Enum.KeyCode.A then
+			keyADown = true
+		elseif input.KeyCode == Enum.KeyCode.D then
+			keyDDown = true
+		end
+
+		if input.KeyCode == Enum.KeyCode.LeftShift then
 			InputController.RequestSprint(true)
-		elseif input.KeyCode == Enum.KeyCode.Q or input.KeyCode == Enum.KeyCode.F then
+		elseif input.KeyCode == Enum.KeyCode.Q then
 			InputController.RequestDash()
 		elseif input.KeyCode == Enum.KeyCode.Space then
 			isSpacebarHeld = true
 			if not jumpConsumedUntilRelease then
 				InputController.RequestDirectionalJump()
 			end
-		elseif input.KeyCode == Enum.KeyCode.E or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
 			if ctx == "Attacking" then
 				InputController.RequestStartCharge("DirectShoot")
 			elseif ctx == "Defending" then
 				InputController.RequestStartCharge("Slide")
 			end
-		elseif input.KeyCode == Enum.KeyCode.C or input.KeyCode == Enum.KeyCode.G or input.UserInputType == Enum.UserInputType.MouseButton3 then
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
 			if ctx == "Attacking" then
 				InputController.RequestStartCharge("Pass")
 			end
-		elseif input.KeyCode == Enum.KeyCode.R or input.KeyCode == Enum.KeyCode.V or input.UserInputType == Enum.UserInputType.MouseButton2 then
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			if ctx == "Attacking" then
-				InputController.RequestStartCharge("CurveShoot")
+				local char = localPlayer and localPlayer.Character
+				local hum = char and char:FindFirstChildOfClass("Humanoid")
+				local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+				local isAir = isCharacterAirborne(char, hum, hrp)
+				if isAir then
+					InputController.RequestStartCharge("Volley")
+				else
+					InputController.RequestStartCharge("CurveShoot")
+				end
 			end
 		elseif input.KeyCode == Enum.KeyCode.X then
 			local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
@@ -1032,14 +1127,26 @@ function InputController.Init()
 				contextVersion = getActionContextVersion(),
 				phase = "start",
 			})
+		elseif input.KeyCode == Enum.KeyCode.H then
+			TrainingHUD.ToggleCodex()
 		end
 	end)
 
-	-- Key Release (InputEnded)
+	-- Key Release (InputEnded) — Strictly Single Physical Key per Action (§12.2)
 	UserInputService.InputEnded:Connect(function(input: InputObject, gameProcessed: boolean)
-		if input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift then
+		if input.KeyCode == Enum.KeyCode.W then
+			keyWDown = false
+		elseif input.KeyCode == Enum.KeyCode.S then
+			keySDown = false
+		elseif input.KeyCode == Enum.KeyCode.A then
+			keyADown = false
+		elseif input.KeyCode == Enum.KeyCode.D then
+			keyDDown = false
+		end
+
+		if input.KeyCode == Enum.KeyCode.LeftShift then
 			InputController.RequestSprint(false)
-		elseif input.KeyCode == Enum.KeyCode.E or input.UserInputType == Enum.UserInputType.MouseButton1 then
+		elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
 			if chargeStartTime ~= nil then
 				local ctx = getLocalActionContext()
 				local now = os.clock()
@@ -1068,7 +1175,7 @@ function InputController.Init()
 					end
 				end
 			end
-		elseif input.KeyCode == Enum.KeyCode.C or input.KeyCode == Enum.KeyCode.G or input.UserInputType == Enum.UserInputType.MouseButton3 then
+		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
 			if chargeStartTime ~= nil and currentChargeAction == "Pass" then
 				local ctx = getLocalActionContext()
 				if ctx ~= "Attacking" then
@@ -1088,8 +1195,8 @@ function InputController.Init()
 					InputController.RequestKick("Pass", finalCharge, prevIntentId)
 				end
 			end
-		elseif input.KeyCode == Enum.KeyCode.R or input.KeyCode == Enum.KeyCode.V or input.UserInputType == Enum.UserInputType.MouseButton2 then
-			if chargeStartTime ~= nil and currentChargeAction == "CurveShoot" then
+		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+			if chargeStartTime ~= nil and (currentChargeAction == "CurveShoot" or currentChargeAction == "Volley") then
 				local ctx = getLocalActionContext()
 				if ctx ~= "Attacking" then
 					InputController.RequestCancelCharge()
@@ -1100,12 +1207,18 @@ function InputController.Init()
 						then Constants.CHARGE_MIN_POWER
 						else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 					local prevIntentId = currentIntentId
+					local char = localPlayer and localPlayer.Character
+					local hum = char and char:FindFirstChildOfClass("Humanoid")
+					local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+					local isAir = isCharacterAirborne(char, hum, hrp)
+					local kickAct: Types.KickActionType = if isAir then "Volley" else "CurveShoot"
+
 					chargeStartTime = nil
 					currentChargeAction = nil
 					currentChargeContext = nil
 					currentIntentId = nil
 					setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
-					InputController.RequestKick("CurveShoot", finalCharge, prevIntentId)
+					InputController.RequestKick(kickAct, finalCharge, prevIntentId)
 				end
 			end
 		elseif input.KeyCode == Enum.KeyCode.Space then
