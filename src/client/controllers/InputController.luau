@@ -342,9 +342,6 @@ function InputController.RequestStartCharge(chargeAction: Types.ChargeActionType
 	setLocalWalkSpeed(Constants.WALK_SPEED * 0.5)
 	R6ActionPoseController.SetCharging(true, visualChargeAct, chargeCurveStyle, chargeFoot)
 end
-	setLocalWalkSpeed(Constants.WALK_SPEED * 0.5)
-	R6ActionPoseController.SetCharging(true, chargeAction, chargeCurveStyle, chargeFoot)
-end
 
 function InputController.RequestCancelCharge()
 	if currentIntentId ~= nil then

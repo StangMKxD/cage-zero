@@ -309,6 +309,7 @@ function BallService.EnsureBallInstance(): Part
 	end
 	local existing = Workspace:FindFirstChild(BALL_PART_NAME)
 	if existing and existing:IsA("Part") then
+		existing.Material = Enum.Material.SmoothPlastic
 		ballPart = existing
 		return existing
 	end
@@ -318,7 +319,7 @@ function BallService.EnsureBallInstance(): Part
 	p.Shape = Enum.PartType.Ball
 	p.Size = Vector3.new(Constants.BALL_RADIUS * 2, Constants.BALL_RADIUS * 2, Constants.BALL_RADIUS * 2)
 	p.Color = Color3.fromRGB(245, 250, 255)
-	p.Material = Enum.Material.Neon
+	p.Material = Enum.Material.SmoothPlastic
 	p.Anchored = true
 	p.CanCollide = false
 	p.CanTouch = false
@@ -754,17 +755,14 @@ function BallService.ExecuteKick(
 		end
 
 		if isAirborneKicker then
-			-- Airborne Shot: Lean Trajectory Deflection & Physical Spin (Owner Delta §12.5–12.6)
-			local F0 = st.jumpFacingF0 or horizUnit
+			-- Airborne Shot: Aim-Relative Lean Trajectory Deflection & Bounded Physical Spin (Owner Delta §14.3)
 			local leanFwd = st.airLeanForward or 0.0
 			local leanRgt = st.airLeanRight or 0.0
-			local elevationAngle = math.asin(math.clamp(aimDir.Y, -0.99, 0.99))
 
 			local airVel, spinVec = AirLeanSolver.ComputeAirShotTrajectory(
-				F0,
-				elevationAngle,
+				aimDir,
 				kickSpeed,
-				upwardBias * kickSpeed,
+				upwardBias,
 				leanFwd,
 				leanRgt,
 				resolvedAction
@@ -773,9 +771,8 @@ function BallService.ExecuteKick(
 			if spinVec.Magnitude > 0.01 then
 				curveForce = if curveForce then curveForce + spinVec else spinVec
 			end
-			-- Reset accepted lean snapshot upon ball release
-			st.airLeanForward = 0.0
-			st.airLeanRight = 0.0
+			-- NOTE: Snapshot taken for ball; do not reset st.airLeanForward / st.airLeanRight here
+			-- so player body lean remains smooth and persistent while keys are held in the air (§14.2)
 		else
 			-- Ground Shot: Downward Floor Smash Rebound (Sandbox: aimDir.Y < -0.16)
 			if aimDir.Y < -0.16 and ballState.position.Y <= Constants.BALL_RADIUS + 0.35 then

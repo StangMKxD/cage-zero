@@ -7,6 +7,8 @@ Ownerdelta2026-10-22: ใช้ArgonR6Packเป็นต้นแบบvisual�
 ยังเว้นท่าโยก/Poke/Shoulder; ไม่มีLobPassแยก; 00/01ยังเปิดและพัก
 
 ## งานส่งแก้
+- [x] T-08 OWNERDELTA§14: F-33W/Sworldtilt,F-34smoothlean;shotbase=aim3D+smallboundeddeviationแทนF0;ลดBloomซ้อน/Haze+ballNeonแบบpresentation-only คงyawlock/physicsgeometry;รวมในfix008
+- [x] T-07 PRIORITY§13/review006: F-31InputControllerparseblocker+F-32AirLeanfixtureundefinedconstant;คืนdefaultClientboot/HUD/newbindingsและrealballinputก่อนงานอื่น ส่งfix008 ไม่ปิดแผน
 - [x] T-06 OWNERDELTA§12: onebindingต่อaction;groundLMBDirect/RMBCurve,airLMBDirect/RMBVolley;A=Finesse/D=Trivela;airWASDlean+serverphysicsตามlockedfacing/pitch ไม่มีHeader/Bicyclefallback;ส่งfix007
 - [x] T-05D: AGYส่งfix006movingjump/off-ballตาม§11แล้ว ยังรอCodexreview; temporaryHeaderเดิมถูกแทนด้วยOwner§12 ไม่กลับไปทำHeader;Plan02ยังOPEN/03รอฐานร่วม/04พัก
 - [x] T-05C PRIORITY: Owner latest HANDOFF§10 — adaptprototype3jump/nativeimpulseและoff-ballfirst-timekick; reproduce input→server→ballจริงก่อนfix ไม่ทำระบบใหม่; currentHEAD e38e2f4+dirty ตรวจใหม่ก่อนเริ่ม
@@ -22,6 +24,8 @@ Ownerdelta2026-10-22: ใช้ArgonR6Packเป็นต้นแบบvisual�
 - [x] T-99: syncOwnerdelta§12เฉพาะscopeที่อนุญาต ส่งassets/fix-007.mdฉบับเดียว เก็บfix001–006historical;รายงานGitSHA/hash/test/ข้อค้าง ไม่ปิดแผนเอง
 
 ## Review queue
+- F-33 P1 OPEN: signedpitchทำWเอนหลัง/Sเอนหน้า;F-34 P2 OPEN: rawleancompositeหลังbaseLerpข้ามsmoothing. AimF0ถูกOwnerเปลี่ยนเป็นaim3Dแล้วตาม§14 ไม่อ้างchoiceเก่าบังคับต่อ
+- F-31 P0 OPEN: duplicatechargetailInput345–347ทำให้Clientrequireที่65ล้ม/HUDไม่เริ่ม;F-32 P1 OPEN: fixtureRUN_SPEEDnil;F-17/F-18ยังไม่ผ่านจาก64PASSเดิม
 - F-25..F-30 OPEN ตามreview-003: intermediateclearance/A05-A16runtime/stopcancel/airbornelanding/contactauthority/foot-slip; freshnative/Edit/Live/visualหลังadaptNOT RUN
 - F-13..F-18 OPEN; F-20..F-24 OPEN ตามreview-002; F-21มีOwner visual REJECTED
 - F-10/F-11/F-12/F-19ดีขึ้นในcodeแต่ไม่ใช้จำนวนtestsรับรองruntime/ปิดfindingทั้งข้อ

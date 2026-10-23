@@ -82,77 +82,94 @@ end
 
 --[=[
     Computes pure orientation tilt CFrame in RootJoint local space.
-    Pitch tilts forward (+X in Motor6D Part0), Roll tilts laterally (Z axis).
+    W (+forward) tilts Torso.Up forward (Part0 -X pitch); Roll tilts laterally (Z axis).
+    Governed by: docs/plan/phase-01-gameplay-demo/02-player-actions/assets/HANDOFF.md §14.1–14.2
 ]=]
 function AirLeanSolver.ComputeLeanCFrame(leanForward: number, leanRight: number): CFrame
     local pitchRad, rollRad = AirLeanSolver.ComputeLeanAngles(leanForward, leanRight)
-    -- Rotation: Pitch forward tilts around local X axis; Roll right tilts around local Z axis
-    return CFrame.Angles(pitchRad, 0, -rollRad)
+    -- In R6 RootJoint C0, negating pitch tilts Torso.Up forward into -Z (W forward, S backward)
+    return CFrame.Angles(-pitchRad, 0, -rollRad)
 end
 
 --[=[
     Calculates deterministic launch velocity and angular spin deflection for airborne shots.
-    Takes the locked takeoff horizontal azimuth F0, camera elevation angle, base shot velocities,
-    and accepted lean snapshot.
+    Uses validated 3D aim direction from reticle/camera as the base trajectory (Owner Delta §14.3),
+    applying a small bounded deterministic perturbation in the aim-local frame (extra cone <= 5 deg).
 ]=]
 function AirLeanSolver.ComputeAirShotTrajectory(
-    baseAzimuthF0: Vector3,
-    cameraElevationAngle: number,
-    basePower: number,
-    baseVerticalPower: number,
-    leanForward: number?,
-    leanRight: number?,
-    actionType: string?
+    baseAimOrF0: Vector3,
+    speedOrElev: number,
+    biasOrPower: number,
+    leanFwdOrVertPower: any,
+    leanRgtOrFwd: any,
+    actionOrRgt: any,
+    legacyAction: any
 ): (Vector3, Vector3)
+    local baseAimDirection: Vector3
+    local kickSpeed: number
+    local upwardBias: number
+    local leanForward: number?
+    local leanRight: number?
+    local actionType: string?
+
+    -- Support both new 6-arg aim-relative signature and legacy 7-arg (F0, elev, power, vertPower, ...) signature
+    if typeof(leanFwdOrVertPower) == "number" and typeof(leanRgtOrFwd) == "number" and (legacyAction ~= nil or typeof(actionOrRgt) == "number") then
+        local elev = speedOrElev
+        local power = biasOrPower
+        local vertPower = leanFwdOrVertPower :: number
+        local flatF0 = Vector3.new(baseAimOrF0.X, 0, baseAimOrF0.Z)
+        local F0 = if flatF0.Magnitude > 0.001 then flatF0.Unit else Vector3.new(0, 0, -1)
+        baseAimDirection = (F0 * math.cos(elev) + UP_VECTOR * math.sin(elev)).Unit
+        kickSpeed = power
+        upwardBias = if power > 0.001 then vertPower / power else 0.0
+        leanForward = leanRgtOrFwd :: number?
+        leanRight = actionOrRgt :: number?
+        actionType = legacyAction :: string?
+    else
+        baseAimDirection = baseAimOrF0
+        kickSpeed = speedOrElev
+        upwardBias = biasOrPower
+        leanForward = leanFwdOrVertPower :: number?
+        leanRight = leanRgtOrFwd :: number?
+        actionType = actionOrRgt :: string?
+    end
+
+    -- 1. Base launch vector from validated aimDirection3D (Owner Delta §14.3)
+    local rawAim = if baseAimDirection and baseAimDirection.Magnitude > 0.001 then baseAimDirection.Unit else Vector3.new(0, 0, -1)
+    local launchY = math.clamp(rawAim.Y + upwardBias, -0.75, 0.85)
+    local horizScale = math.sqrt(math.max(0.01, 1.0 - launchY * launchY))
+    local horizAim = Vector3.new(rawAim.X, 0, rawAim.Z)
+    local flatAim = if horizAim.Magnitude > 0.001 then horizAim.Unit else Vector3.new(0, 0, -1)
+    local baseLaunchDir = (flatAim * horizScale + UP_VECTOR * launchY).Unit
+    local baseVelocity = baseLaunchDir * kickSpeed
+
+    -- 2. Neutral lean fast-path: exact base trajectory without extra modification
     local f, r = AirLeanSolver.ClampLeanInput(leanForward, leanRight)
-
-    -- Normalize horizontal F0 (ensure valid unit vector)
-    local flatF0 = Vector3.new(baseAzimuthF0.X, 0, baseAzimuthF0.Z)
-    local F0 = if flatF0.Magnitude > 0.001 then flatF0.Unit else Vector3.new(0, 0, -1)
-    local R0 = F0:Cross(UP_VECTOR).Unit
-
-    -- Elevation bounded between -35 deg and +45 deg
-    local cleanElevation = math.clamp(cameraElevationAngle, math.rad(-35.0), math.rad(45.0))
-
-    -- Neutral lean fast-path: exact base trajectory without extra modification
     if math.abs(f) < 0.001 and math.abs(r) < 0.001 then
-        local baseDir = (F0 * math.cos(cleanElevation) + UP_VECTOR * math.sin(cleanElevation)).Unit
-        local baseVelocity = baseDir * basePower + UP_VECTOR * baseVerticalPower
         return baseVelocity, Vector3.zero
     end
 
-    -- 1. Pitch modifies launch elevation angle
-    local elevationOffset = math.rad(f * AirLeanConfigs.MAX_ELEVATION_DEFLECTION_DEG)
-    local effectiveElevation = math.clamp(cleanElevation + elevationOffset, math.rad(-45.0), math.rad(55.0))
+    -- 3. Construct orthonormal AIM-local coordinate frame (AimForward, AimRight, AimUp)
+    local AimForward = baseLaunchDir
+    local refUp = UP_VECTOR
+    if math.abs(AimForward:Dot(refUp)) > 0.98 then
+        refUp = Vector3.new(0, 0, -1)
+    end
+    local AimRight = AimForward:Cross(refUp).Unit
+    local AimUp = AimRight:Cross(AimForward).Unit
 
-    -- 2. Base directed launch vector from effective elevation
-    local baseDir = (F0 * math.cos(effectiveElevation) + UP_VECTOR * math.sin(effectiveElevation)).Unit
-    local baseVelocity = baseDir * basePower + UP_VECTOR * baseVerticalPower
+    -- 4. Bounded deflection cone: strictly capped at MAX_DEFLECTION_CONE_DEG (5.0 deg)
+    local maxConeDeg = AirLeanConfigs.MAX_DEFLECTION_CONE_DEG or 5.0
+    local yawAngle = math.rad(r * maxConeDeg)
+    local pitchAngle = math.rad(-f * maxConeDeg)
+    local deflectedDir = (AimForward + AimRight * math.tan(yawAngle) + AimUp * math.tan(pitchAngle)).Unit
+    local finalVelocity = deflectedDir * kickSpeed
 
-    -- 3. Roll imparts lateral tangential impulse along R0 (Right vector)
-    local lateralMag = math.clamp(
-        r * basePower * AirLeanConfigs.LATERAL_IMPULSE_RATIO,
-        -AirLeanConfigs.MAX_LATERAL_DEFLECTION_STUDS,
-        AirLeanConfigs.MAX_LATERAL_DEFLECTION_STUDS
-    )
-    local lateralImpulse = R0 * lateralMag
+    -- 5. Bounded physical curve force (studs/s²) for subtle Magnus drift
+    local maxExtraCurve = AirLeanConfigs.MAX_EXTRA_CURVE_FORCE or 6.0
+    local extraCurveForce = AimRight * (-r * maxExtraCurve)
 
-    local rawVelocity = baseVelocity + lateralImpulse
-
-    -- 4. Energy Conservation Cap (prevents exploit power boosting)
-    local maxSpeed = math.max(baseVelocity.Magnitude, basePower) * AirLeanConfigs.ENERGY_BOOST_CAP
-    local finalVelocity = if rawVelocity.Magnitude > maxSpeed
-        then rawVelocity.Unit * maxSpeed
-        else rawVelocity
-
-    -- 5. Physical Spin Deflection
-    -- Rolling right induces clockwise curve (negative yaw spin); rolling left induces counter-clockwise curve
-    local yawSpin = -r * AirLeanConfigs.SPIN_DEFLECTION_RAD_S
-    -- Pitching forward induces topspin (curves downward); pitching back induces backspin (floats)
-    local pitchSpin = f * (AirLeanConfigs.SPIN_DEFLECTION_RAD_S * 0.6)
-    local finalSpin = Vector3.new(0, yawSpin, 0) + R0 * pitchSpin
-
-    return finalVelocity, finalSpin
+    return finalVelocity, extraCurveForce
 end
 
 return table.freeze(AirLeanSolver)

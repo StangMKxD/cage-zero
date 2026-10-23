@@ -86,8 +86,10 @@ local airborneRecoveryDuration = 0.28
 local wasCustomPoseActive = false
 local lastObservedCharacter: Model? = nil
 
-local airLeanForward = 0.0
-local airLeanRight = 0.0
+local targetLeanForward = 0.0
+local targetLeanRight = 0.0
+local currentLeanForward = 0.0
+local currentLeanRight = 0.0
 
 type JointMap = {
 	RootJoint: Motor6D?,
@@ -369,8 +371,7 @@ function R6ActionPoseController.SetSliding(sliding: boolean)
 end
 
 function R6ActionPoseController.SetAirLean(forward: number, right: number)
-	airLeanForward = forward
-	airLeanRight = right
+	targetLeanForward, targetLeanRight = AirLeanSolver.ClampLeanInput(forward, right)
 end
 
 function R6ActionPoseController.IsCustomPoseActive(): boolean
@@ -426,8 +427,10 @@ function R6ActionPoseController.ResetPoses(char: Model?)
 	isWhiffing = false
 	isSlideRecovering = false
 	isAirborneRecovering = false
-	airLeanForward = 0.0
-	airLeanRight = 0.0
+	targetLeanForward = 0.0
+	targetLeanRight = 0.0
+	currentLeanForward = 0.0
+	currentLeanRight = 0.0
 	wasCustomPoseActive = false
 	actionBlendWeight = 1.0
 	actionTargetWeight = 1.0
@@ -639,7 +642,29 @@ function R6ActionPoseController.Init()
 		end
 
 		local isAir = (char:GetAttribute("IsAirborne") == true) or (hum and hum.FloorMaterial == Enum.Material.Air)
-		if isAir and (math.abs(airLeanForward) > 0.01 or math.abs(airLeanRight) > 0.01) then
+		if isAir then
+			currentLeanForward, currentLeanRight = AirLeanSolver.SlewLean(
+				currentLeanForward,
+				currentLeanRight,
+				targetLeanForward,
+				targetLeanRight,
+				dt
+			)
+		else
+			-- Smoothly ease back to neutral when grounded or landing (F-34)
+			currentLeanForward, currentLeanRight = AirLeanSolver.SlewLean(
+				currentLeanForward,
+				currentLeanRight,
+				0.0,
+				0.0,
+				dt
+			)
+			targetLeanForward = 0.0
+			targetLeanRight = 0.0
+		end
+
+		local hasActiveLean = math.abs(currentLeanForward) > 0.001 or math.abs(currentLeanRight) > 0.001
+		if hasActiveLean then
 			isActionActive = true
 		end
 
@@ -663,8 +688,8 @@ function R6ActionPoseController.Init()
 			local deltaY = math.max(0, 0.010 - minY)
 			local effectiveRootCF = if deltaY > 0 then (CFrame.new(0, deltaY, 0) * currentOffsets.RootJoint) else currentOffsets.RootJoint
 
-			if isAir and (math.abs(airLeanForward) > 0.01 or math.abs(airLeanRight) > 0.01) then
-				local leanCF = AirLeanSolver.ComputeLeanCFrame(airLeanForward, airLeanRight)
+			if hasActiveLean then
+				local leanCF = AirLeanSolver.ComputeLeanCFrame(currentLeanForward, currentLeanRight)
 				effectiveRootCF = effectiveRootCF * leanCF
 			end
 
