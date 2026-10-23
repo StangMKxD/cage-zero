@@ -13,9 +13,11 @@ local Constants = require(Shared:WaitForChild("Constants"))
 local Network = require(Shared:WaitForChild("Network"))
 local Types = require(Shared:WaitForChild("Types"))
 local AirLeanSolver = require(Shared:WaitForChild("AirLeanSolver"))
+local JumpModel = require(Shared:WaitForChild("JumpModel"))
 local Configs = Shared:WaitForChild("configs")
 local PlayerActionPoseConfigs = require(Configs:WaitForChild("PlayerActionPoseConfigs"))
 local AirLeanConfigs = require(Configs:WaitForChild("AirLeanConfigs"))
+local JumpConfigs = require(Configs:WaitForChild("JumpConfigs"))
 
 local Services = script.Parent
 local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
@@ -69,6 +71,13 @@ export type PlayerMovementState = {
 	airLeanForward: number?,
 	airLeanRight: number?,
 	lastAirLeanTime: number?,
+	flightState: Types.FlightState,
+	flightId: string?,
+	airOffensiveBudget: number,
+	hasLeftGround: boolean,
+	landingLagUntil: number,
+	takeoffY: number,
+	lastGroundedTime: number,
 }
 
 local BALL_PART_NAME = Constants.BALL_PART_NAME or "CageMatchBall"
@@ -149,6 +158,13 @@ local function getOrCreatePlayerState(userId: number): PlayerMovementState
 		airLeanForward = 0.0,
 		airLeanRight = 0.0,
 		lastAirLeanTime = 0,
+		flightState = "Grounded",
+		flightId = nil,
+		airOffensiveBudget = 0,
+		hasLeftGround = false,
+		landingLagUntil = 0,
+		takeoffY = 0,
+		lastGroundedTime = 0,
 	}
 	playerStates[userId] = newState
 	return newState
@@ -175,6 +191,10 @@ local function syncPlayerAttributes(player: Player?, st: PlayerMovementState)
 	char:SetAttribute("IsDashing", st.isDashing)
 	char:SetAttribute("DashCooldownRemaining", math.max(0, math.round((st.dashCooldownUntil - now) * 100) / 100))
 	char:SetAttribute("IsAirborne", st.isAirborne)
+	char:SetAttribute("FlightState", st.flightState)
+	char:SetAttribute("FlightId", st.flightId or "")
+	char:SetAttribute("AirOffensiveBudget", st.airOffensiveBudget)
+	char:SetAttribute("LandingLagRemaining", math.max(0, math.round((st.landingLagUntil - now) * 100) / 100))
 	char:SetAttribute("IsCharging", st.isCharging)
 	char:SetAttribute("ActionContext", st.actionContext)
 	char:SetAttribute("PlayerActionGeneration", st.characterGeneration)
@@ -199,6 +219,8 @@ local function syncPlayerAttributes(player: Player?, st: PlayerMovementState)
 	char:SetAttribute("LastActionRejectReason", st.lastActionReason)
 	char:SetAttribute("ResolvedKickFoot", st.resolvedKickFoot or "")
 	char:SetAttribute("ResolvedCurveStyle", st.resolvedCurveStyle or "")
+	char:SetAttribute("HasBall", ballState.possessorUserId == st.userId)
+	char:SetAttribute("IsPossessor", ballState.possessorUserId == st.userId)
 end
 
 local function recordActionFailure(player: Player | { UserId: number, Character: Model? }, intentId: string?, reason: Types.ActionRejectReason): boolean
@@ -303,6 +325,10 @@ function BallService.ClearAllPlayerStates()
 	syncBallAttributes()
 end
 
+function BallService.GetOrCreatePlayerState(userId: number): PlayerMovementState
+	return getOrCreatePlayerState(userId)
+end
+
 function BallService.EnsureBallInstance(): Part
 	if ballPart and ballPart.Parent ~= nil then
 		return ballPart
@@ -345,6 +371,8 @@ function BallService.GetBallState(): Types.BallSnapshot
 		inFlightAction = ballState.inFlightAction,
 	}
 end
+
+BallService.GetBallSnapshot = BallService.GetBallState
 
 function BallService.SetBallPositionAndVelocity(pos: Vector3, vel: Vector3)
 	ballState.position = pos
@@ -489,6 +517,10 @@ function BallService.GetPlayerMovementSnapshot(userId: number): Types.PlayerMove
 		airLeanForward = st.airLeanForward,
 		airLeanRight = st.airLeanRight,
 		jumpFacingF0 = st.jumpFacingF0,
+		flightState = st.flightState,
+		flightId = st.flightId,
+		airOffensiveBudget = st.airOffensiveBudget,
+		landingLagRemaining = math.max(0.0, st.landingLagUntil - now),
 	}
 end
 
@@ -606,6 +638,14 @@ function BallService.ExecuteKick(
 	local isRealAirborne = (not rootPart.Anchored) and (humanoid.FloorMaterial == Enum.Material.Air) and (rootPart.Position.Y > 3.6)
 	local isAirborneKicker = st.isAirborne or (st.takeoffTime > 0 and (os.clock() - st.takeoffTime) < 1.5) or isRealAirborne
 
+	if isAirborneKicker then
+		if st.airOffensiveBudget <= 0 then
+			return recordActionFailure(player, intentId, "ExceededBudget")
+		end
+		-- Atomically consume offensive action budget per flight (§15.3)
+		st.airOffensiveBudget = math.max(0, st.airOffensiveBudget - 1)
+	end
+
 	local maxHorizReach = if isAirborneKicker then (Constants.AERIAL_VOLLEY_REACH or 9.5) else (Constants.FIRST_TIME_KICK_REACH or 9.0)
 	local maxVertReach = Constants.FIRST_TIME_VERT_REACH or 8.5
 	local inKickRange = isPossessor or (horizDist <= maxHorizReach and vertDist <= maxVertReach)
@@ -616,9 +656,11 @@ function BallService.ExecuteKick(
 		local offBallAction = actionType
 		if isAirborneKicker then
 			offBallAction = if actionType == "Volley" or actionType == "CurveShoot" then "Volley" else "DirectShoot"
+			-- Valid airborne attempt that whiffs consumes budget once but does not add whiff stun (§15.3)
+		else
+			st.whiffRecoveryUntil = os.clock() + (Constants.WHIFF_RECOVERY_SEC or 0.35)
+			humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
 		end
-		st.whiffRecoveryUntil = os.clock() + (Constants.WHIFF_RECOVERY_SEC or 0.35)
-		humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
 		char:SetAttribute("LastResolvedAction", offBallAction)
 		char:SetAttribute("LastActionStatus", "Rejected")
 		char:SetAttribute("LastActionReason", "OutOfReach")
@@ -725,6 +767,12 @@ function BallService.ExecuteKick(
 		finalVel = (horizUnit * hScale + Vector3.new(0, headerLaunchY, 0)).Unit * kickSpeed
 	elseif resolvedAction == "Pass" then
 		local passSpeed = Constants.PASS_BASE_SPEED * (0.55 + charge * 1.00) * passMod * boostMult
+		if isAirborneKicker then
+			local timeInFlight = math.max(0, os.clock() - st.takeoffTime)
+			local currentVY = rootPart.AssemblyLinearVelocity.Y
+			local softQuality = JumpModel.CalculateSoftQuality(timeInFlight, currentVY)
+			passSpeed = passSpeed * softQuality
+		end
 		if aimDir.Y < -0.14 and ballState.position.Y <= Constants.BALL_RADIUS + 0.35 then
 			local bounceUp = math.abs(aimDir.Y) * passSpeed * (Constants.FLOOR_SMASH_RESTITUTION or 0.84) * 1.15
 			local forwardSpeed = math.sqrt(math.max(0.15, 1 - aimDir.Y * aimDir.Y)) * passSpeed * 0.95
@@ -755,6 +803,12 @@ function BallService.ExecuteKick(
 		end
 
 		if isAirborneKicker then
+			-- Calculate soft quality multiplier [0.90, 1.00] from flight timing and vertical velocity (§15.3)
+			local timeInFlight = math.max(0, os.clock() - st.takeoffTime)
+			local currentVY = rootPart.AssemblyLinearVelocity.Y
+			local softQuality = JumpModel.CalculateSoftQuality(timeInFlight, currentVY)
+			kickSpeed = kickSpeed * softQuality
+
 			-- Airborne Shot: Aim-Relative Lean Trajectory Deflection & Bounded Physical Spin (Owner Delta §14.3)
 			local leanFwd = st.airLeanForward or 0.0
 			local leanRgt = st.airLeanRight or 0.0
@@ -1046,56 +1100,92 @@ function BallService.ExecuteDash(player: Player | { UserId: number, Character: M
 	return true
 end
 
-function BallService.ExecuteDirectionalJump(player: Player | { UserId: number, Character: Model? }, jumpDirection: Vector3): boolean
+function BallService.ExecuteDirectionalJump(
+	player: Player | { UserId: number, Character: Model? },
+	jumpDirection: Vector3,
+	flightId: string?,
+	intentId: string?
+): boolean
 	local userId = player.UserId
 	local st = getOrCreatePlayerState(userId)
 	local now = os.clock()
 
+	-- Cannot initiate jump if in Slide or recovery or landing lag
+	if st.isSliding or now < st.slideRecoveryUntil then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+	if now < st.landingLagUntil then
+		return recordActionFailure(player, intentId, "LandingLag")
+	end
+
 	-- Directional jump cannot alter trajectory once airborne per Spec 02 §1 & F-15
-	if st.isAirborne then
-		return false
+	if st.isAirborne or (st.flightState ~= "Grounded" and st.flightState ~= "Landed") then
+		return recordActionFailure(player, intentId, "Recovery")
 	end
 
 	local char = getPlayerCharacter(userId) or (if typeof(player) == "Instance" and player:IsA("Player") then player.Character else (player :: any).Character)
 	if not char or not char.PrimaryPart then
-		return false
+		return recordActionFailure(player, intentId, "NotAlive")
 	end
 
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	if not humanoid or humanoid.Health <= 0 then
-		return false
-	end
-
-	-- Cannot initiate jump while already falling in air (F-15 edge fall)
-	if isCharacterAirborne(char, humanoid, char.PrimaryPart) then
-		return false
+		return recordActionFailure(player, intentId, "NotAlive")
 	end
 
 	local rootPart = char.PrimaryPart
+
+	-- Bounded recent ground tolerance (absorbs client prediction packet delay, but rejects edge fall)
+	local isFloorGrounded = (humanoid.FloorMaterial ~= Enum.Material.Air) or (rootPart.Position.Y <= 2.25)
+	local isRecentGround = (now - st.lastGroundedTime) <= (JumpConfigs.RECENT_GROUND_TOLERANCE_SEC or 0.12)
+	if not isFloorGrounded and not isRecentGround then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+
+	-- Grounded personal possessor cannot create a character jump flight (Owner Delta § 16.1)
+	if isFloorGrounded and ballState.possessorUserId == userId then
+		return recordActionFailure(player, intentId, "PossessingBall")
+	end
+
 	local isStationaryJump = (jumpDirection.Magnitude <= 0.08)
 	local flatDir = Vector3.new(jumpDirection.X, 0, jumpDirection.Z)
 	local dir = if flatDir.Magnitude > 0.08 then flatDir.Unit else Vector3.zero
 
+	local resolvedFlightId = flightId or ("flight_" .. tostring(math.floor(now * 1000)) .. "_" .. tostring(userId))
+
 	st.isAirborne = true
 	st.takeoffTime = now
+	st.takeoffY = rootPart.Position.Y
+	st.flightState = "Rising"
+	st.flightId = resolvedFlightId
+	st.airOffensiveBudget = JumpConfigs.AIR_OFFENSIVE_BUDGET_PER_FLIGHT or 1
+	st.hasLeftGround = false
 	st.jumpFacingF0 = if dir.Magnitude > 0.08 then dir else Vector3.new(rootPart.CFrame.LookVector.X, 0, rootPart.CFrame.LookVector.Z).Unit
 	st.airLeanForward = 0.0
 	st.airLeanRight = 0.0
 	st.lastAirLeanTime = now
 
+	local horizSpeed = if st.isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+	local targetHoriz = if isStationaryJump then Vector3.zero else (dir * horizSpeed)
+
 	if isStationaryJump then
 		st.jumpLockedVelocity = nil
 	else
-		local horizSpeed = if st.isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
-		st.jumpLockedVelocity = dir * horizSpeed
+		st.jumpLockedVelocity = targetHoriz
 	end
 
-	-- For mock players or server physics where Humanoid JumpPower is not simulated by client:
+	-- For mock players or server physics where client network ownership does not exist:
 	local isMockPlayer = (typeof(player) == "table") or (not (typeof(player) == "Instance" and player:IsA("Player")))
-	if isMockPlayer and rootPart and st.jumpLockedVelocity then
-		local currentVY = rootPart.AssemblyLinearVelocity.Y
-		local vertY = if currentVY > 1.0 then currentVY else (Constants.DIRECTIONAL_JUMP_VERTICAL_SPEED or 56.0)
-		rootPart.AssemblyLinearVelocity = Vector3.new(st.jumpLockedVelocity.X, vertY, st.jumpLockedVelocity.Z)
+	if isMockPlayer and rootPart then
+		local totalMass = rootPart.AssemblyMass
+		local impulse = JumpModel.CalculateLaunchImpulse(
+			rootPart.AssemblyLinearVelocity,
+			targetHoriz,
+			JumpConfigs.VERTICAL_LAUNCH_SPEED,
+			totalMass
+		)
+		rootPart:ApplyImpulse(impulse)
+		rootPart.AssemblyLinearVelocity = Vector3.new(targetHoriz.X, JumpConfigs.VERTICAL_LAUNCH_SPEED, targetHoriz.Z)
 	end
 
 	-- If possessing ball, jumping drops ball into free/loose ball (matching Sandbox prototype3:1717)
@@ -1107,8 +1197,74 @@ function BallService.ExecuteDirectionalJump(player: Player | { UserId: number, C
 		updateTeamContexts()
 	end
 
-	local p = Players:GetPlayerByUserId(userId)
-	syncPlayerAttributes(p, st)
+	recordActionSuccess(player, intentId, "DirectionalJump")
+	return true
+end
+
+function BallService.ExecuteBallPop(
+	player: Player | { UserId: number, Character: Model? },
+	moveDirection: Vector3?,
+	intentId: string?
+): boolean
+	local userId = player.UserId
+	local st = getOrCreatePlayerState(userId)
+	local now = os.clock()
+
+	local char = getPlayerCharacter(userId) or (if typeof(player) == "Instance" and player:IsA("Player") then player.Character else (player :: any).Character)
+	if not char or not char.PrimaryPart then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local rootPart = char.PrimaryPart
+
+	-- 1. Must be ACTUAL server possessor
+	if ballState.possessorUserId ~= userId then
+		return recordActionFailure(player, intentId, "NotPossessor")
+	end
+
+	-- 2. Must be grounded (floor material ~= Air or Y <= 2.25)
+	local isFloorGrounded = (humanoid.FloorMaterial ~= Enum.Material.Air) or (rootPart.Position.Y <= 2.25)
+	if not isFloorGrounded then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+
+	-- 3. Calculate launch velocity via pure deterministic JumpModel
+	local launchVelocity = JumpModel.CalculateBallPopLaunchVelocity(
+		moveDirection,
+		st.isSprinting,
+		Constants.GRAVITY_ACCELERATION_Y,
+		JumpConfigs.GRAVITY,
+		JumpConfigs.VERTICAL_LAUNCH_SPEED,
+		Constants.WALK_SPEED,
+		Constants.SPRINT_SPEED
+	)
+
+	-- 4. Atomically release possession (Single Ball Writer)
+	ballState.possessorUserId = nil
+	ballState.state = "Free"
+	ballState.lastKickerUserId = userId
+	ballState.lastKickTime = now
+	ballState.lastPossessingTeam = st.teamSide
+	ballState.inFlightAction = "BallPop" :: any
+	ballState.velocity = launchVelocity
+	ballState.curveImpulse = nil
+
+	if ballPart then
+		ballPart.AssemblyLinearVelocity = launchVelocity
+	end
+
+	syncBallAttributes()
+	updateTeamContexts()
+
+	-- 5. Character stays 100% on the ground (no takeoff, no impulse, no flightId, no budget consume)
+	st.lastResolvedAction = "BallPop"
+	st.actionSequence += 1
+	recordActionSuccess(player, intentId, "BallPop")
 	return true
 end
 
@@ -1271,22 +1427,37 @@ function BallService.StepPhysics(dt: number)
 			end
 		end
 
-		-- Directional Jump airborne & landing lifecycle (F-15)
+		local isFloorGrounded = false
+		if humanoid and rootPart then
+			isFloorGrounded = (humanoid.FloorMaterial ~= Enum.Material.Air) or (rootPart.Position.Y <= 2.25)
+			if isFloorGrounded and not st.isAirborne then
+				st.lastGroundedTime = now
+				st.flightState = "Grounded"
+				st.airOffensiveBudget = 0
+			end
+		end
+
+		-- Directional Jump airborne & landing lifecycle (F-15 & §15 FSM)
 		if st.isAirborne then
 			if rootPart and humanoid then
-				local takeoffPassed = (now - st.takeoffTime) > 0.18
-				local isDescending = rootPart.AssemblyLinearVelocity.Y <= 0.5
+				local timeInFlight = now - st.takeoffTime
+				local vy = rootPart.AssemblyLinearVelocity.Y
+
+				if not st.hasLeftGround and (timeInFlight >= 0.04 or vy > 2.0 or humanoid.FloorMaterial == Enum.Material.Air) then
+					st.hasLeftGround = true
+				end
+
 				local isLanded = false
-				if takeoffPassed then
+				if st.hasLeftGround and timeInFlight > 0.12 then
 					if rootPart.Position.Y <= 2.25 or CagePhysicsService.IsPositionOnElevatingRamp(rootPart.Position) then
 						isLanded = true
-					elseif isDescending then
+					elseif vy <= 0.5 then
 						if humanoid.FloorMaterial ~= Enum.Material.Air then
 							isLanded = true
 						else
 							local rayParams = RaycastParams.new()
-							local char = getPlayerCharacter(userId)
-							if char then rayParams.FilterDescendantsInstances = { char } end
+							local charMod = getPlayerCharacter(userId)
+							if charMod then rayParams.FilterDescendantsInstances = { charMod } end
 							rayParams.FilterType = Enum.RaycastFilterType.Exclude
 							local footPos = rootPart.Position - Vector3.new(0, 2.0, 0)
 							local rayResult = Workspace:Raycast(footPos, Vector3.new(0, -0.9, 0), rayParams)
@@ -1297,7 +1468,22 @@ function BallService.StepPhysics(dt: number)
 					end
 				end
 
-				if not isLanded then
+				local nextState = JumpModel.ResolveFlightState(vy, timeInFlight, st.hasLeftGround, isLanded)
+				st.flightState = nextState
+
+				if isLanded or nextState == "Landed" then
+					st.isAirborne = false
+					st.flightState = "Grounded"
+					st.landingLagUntil = now + JumpConfigs.LANDING_LAG_SEC
+					st.lastGroundedTime = now
+					st.airOffensiveBudget = 0
+					st.flightId = nil
+					st.hasLeftGround = false
+					st.jumpLockedVelocity = nil
+					st.jumpFacingF0 = nil
+					st.airLeanForward = 0.0
+					st.airLeanRight = 0.0
+				else
 					local playerObj = Players:GetPlayerByUserId(userId)
 					local isRealPlayer = (playerObj ~= nil and playerObj:IsA("Player"))
 					if not isRealPlayer and st.jumpLockedVelocity and rootPart then
@@ -1307,12 +1493,6 @@ function BallService.StepPhysics(dt: number)
 							st.jumpLockedVelocity.Z
 						)
 					end
-				else
-					st.isAirborne = false
-					st.jumpLockedVelocity = nil
-					st.jumpFacingF0 = nil
-					st.airLeanForward = 0.0
-					st.airLeanRight = 0.0
 				end
 			end
 		end
@@ -1467,7 +1647,8 @@ function BallService.StepPhysics(dt: number)
 		local ballSpeed = nextVel.Magnitude
 
 		for userId, st in pairs(playerStates) do
-			local isKickerCooldown = (userId == ballState.lastKickerUserId and (now - ballState.lastKickTime) < 0.22)
+			local kickerCooldownWindow = if ballState.inFlightAction == "BallPop" then (Constants.BALL_POP_REPOSSESS_COOLDOWN or 0.35) else 0.22
+			local isKickerCooldown = (userId == ballState.lastKickerUserId and (now - ballState.lastKickTime) < kickerCooldownWindow)
 			if not isKickerCooldown then
 				local char = getPlayerCharacter(userId)
 				local rootPart = char and char.PrimaryPart
@@ -1530,6 +1711,13 @@ local function setupPlayerLifecycle(player: Player)
 		st.isSprinting = false
 		st.isDashing = false
 		st.isAirborne = false
+		st.flightState = "Grounded"
+		st.flightId = nil
+		st.airOffensiveBudget = 0
+		st.hasLeftGround = false
+		st.landingLagUntil = 0
+		st.takeoffY = 0
+		st.lastGroundedTime = os.clock()
 		st.jumpFacingF0 = nil
 		st.airLeanForward = 0.0
 		st.airLeanRight = 0.0
@@ -1556,8 +1744,9 @@ local function setupPlayerLifecycle(player: Player)
 
 		if humanoid then
 			humanoid.UseJumpPower = true
-			humanoid.JumpPower = Constants.HIGH_JUMP_POWER or 72.0
-			humanoid.JumpHeight = Constants.HIGH_JUMP_HEIGHT or 15.5
+			humanoid.JumpPower = 0
+			humanoid.JumpHeight = 0
+			humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 
 			local diedConn: RBXScriptConnection? = nil
 			diedConn = humanoid.Died:Connect(function()
@@ -1580,6 +1769,12 @@ local function setupPlayerLifecycle(player: Player)
 					curSt.isSprinting = false
 					curSt.isDashing = false
 					curSt.isAirborne = false
+					curSt.flightState = "Grounded"
+					curSt.flightId = nil
+					curSt.airOffensiveBudget = 0
+					curSt.hasLeftGround = false
+					curSt.landingLagUntil = 0
+					curSt.takeoffY = 0
 					curSt.jumpFacingF0 = nil
 					curSt.airLeanForward = 0.0
 					curSt.airLeanRight = 0.0
@@ -1703,6 +1898,7 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 		BicycleKick = true,
 		AcrobaticFinishing = true,
 		SetAirLean = true,
+		BallPop = true,
 	}
 	if not allowedActions[act] then
 		recordActionFailure(player, intentId, "InvalidPayload")
@@ -1769,7 +1965,7 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 	-- F-14: Charge / Intent Latch & Lifecycle
 	st.processedIntents[intentId] = st.processedIntents[intentId] or {}
 
-	local isInstant = (canonicalAct == "Sprint" or canonicalAct == "StopSprint" or canonicalAct == "Dash" or canonicalAct == "DirectionalJump" or canonicalAct == "ResetBall")
+	local isInstant = (canonicalAct == "Sprint" or canonicalAct == "StopSprint" or canonicalAct == "Dash" or canonicalAct == "DirectionalJump" or canonicalAct == "ResetBall" or canonicalAct == "BallPop")
 
 	if phase == "start" then
 		if st.processedIntents[intentId]["start"] or st.processedIntents[intentId]["release"] or st.processedIntents[intentId]["cancel"] then
@@ -1861,7 +2057,9 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 	elseif canonicalAct == "Dash" then
 		BallService.ExecuteDash(player, aim)
 	elseif canonicalAct == "DirectionalJump" then
-		BallService.ExecuteDirectionalJump(player, aim)
+		BallService.ExecuteDirectionalJump(player, aim, actionPayload.flightId, intentId)
+	elseif canonicalAct == "BallPop" then
+		BallService.ExecuteBallPop(player, aim, intentId)
 	elseif canonicalAct == "CancelCharge" then
 		BallService.CancelCharge(player, intentId)
 	elseif canonicalAct == "ResetBall" then

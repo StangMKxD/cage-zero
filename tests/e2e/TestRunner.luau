@@ -24,6 +24,8 @@ end
 
 local PlayerActions = require(script.Parent:WaitForChild("Tier1_PlayerActions"))
 local AirLeanPhysics = require(script.Parent:WaitForChild("Tier1_AirLeanPhysics"))
+local StateJumpPhysics = require(script.Parent:WaitForChild("Tier1_StateJumpPhysics"))
+local BallPopPhysics = require(script.Parent:WaitForChild("Tier1_BallPopPhysics"))
 
 local TestRunner = {}
 
@@ -36,6 +38,8 @@ function TestRunner.RunPlayerActions(): any
 	print("================================================================================")
 	PlayerActions(TestHarness)
 	AirLeanPhysics(TestHarness)
+	StateJumpPhysics(TestHarness)
+	BallPopPhysics(TestHarness)
 
 	local durationMs = (os.clock() - startTime) * 1000.0
 	local summary = TestHarness.GetSummary(durationMs)
@@ -73,6 +77,68 @@ function TestRunner.RunAirLeanPhysics(): any
 
 	print("\n================================================================================")
 	print(string.format("AIR LEAN PHYSICS STATUS: %s", summary.status))
+	print(string.format("Total Tests:      %d", summary.totalTests))
+	print(string.format("Passed Tests:     %d", summary.passedTests))
+	print(string.format("Failed Tests:     %d", summary.failedTests))
+	print(string.format("Total Assertions: %d", summary.totalAssertions))
+	print(string.format("Execution Time:   %.2f ms", summary.durationMs))
+	print("================================================================================")
+
+	if summary.failedTests > 0 then
+		print("\nFAILED TEST DETAILS:")
+		for i, failure in ipairs(summary.failures) do
+			print(string.format("[%d] %s > %s: %s", i, failure.suiteName, failure.testName, failure.message))
+		end
+	end
+
+	return summary
+end
+
+function TestRunner.RunStateJumpPhysics(): any
+	TestHarness.Reset()
+	local startTime = os.clock()
+
+	print("================================================================================")
+	print("             CAGE ZERO E2E: STATE-BASED MOMENTUM JUMP PHYSICS                   ")
+	print("================================================================================")
+	StateJumpPhysics(TestHarness)
+
+	local durationMs = (os.clock() - startTime) * 1000.0
+	local summary = TestHarness.GetSummary(durationMs)
+
+	print("\n================================================================================")
+	print(string.format("STATE JUMP PHYSICS STATUS: %s", summary.status))
+	print(string.format("Total Tests:      %d", summary.totalTests))
+	print(string.format("Passed Tests:     %d", summary.passedTests))
+	print(string.format("Failed Tests:     %d", summary.failedTests))
+	print(string.format("Total Assertions: %d", summary.totalAssertions))
+	print(string.format("Execution Time:   %.2f ms", summary.durationMs))
+	print("================================================================================")
+
+	if summary.failedTests > 0 then
+		print("\nFAILED TEST DETAILS:")
+		for i, failure in ipairs(summary.failures) do
+			print(string.format("[%d] %s > %s: %s", i, failure.suiteName, failure.testName, failure.message))
+		end
+	end
+
+	return summary
+end
+
+function TestRunner.RunBallPopPhysics(): any
+	TestHarness.Reset()
+	local startTime = os.clock()
+
+	print("================================================================================")
+	print("                 CAGE ZERO E2E: BALL POP PHYSICS (§ 16)                         ")
+	print("================================================================================")
+	BallPopPhysics(TestHarness)
+
+	local durationMs = (os.clock() - startTime) * 1000.0
+	local summary = TestHarness.GetSummary(durationMs)
+
+	print("\n================================================================================")
+	print(string.format("TEST RUN STATUS: %s", summary.status))
 	print(string.format("Total Tests:      %d", summary.totalTests))
 	print(string.format("Passed Tests:     %d", summary.passedTests))
 	print(string.format("Failed Tests:     %d", summary.failedTests))

@@ -232,6 +232,7 @@ export type KickActionType =
 	| "Volley"
 	| "BicycleKick"
 	| "AcrobaticFinishing"
+	| "BallPop"
 
 export type ChargeActionType = "DirectShoot" | "CurveShoot" | "Pass" | "Slide"
 
@@ -252,6 +253,16 @@ export type ActionIntentName =
 	| "Volley"
 	| "BicycleKick"
 	| "SetAirLean"
+	| "BallPop"
+
+export type FlightState =
+	| "Grounded"
+	| "Takeoff"
+	| "Rising"
+	| "Apex"
+	| "Falling"
+	| "Landed"
+	| "LandingLag"
 
 export type ActionStatus = "Accepted" | "Rejected" | "Cancelled"
 
@@ -266,10 +277,15 @@ export type ActionRejectReason =
 	| "Recovery"
 	| "RateLimited"
 	| "RemovedAction"
+	| "ExceededBudget"
+	| "LandingLag"
+	| "NotPossessor"
+	| "PossessingBall"
 
 export type ActionIntentPayload = {
 	action: ActionIntentName,
 	intentId: string?,
+	flightId: string?,
 	characterGeneration: number?,
 	contextVersion: number?,
 	phase: ("start" | "release" | "cancel")?,
@@ -325,6 +341,10 @@ export type PlayerMovementSnapshot = {
 	airLeanRight: number?,
 	airLeanTimestamp: number?,
 	jumpFacingF0: Vector3?,
+	flightState: FlightState?,
+	flightId: string?,
+	airOffensiveBudget: number?,
+	landingLagRemaining: number?,
 }
 
 local Types = {}

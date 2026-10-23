@@ -7,6 +7,8 @@ Ownerdelta2026-10-22: ใช้ArgonR6Packเป็นต้นแบบvisual�
 ยังเว้นท่าโยก/Poke/Shoulder; ไม่มีLobPassแยก; 00/01ยังเปิดและพัก
 
 ## งานส่งแก้
+- [x] T-10 OWNERDELTA§16: groundpersonalpossessorSpace=BallPopตามmovement/playergrounded;releaseSpace+pressใหม่เมื่อballfree=normaljump;คงballphysicsทั้งชุดเปลี่ยนเฉพาะinitialpoplaunch,ไม่auto-jump/แย่งball/เปิดSombreroSkill03;รวมในfix009
+- [x] T-09 OWNERDELTA§15: adaptstate-basedcustomjump/singlelaunch+momentum/yawlock;mouseaim3Dยังได้;airreleaseหนึ่งครั้งต่อflight+softapexดีที่สุด กดได้ทั้งช่วงลอย;ไม่เพิ่มStyles/JumpMeter/SnakeJump;ทำหลังbaseline§13–14นิ่ง;รวมในfix009
 - [x] T-08 OWNERDELTA§14: F-33W/Sworldtilt,F-34smoothlean;shotbase=aim3D+smallboundeddeviationแทนF0;ลดBloomซ้อน/Haze+ballNeonแบบpresentation-only คงyawlock/physicsgeometry;รวมในfix008
 - [x] T-07 PRIORITY§13/review006: F-31InputControllerparseblocker+F-32AirLeanfixtureundefinedconstant;คืนdefaultClientboot/HUD/newbindingsและrealballinputก่อนงานอื่น ส่งfix008 ไม่ปิดแผน
 - [x] T-06 OWNERDELTA§12: onebindingต่อaction;groundLMBDirect/RMBCurve,airLMBDirect/RMBVolley;A=Finesse/D=Trivela;airWASDlean+serverphysicsตามlockedfacing/pitch ไม่มีHeader/Bicyclefallback;ส่งfix007

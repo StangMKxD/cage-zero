@@ -15,8 +15,10 @@ local Constants = require(Shared:WaitForChild("Constants"))
 local Network = require(Shared:WaitForChild("Network"))
 local Types = require(Shared:WaitForChild("Types"))
 local AirLeanSolver = require(Shared:WaitForChild("AirLeanSolver"))
+local JumpModel = require(Shared:WaitForChild("JumpModel"))
 local Configs = Shared:WaitForChild("configs")
 local PlayerActionPoseConfigs = require(Configs:WaitForChild("PlayerActionPoseConfigs"))
+local JumpConfigs = require(Configs:WaitForChild("JumpConfigs"))
 
 local CharacterFolder = script.Parent.Parent:WaitForChild("character")
 local R6AnimationController = require(CharacterFolder:WaitForChild("R6AnimationController"))
@@ -83,9 +85,12 @@ local jumpTakeoffTime = 0
 local isSpacebarHeld = false
 local jumpConsumedUntilRelease = false
 
--- Flight Lifecycle State (F-28)
-type FlightState = "idle" | "takeoff" | "ascent" | "apex" | "descent" | "landed"
-local currentFlightState: FlightState = "idle"
+-- Flight Lifecycle State (Owner Delta §15 Central FSM)
+local currentFlightState: Types.FlightState = "Grounded"
+local currentFlightId: string? = nil
+local hasLeftGround = false
+local landingLagUntil = 0.0
+local lockedFlightVelocity: Vector3? = nil
 local isAcrobaticInFlight = false
 
 local charContextConn: RBXScriptConnection? = nil
@@ -173,7 +178,7 @@ local function isCharacterAirborne(char: Model?, hum: Humanoid?, hrp: BasePart?)
 	if isAirborneLocked or isAcrobaticInFlight then
 		return true
 	end
-	if currentFlightState ~= "idle" and currentFlightState ~= "landed" then
+	if currentFlightState ~= "Grounded" and currentFlightState ~= "Landed" then
 		return true
 	end
 	if char and char:GetAttribute("IsAirborne") == true then
@@ -228,6 +233,7 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 	remote:FireServer({
 		action = finalAction,
 		intentId = resolvedIntentId,
+		flightId = if isAir then currentFlightId else nil,
 		characterGeneration = getCharacterGeneration(),
 		contextVersion = getActionContextVersion(),
 		phase = "release",
@@ -602,7 +608,7 @@ function InputController.RequestDash(overrideDir: Vector3?)
 	if isAirborneLocked then
 		if hum.FloorMaterial ~= Enum.Material.Air then
 			isAirborneLocked = false
-			currentFlightState = "idle"
+			currentFlightState = "Grounded"
 		else
 			return
 		end
@@ -722,8 +728,9 @@ local function commitJumpDirection(char: Model)
 
 	local moveDir = hum.MoveDirection
 	local flatMove = Vector3.new(moveDir.X, 0, moveDir.Z)
+	local isMoving = flatMove.Magnitude > 0.08
 	local commitDir: Vector3
-	if flatMove.Magnitude > 0.08 then
+	if isMoving then
 		commitDir = flatMove.Unit
 	else
 		local cam = Workspace.CurrentCamera
@@ -732,10 +739,15 @@ local function commitJumpDirection(char: Model)
 		commitDir = if flatLook.Magnitude > 0.08 then flatLook.Unit else Vector3.new(0, 0, -1)
 	end
 
+	local targetSpeed = if isMoving then (if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED) else 0.0
+	lockedFlightVelocity = if isMoving then (commitDir * targetSpeed) else Vector3.zero
+
 	jumpCommitDir = commitDir
 	jumpTakeoffTime = os.clock()
 	isAirborneLocked = true
-	currentFlightState = "takeoff"
+	currentFlightId = generateIntentId("flight")
+	currentFlightState = "Takeoff"
+	hasLeftGround = false
 	CameraShiftLockController.SetAirborneJumpLock(true, commitDir)
 
 	-- If Shift Lock is OFF, face jump direction at takeoff
@@ -743,26 +755,118 @@ local function commitJumpDirection(char: Model)
 		hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + commitDir)
 	end
 
-	-- Trigger native Humanoid jumping state so Roblox physics runs a smooth, natural jump arc (prototype3 fidelity)
-	hum.UseJumpPower = true
-	hum.JumpPower = Constants.HIGH_JUMP_POWER or 72.0
-	hum.JumpHeight = Constants.HIGH_JUMP_HEIGHT or 15.5
-	hum:ChangeState(Enum.HumanoidStateType.Jumping)
+	-- Single custom instantaneous launch impulse (BasePart:ApplyImpulse) per §15.2
+	local totalMass = hrp.AssemblyMass
+	local launchImpulse = JumpModel.CalculateLaunchImpulse(
+		hrp.AssemblyLinearVelocity,
+		lockedFlightVelocity,
+		JumpConfigs.VERTICAL_LAUNCH_SPEED,
+		totalMass
+	)
+	hrp:ApplyImpulse(launchImpulse)
 
 	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
 	remote:FireServer({
 		action = "DirectionalJump",
 		intentId = generateIntentId("jump"),
+		flightId = currentFlightId,
 		characterGeneration = getCharacterGeneration(),
 		contextVersion = getActionContextVersion(),
 		phase = "start",
-		aimDirection = if flatMove.Magnitude > 0.08 then commitDir else Vector3.zero,
+		aimDirection = if isMoving then commitDir else Vector3.zero,
 	})
 	R6AnimationController.PlayAction("jump")
 end
 
+local function isLocalPlayerPossessor(): boolean
+	local localPlayer = Players.LocalPlayer
+	if not localPlayer then
+		return false
+	end
+	local char = localPlayer.Character
+	if char and (char:GetAttribute("HasBall") == true or char:GetAttribute("IsPossessor") == true) then
+		return true
+	end
+	local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+	if ballPart and ballPart:GetAttribute("PossessorUserId") == localPlayer.UserId then
+		return true
+	end
+	return false
+end
+
+function InputController.RequestBallPop()
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	if not char then
+		return
+	end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hum or not hrp or hum.Health <= 0 then
+		return
+	end
+
+	-- Space consumed until physical key release
+	jumpConsumedUntilRelease = true
+
+	-- Compute validated horizontal WASD move direction
+	local moveDir = Vector3.zero
+	if hum.MoveDirection.Magnitude > (JumpConfigs.BALL_POP_MIN_MOVE_THRESHOLD or 0.08) then
+		local flat = Vector3.new(hum.MoveDirection.X, 0, hum.MoveDirection.Z)
+		if flat.Magnitude > 0.08 then
+			moveDir = flat.Unit
+		end
+	end
+
+	local popIntentId = generateIntentId("pop")
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = "BallPop",
+		intentId = popIntentId,
+		contextVersion = getActionContextVersion(),
+		characterGeneration = getCharacterGeneration(),
+		phase = "start",
+		aimDirection = moveDir,
+		isSprinting = isSprinting,
+	})
+
+	-- Play subtle ground pass/kick visual feedback
+	R6AnimationController.PlayAction("pass")
+end
+
+function InputController.RequestSpaceAction()
+	local now = os.clock()
+	if jumpConsumedUntilRelease or now < landingLagUntil then
+		return
+	end
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	if not char then
+		return
+	end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 or isSlidingClient then
+		return
+	end
+
+	local isGrounded = (hum.FloorMaterial ~= Enum.Material.Air) and (currentFlightState == "Grounded")
+	local possessesBall = isLocalPlayerPossessor()
+
+	if possessesBall and isGrounded then
+		-- OWNER DELTA § 16: Grounded Personal Possessor -> BallPop!
+		-- Character stays 100% on the ground.
+		InputController.RequestBallPop()
+		return
+	end
+
+	-- Non-possessor or mid-air -> normal directional jump
+	InputController.RequestDirectionalJump()
+end
+
 function InputController.RequestDirectionalJump()
-	if jumpConsumedUntilRelease then
+	local now = os.clock()
+	if jumpConsumedUntilRelease or now < landingLagUntil then
 		return
 	end
 	local localPlayer = Players.LocalPlayer
@@ -770,10 +874,13 @@ function InputController.RequestDirectionalJump()
 	if char then
 		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum and hum.Health > 0 and not isSlidingClient then
-			if hum.FloorMaterial ~= Enum.Material.Air then
-				isAirborneLocked = false
-				currentFlightState = "idle"
-				CameraShiftLockController.SetAirborneJumpLock(false)
+			local isGrounded = (hum.FloorMaterial ~= Enum.Material.Air) and (currentFlightState == "Grounded")
+			-- Contextual gate: grounded possessor must perform BallPop, never character jump!
+			if isGrounded and isLocalPlayerPossessor() then
+				InputController.RequestBallPop()
+				return
+			end
+			if isGrounded then
 				jumpConsumedUntilRelease = true
 				commitJumpDirection(char)
 			end
@@ -821,7 +928,11 @@ function InputController.Init()
 		isSlidingClient = false
 		isSpacebarHeld = false
 		jumpConsumedUntilRelease = false
-		currentFlightState = "idle"
+		currentFlightState = "Grounded"
+		currentFlightId = nil
+		hasLeftGround = false
+		landingLagUntil = 0.0
+		lockedFlightVelocity = nil
 		isAcrobaticInFlight = false
 		CameraShiftLockController.SetSlideLock(false)
 		CameraShiftLockController.SetAirborneJumpLock(false)
@@ -832,18 +943,14 @@ function InputController.Init()
 		local hrp = char:WaitForChild("HumanoidRootPart", 5) :: BasePart?
 		if hum and hrp then
 			hum.UseJumpPower = true
-			hum.JumpPower = Constants.HIGH_JUMP_POWER or 72.0
-			hum.JumpHeight = Constants.HIGH_JUMP_HEIGHT or 15.5
+			hum.JumpPower = 0
+			hum.JumpHeight = 0
+			hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 
 			charStateConn = hum.StateChanged:Connect(function(_oldState, newState)
-				if newState == Enum.HumanoidStateType.Jumping then
-					if not jumpConsumedUntilRelease then
-						jumpConsumedUntilRelease = true
-						commitJumpDirection(char)
-					end
-				elseif newState == Enum.HumanoidStateType.Landed then
+				if newState == Enum.HumanoidStateType.Landed then
 					if isSpacebarHeld then
-						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+						jumpConsumedUntilRelease = true
 					else
 						jumpConsumedUntilRelease = false
 					end
@@ -851,18 +958,30 @@ function InputController.Init()
 						isAcrobaticInFlight = false
 						R6ActionPoseController.TriggerAirborneRecovery(0.32)
 					end
-					isAirborneLocked = false
-					currentFlightState = "idle"
-					CameraShiftLockController.SetAirborneJumpLock(false)
-					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
-						hum.AutoRotate = true
+					if currentFlightState ~= "Grounded" then
+						landingLagUntil = os.clock() + JumpConfigs.LANDING_LAG_SEC
+						currentFlightState = "Grounded"
+						isAirborneLocked = false
+						currentFlightId = nil
+						hasLeftGround = false
+						lockedFlightVelocity = nil
+						CameraShiftLockController.SetAirborneJumpLock(false)
+						if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
+							hum.AutoRotate = true
+						end
 					end
 				elseif newState == Enum.HumanoidStateType.Running and isAirborneLocked then
-					isAirborneLocked = false
-					currentFlightState = "idle"
-					CameraShiftLockController.SetAirborneJumpLock(false)
-					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
-						hum.AutoRotate = true
+					if hasLeftGround and (os.clock() - jumpTakeoffTime) > 0.12 then
+						landingLagUntil = os.clock() + JumpConfigs.LANDING_LAG_SEC
+						currentFlightState = "Grounded"
+						isAirborneLocked = false
+						currentFlightId = nil
+						hasLeftGround = false
+						lockedFlightVelocity = nil
+						CameraShiftLockController.SetAirborneJumpLock(false)
+						if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
+							hum.AutoRotate = true
+						end
 					end
 				end
 			end)
@@ -877,8 +996,11 @@ function InputController.Init()
 				isAirborneLocked = false
 				isSpacebarHeld = false
 				jumpConsumedUntilRelease = false
-				hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
-				currentFlightState = "idle"
+				currentFlightState = "Grounded"
+				currentFlightId = nil
+				hasLeftGround = false
+				landingLagUntil = 0.0
+				lockedFlightVelocity = nil
 				isAcrobaticInFlight = false
 				CameraShiftLockController.SetSlideLock(false)
 				CameraShiftLockController.SetAirborneJumpLock(false)
@@ -949,24 +1071,12 @@ function InputController.Init()
 		end
 	end)
 
-	-- Discrete single jump per Space press (never auto-repeat while Space is held)
+	-- Discrete single action per Space press: BallPop if grounded possessor, else DirectionalJump
 	UserInputService.JumpRequest:Connect(function()
 		if jumpConsumedUntilRelease or isSpacebarHeld then
 			return
 		end
-		local char = localPlayer and localPlayer.Character
-		if char then
-			local hum = char:FindFirstChildOfClass("Humanoid")
-			if hum and hum.Health > 0 and not isSlidingClient then
-				if hum.FloorMaterial ~= Enum.Material.Air then
-					isAirborneLocked = false
-					currentFlightState = "idle"
-					CameraShiftLockController.SetAirborneJumpLock(false)
-					jumpConsumedUntilRelease = true
-					commitJumpDirection(char)
-				end
-			end
-		end
+		InputController.RequestSpaceAction()
 	end)
 
 	-- RenderStepped maintains smooth orientation lock, handles slide expiration, physical flight lifecycle, and air lean
@@ -1016,37 +1126,38 @@ function InputController.Init()
 			end
 		end
 
-		if isAirborneLocked or isAcrobaticInFlight or (currentFlightState ~= "idle" and currentFlightState ~= "landed") then
+		if isAirborneLocked or currentFlightState ~= "Grounded" then
 			if hrp and hum and hum.Health > 0 then
 				local timeSinceJump = now - jumpTakeoffTime
 				local vy = hrp.AssemblyLinearVelocity.Y
 
-				-- Flight lifecycle transitions
-				if currentFlightState == "takeoff" then
-					if timeSinceJump >= 0.06 or vy > 1.0 then
-						currentFlightState = "ascent"
-					end
-				elseif currentFlightState == "ascent" then
-					if vy <= 2.0 and vy >= -2.0 then
-						currentFlightState = "apex"
-					elseif vy < -2.0 then
-						currentFlightState = "descent"
-					end
-				elseif currentFlightState == "apex" then
-					if vy < -2.0 then
-						currentFlightState = "descent"
-					end
+				-- Lock horizontal flight velocity to captured momentum
+				if lockedFlightVelocity then
+					hrp.AssemblyLinearVelocity = Vector3.new(
+						lockedFlightVelocity.X,
+						vy,
+						lockedFlightVelocity.Z
+					)
 				end
 
-				-- Fallback ground detection after substantial flight time (actual landing is primarily driven by Humanoid.StateChanged Landed)
-				if timeSinceJump > 0.25 and hum.FloorMaterial ~= Enum.Material.Air and vy <= 0.5 then
-					if isSpacebarHeld then
-						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-					else
-						jumpConsumedUntilRelease = false
-					end
-					currentFlightState = "idle"
+				if not hasLeftGround and (timeSinceJump >= 0.04 or vy > 2.0 or hum.FloorMaterial == Enum.Material.Air) then
+					hasLeftGround = true
+				end
+
+				local isGrounded = (hasLeftGround and timeSinceJump > 0.12 and hum.FloorMaterial ~= Enum.Material.Air and vy <= 0.5)
+
+				local nextState = JumpModel.ResolveFlightState(vy, timeSinceJump, hasLeftGround, isGrounded)
+				if nextState ~= currentFlightState then
+					currentFlightState = nextState
+				end
+
+				if currentFlightState == "Landed" then
+					landingLagUntil = now + JumpConfigs.LANDING_LAG_SEC
+					currentFlightState = "Grounded"
 					isAirborneLocked = false
+					currentFlightId = nil
+					hasLeftGround = false
+					lockedFlightVelocity = nil
 					CameraShiftLockController.SetAirborneJumpLock(false)
 					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
 						hum.AutoRotate = true
@@ -1059,7 +1170,10 @@ function InputController.Init()
 			else
 				isAirborneLocked = false
 				isAcrobaticInFlight = false
-				currentFlightState = "idle"
+				currentFlightState = "Grounded"
+				currentFlightId = nil
+				hasLeftGround = false
+				lockedFlightVelocity = nil
 				CameraShiftLockController.SetAirborneJumpLock(false)
 			end
 		end
@@ -1091,7 +1205,7 @@ function InputController.Init()
 		elseif input.KeyCode == Enum.KeyCode.Space then
 			isSpacebarHeld = true
 			if not jumpConsumedUntilRelease then
-				InputController.RequestDirectionalJump()
+				InputController.RequestSpaceAction()
 			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
 			if ctx == "Attacking" then
@@ -1249,8 +1363,16 @@ function InputController.IsSpacebarHeld(): boolean
 	return isSpacebarHeld
 end
 
-function InputController.GetFlightState(): string
+function InputController.GetFlightState(): Types.FlightState
 	return currentFlightState
+end
+
+function InputController.GetFlightId(): string?
+	return currentFlightId
+end
+
+function InputController.GetLandingLagRemaining(): number
+	return math.max(0.0, landingLagUntil - os.clock())
 end
 
 function InputController.IsAcrobaticInFlight(): boolean
