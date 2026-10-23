@@ -369,9 +369,8 @@ function R6ActionPoseController.IsCustomPoseActive(): boolean
 end
 
 function R6ActionPoseController.TriggerLandingRecovery(durationSec: number?)
-	isLanding = true
-	landingStartTime = os.clock()
-	landingDuration = durationSec or Constants.LANDING_RECOVERY_SEC
+	-- Stand down: standard R6 rig landing is handled natively by R6AnimationController
+	isLanding = false
 end
 
 function R6ActionPoseController.TriggerWhiff(isCurve: boolean?, durationSec: number?)
@@ -615,7 +614,9 @@ function R6ActionPoseController.Init()
 			end
 
 		-- PRIORITY 8: Jump Landing Shock Absorption (Image 1 Row 1 Step 3)
-		elseif isLanding then
+		-- Stand down: standard R6 rig uses native animation blending for landing.
+		-- Procedural A07 cushion was jerking RootJoint C0 and causing visual bounces.
+		elseif false and isLanding then
 			local elapsed = now - landingStartTime
 			if elapsed < landingDuration then
 				isActionActive = true

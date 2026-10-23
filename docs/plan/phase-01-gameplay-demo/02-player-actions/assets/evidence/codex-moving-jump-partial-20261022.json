@@ -1,0 +1,93 @@
+{
+  "recordedDate": "2026-10-23 Asia/Bangkok",
+  "testDate": "2026-10-22 Asia/Bangkok",
+  "kind": "Partial real Client MCP keyboard test; transcribed from actual tool output before Owner pause",
+  "reviewedRef": "e38e2f489fca522dbf0d12ea73894f2332e0118d plus dirty working tree; exact runtime-to-disk SHA parity NOT VERIFIED",
+  "studioId": "cfc72f6f-7ad7-476d-b821-0b815063d6f6",
+  "placeId": 137721422246269,
+  "case": {
+    "name": "walk-space-v2",
+    "input": "W down; wait200ms; Space down; wait100ms; Space up; wait900ms; W up",
+    "probeTrigger": "Actual Space InputBegan or Humanoid Jumping, not time of MCP request",
+    "sampleCount": 210,
+    "gravity": 196.1999969482422,
+    "baseRootY": 3.0899996757507324,
+    "maxRootY": 5.53862476348877,
+    "rootRise": 2.448625087738037,
+    "maxVy": 73.86750030517578,
+    "minVy": -26.977493286132812,
+    "maxHeartbeatDt": 0.019983559846878052,
+    "maxTorsoRelativeYStep": 0.0030591487884521484,
+    "anomaly": {
+      "t": 0.05051994323730469,
+      "y": 5.487531185150147,
+      "vyBefore": 70.5975112915039,
+      "vyAfter": -4.087500095367432,
+      "heartbeatDt": 0.01692253164947033,
+      "gravityCompensatedVyResidual": -71.45557084338361,
+      "clientFlightState": "idle",
+      "replicatedIsAirborne": true
+    },
+    "events": [
+      {
+        "t": 0.016185998916625977,
+        "old": "Running",
+        "new": "Jumping"
+      },
+      {
+        "t": 0.033509016036987305,
+        "old": "Jumping",
+        "new": "Freefall"
+      },
+      {
+        "t": 0.3162269592285156,
+        "old": "Freefall",
+        "new": "Landed"
+      },
+      {
+        "t": 0.34955692291259766,
+        "old": "Landed",
+        "new": "Running"
+      }
+    ],
+    "startingPositionApprox": {
+      "x": 0,
+      "y": 3.09,
+      "z": -59.89484024047852
+    },
+    "endingPosition": {
+      "x": 0,
+      "y": 3.0899996757507324,
+      "z": -84.47868347167969
+    }
+  },
+  "runtimeFingerprintsBeforeRestart": {
+    "note": "Adler32 and bytes only, not SHA parity; collected before fresh test Play session",
+    "R6ActionPoseController": {
+      "bytes": 24050,
+      "adler32": 1117165469
+    },
+    "R6AnimationController": {
+      "bytes": 23916,
+      "adler32": 1436981866
+    },
+    "InputController": {
+      "bytes": 40528,
+      "adler32": 2429663156
+    }
+  },
+  "limitations": [
+    "Only one valid moving-jump trace; root cause not yet isolated",
+    "Earlier timed probe missed actual input and is invalid as jump evidence",
+    "Sprint input was sent but probe expired: INCONCLUSIVE, rerun needed",
+    "No valid stationary-jump control or Sandbox differential measurement",
+    "No viewport visual sign-off",
+    "Studio/source/generation must be freshly revalidated on resume"
+  ],
+  "cleanup": {
+    "temporaryProbesDisconnected": true,
+    "temporaryGlobalsRemoved": true,
+    "ownPlaySessionStopped": true,
+    "persistentSourceChangedByCodex": false
+  }
+}

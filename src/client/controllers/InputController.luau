@@ -81,13 +81,23 @@ end
 
 local function getAimDirection(): Vector3
 	local cam = Workspace.CurrentCamera
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+
 	if cam then
 		local look = cam.CFrame.LookVector
+		if isAirborneLocked and jumpCommitDir.Magnitude > 0.001 then
+			local pitchY = math.clamp(look.Y, -0.85, 0.85)
+			local horizScale = math.sqrt(math.max(0.01, 1 - pitchY * pitchY))
+			local lockedDir = Vector3.new(jumpCommitDir.X * horizScale, pitchY, jumpCommitDir.Z * horizScale)
+			return if lockedDir.Magnitude > 0.001 then lockedDir.Unit else jumpCommitDir
+		end
 		return look
 	end
-	local localPlayer = Players.LocalPlayer
-	if localPlayer and localPlayer.Character and localPlayer.Character.PrimaryPart then
-		return localPlayer.Character.PrimaryPart.CFrame.LookVector
+
+	if hrp then
+		return hrp.CFrame.LookVector
 	end
 	return Vector3.new(0, 0, 1)
 end
@@ -171,9 +181,6 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 		end
 	end
 
-	if finalAction == "BicycleKick" then
-		isAcrobaticInFlight = true
-	end
 
 	local cAct: Types.ChargeActionType = if finalAction == "CurveShoot" or finalAction == "BicycleKick"
 		then "CurveShoot"
@@ -194,17 +201,54 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 	})
 	R6ActionPoseController.SetCharging(false)
 
-	local distToBall = 999.0
 	local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
-	if ballPart and hrp then
-		distToBall = (hrp.Position - ballPart.Position).Magnitude
-	end
 	local isPossessor = (char ~= nil and (char:GetAttribute("HasBall") == true or char:GetAttribute("IsPossessor") == true))
-	local isOutOfReach = not isPossessor and distToBall > Constants.BALL_TOUCH_RADIUS
+	local isOutOfReach = false
+	if not isPossessor then
+		if ballPart and hrp then
+			local delta = ballPart.Position - hrp.Position
+			local horizDist = Vector3.new(delta.X, 0, delta.Z).Magnitude
+			local vertDist = math.abs(delta.Y)
+			local maxH = if isAir then (Constants.AERIAL_VOLLEY_REACH or 9.5) else (Constants.FIRST_TIME_KICK_REACH or 9.0)
+			local maxV = Constants.FIRST_TIME_VERT_REACH or 8.5
+			isOutOfReach = (horizDist > maxH) or (vertDist > maxV)
+		else
+			isOutOfReach = true
+		end
+	end
 
-	if isOutOfReach then
-		-- Missed shot / Whiff recovery immediate feedback (Image 2 Row 3)
-		R6ActionPoseController.TriggerWhiff(finalAction == "CurveShoot", Constants.WHIFF_RECOVERY_SEC)
+	local isAirborneFallbackHeader = (finalAction == "BicycleKick") or (finalAction == "CurveShoot" and isAir)
+	local visualAction = if isAirborneFallbackHeader then "Header" else finalAction
+	local visualAnim = if isAirborneFallbackHeader then "header"
+		elseif visualAction == "Volley" then "kick"
+		else visualAction
+
+	if visualAction == "BicycleKick" then
+		isAcrobaticInFlight = true
+	else
+		isAcrobaticInFlight = false
+	end
+
+	R6AnimationController.PlayAction(visualAnim)
+	local duration = if visualAction == "Header" then 0.35
+		elseif visualAction == "BicycleKick" then 0.52
+		elseif visualAction == "Volley" then 0.44
+		elseif visualAction == "CurveShoot" then 0.44
+		elseif visualAction == "Pass" or visualAction == "GroundPass" then 0.36
+		elseif visualAction == "LobPass" then 0.36
+		else 0.34
+	local kickCurveStyle: string? = nil
+	local kickFoot: string? = nil
+	if finalAction == "CurveShoot" then
+		if hrp then
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position)
+			kickCurveStyle = curveRes.style
+			kickFoot = curveRes.foot
+		end
+	end
+	R6ActionPoseController.TriggerAction(visualAction, duration, kickCurveStyle, nil, kickFoot)
+
+	if isOutOfReach and not isAir then
 		speedRestoreToken += 1
 		local myToken = speedRestoreToken
 		if hum and hum.Health > 0 then
@@ -215,27 +259,6 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 				end
 			end)
 		end
-	else
-		if finalAction == "BicycleKick" then
-			isAcrobaticInFlight = true
-		end
-		R6AnimationController.PlayAction(if finalAction == "BicycleKick" or finalAction == "Volley" then "kick" else finalAction)
-		local duration = if finalAction == "BicycleKick" then 0.52
-			elseif finalAction == "Volley" then 0.44
-			elseif finalAction == "CurveShoot" then 0.44
-			elseif finalAction == "Pass" or finalAction == "GroundPass" then 0.32
-			elseif finalAction == "LobPass" then 0.36
-			else 0.32
-		local kickCurveStyle: string? = nil
-		local kickFoot: string? = nil
-		if finalAction == "CurveShoot" then
-			if hrp then
-				local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position)
-				kickCurveStyle = curveRes.style
-				kickFoot = curveRes.foot
-			end
-		end
-		R6ActionPoseController.TriggerAction(finalAction, duration, kickCurveStyle, nil, kickFoot)
 	end
 end
 
@@ -662,7 +685,7 @@ local function commitJumpDirection(char: Model)
 		local cam = Workspace.CurrentCamera
 		local camLook = if cam then cam.CFrame.LookVector else hrp.CFrame.LookVector
 		local flatLook = Vector3.new(camLook.X, 0, camLook.Z)
-		commitDir = if flatLook.Magnitude > 0.08 then flatLook.Unit else Vector3.new(0, 0, 1)
+		commitDir = if flatLook.Magnitude > 0.08 then flatLook.Unit else Vector3.new(0, 0, -1)
 	end
 
 	jumpCommitDir = commitDir
@@ -676,17 +699,11 @@ local function commitJumpDirection(char: Model)
 		hrp.CFrame = CFrame.lookAt(hrp.Position, hrp.Position + commitDir)
 	end
 
-	-- Consume immediate jump flag so it does not auto-repeat
-	hum.Jump = false
-
-	-- Apply horizontal velocity with boosted vertical jump height per owner request
-	local horizSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
-	local vertSpeed = math.max(hrp.AssemblyLinearVelocity.Y, Constants.DIRECTIONAL_JUMP_VERTICAL_SPEED)
-	hrp.AssemblyLinearVelocity = Vector3.new(
-		commitDir.X * horizSpeed,
-		vertSpeed,
-		commitDir.Z * horizSpeed
-	)
+	-- Trigger native Humanoid jumping state so Roblox physics runs a smooth, natural jump arc (prototype3 fidelity)
+	hum.UseJumpPower = true
+	hum.JumpPower = Constants.HIGH_JUMP_POWER or 72.0
+	hum.JumpHeight = Constants.HIGH_JUMP_HEIGHT or 15.5
+	hum:ChangeState(Enum.HumanoidStateType.Jumping)
 
 	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
 	remote:FireServer({
@@ -695,7 +712,7 @@ local function commitJumpDirection(char: Model)
 		characterGeneration = getCharacterGeneration(),
 		contextVersion = getActionContextVersion(),
 		phase = "start",
-		aimDirection = commitDir,
+		aimDirection = if flatMove.Magnitude > 0.08 then commitDir else Vector3.zero,
 	})
 	R6AnimationController.PlayAction("jump")
 end
@@ -708,9 +725,14 @@ function InputController.RequestDirectionalJump()
 	local char = localPlayer and localPlayer.Character
 	if char then
 		local hum = char:FindFirstChildOfClass("Humanoid")
-		if hum and hum.Health > 0 and hum.FloorMaterial ~= Enum.Material.Air and not isAirborneLocked and not isSlidingClient then
-			jumpConsumedUntilRelease = true
-			commitJumpDirection(char)
+		if hum and hum.Health > 0 and not isSlidingClient then
+			if hum.FloorMaterial ~= Enum.Material.Air then
+				isAirborneLocked = false
+				currentFlightState = "idle"
+				CameraShiftLockController.SetAirborneJumpLock(false)
+				jumpConsumedUntilRelease = true
+				commitJumpDirection(char)
+			end
 		end
 	end
 end
@@ -767,26 +789,23 @@ function InputController.Init()
 		if hum and hrp then
 			hum.UseJumpPower = true
 			hum.JumpPower = Constants.HIGH_JUMP_POWER or 72.0
+			hum.JumpHeight = Constants.HIGH_JUMP_HEIGHT or 15.5
 
 			charStateConn = hum.StateChanged:Connect(function(_oldState, newState)
 				if newState == Enum.HumanoidStateType.Jumping then
 					if not jumpConsumedUntilRelease then
 						jumpConsumedUntilRelease = true
 						commitJumpDirection(char)
-					else
-						hum.Jump = false
 					end
 				elseif newState == Enum.HumanoidStateType.Landed then
 					if isSpacebarHeld then
-						hum.Jump = false
+						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 					else
 						jumpConsumedUntilRelease = false
 					end
 					if isAcrobaticInFlight then
 						isAcrobaticInFlight = false
 						R6ActionPoseController.TriggerAirborneRecovery(0.32)
-					elseif isAirborneLocked then
-						R6ActionPoseController.TriggerLandingRecovery(Constants.LANDING_RECOVERY_SEC)
 					end
 					isAirborneLocked = false
 					currentFlightState = "idle"
@@ -832,19 +851,29 @@ function InputController.Init()
 					local resolvedStyle = char:GetAttribute("ResolvedCurveStyle") :: string?
 
 					if resolvedAction and resolvedAction ~= "" then
-						if resolvedAction == "Header" then
+						local isCharAir = (hum and hum.FloorMaterial == Enum.Material.Air) or char:GetAttribute("IsAirborne") == true
+						local isAirborneFallbackHeader = (resolvedAction == "BicycleKick") or (resolvedAction == "CurveShoot" and isCharAir)
+						local visualAction = if isAirborneFallbackHeader then "Header" else resolvedAction
+
+						if visualAction == "Header" then
+							isAcrobaticInFlight = false
 							R6AnimationController.PlayAction("header")
 							R6ActionPoseController.TriggerAction("Header", 0.35, nil, nil, resolvedFoot)
-						elseif resolvedAction == "Volley" then
+						elseif visualAction == "Volley" then
 							R6AnimationController.PlayAction("volley")
 							R6ActionPoseController.TriggerAction("Volley", 0.44, nil, nil, resolvedFoot)
-						elseif resolvedAction == "BicycleKick" then
+						elseif visualAction == "BicycleKick" then
 							isAcrobaticInFlight = true
 							R6AnimationController.PlayAction("kick")
 							R6ActionPoseController.TriggerAction("BicycleKick", 0.52, nil, nil, resolvedFoot)
-						elseif resolvedAction == "CurveShoot" then
+						elseif visualAction == "CurveShoot" then
 							R6AnimationController.PlayAction("kick")
-							R6ActionPoseController.TriggerAction("CurveShoot", 0.28, resolvedStyle, nil, resolvedFoot)
+							R6ActionPoseController.TriggerAction("CurveShoot", 0.30, resolvedStyle, nil, resolvedFoot)
+						elseif visualAction == "DirectShoot" then
+							R6AnimationController.PlayAction("kick")
+							R6ActionPoseController.TriggerAction("DirectShoot", 0.34, nil, nil, resolvedFoot)
+						elseif visualAction == "Pass" then
+							R6ActionPoseController.TriggerAction("Pass", 0.36, nil, nil, resolvedFoot)
 						end
 					end
 				elseif status == "Rejected" and currentSlideIntentId ~= nil and (actionIntent == currentSlideIntentId or not actionIntent) then
@@ -887,19 +916,19 @@ function InputController.Init()
 	-- Discrete single jump per Space press (never auto-repeat while Space is held)
 	UserInputService.JumpRequest:Connect(function()
 		if jumpConsumedUntilRelease or isSpacebarHeld then
-			local char = localPlayer and localPlayer.Character
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			if hum then
-				hum.Jump = false
-			end
 			return
 		end
 		local char = localPlayer and localPlayer.Character
 		if char then
 			local hum = char:FindFirstChildOfClass("Humanoid")
-			if hum and hum.FloorMaterial ~= Enum.Material.Air and hum.Health > 0 and not isSlidingClient then
-				jumpConsumedUntilRelease = true
-				commitJumpDirection(char)
+			if hum and hum.Health > 0 and not isSlidingClient then
+				if hum.FloorMaterial ~= Enum.Material.Air then
+					isAirborneLocked = false
+					currentFlightState = "idle"
+					CameraShiftLockController.SetAirborneJumpLock(false)
+					jumpConsumedUntilRelease = true
+					commitJumpDirection(char)
+				end
 			end
 		end
 	end)
@@ -911,13 +940,9 @@ function InputController.Init()
 			InputController.EndSlide()
 		end
 
-		local char = localPlayer and localPlayer.Character
-		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if isSpacebarHeld and hum then
-			hum.Jump = false
-		end
-
 		if isAirborneLocked or isAcrobaticInFlight or (currentFlightState ~= "idle" and currentFlightState ~= "landed") then
+			local char = localPlayer and localPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if hrp and hum and hum.Health > 0 then
 				local timeSinceJump = now - jumpTakeoffTime
@@ -940,39 +965,22 @@ function InputController.Init()
 					end
 				end
 
-				-- Ground contact raycast under feet
-				local rayParams = RaycastParams.new()
-				rayParams.FilterDescendantsInstances = { char }
-				rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-				local rayOrigin = hrp.Position - Vector3.new(0, 1.5, 0)
-				local rayResult = Workspace:Raycast(rayOrigin, Vector3.new(0, -1.7, 0), rayParams)
-				local isGrounded = (rayResult ~= nil) or (hum.FloorMaterial ~= Enum.Material.Air and timeSinceJump > 0.08)
-				local isLanded = (vy <= 2.0 and isGrounded and timeSinceJump > 0.08) or (hum.FloorMaterial ~= Enum.Material.Air and timeSinceJump > 0.30)
-
-				if isLanded then
+				-- Fallback ground detection after substantial flight time (actual landing is primarily driven by Humanoid.StateChanged Landed)
+				if timeSinceJump > 0.25 and hum.FloorMaterial ~= Enum.Material.Air and vy <= 0.5 then
 					if isSpacebarHeld then
-						hum.Jump = false
+						hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 					else
 						jumpConsumedUntilRelease = false
 					end
-					currentFlightState = "landed"
+					currentFlightState = "idle"
 					isAirborneLocked = false
 					CameraShiftLockController.SetAirborneJumpLock(false)
 					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
 						hum.AutoRotate = true
 					end
-
 					if isAcrobaticInFlight then
 						isAcrobaticInFlight = false
 						R6ActionPoseController.TriggerAirborneRecovery(0.32)
-					else
-						R6ActionPoseController.TriggerLandingRecovery(Constants.LANDING_RECOVERY_SEC)
-					end
-					currentFlightState = "idle"
-				else
-					if isSpacebarHeld then
-						hum.Jump = false
 					end
 				end
 			else
@@ -1106,7 +1114,7 @@ function InputController.Init()
 			local char = localPlayer and localPlayer.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			if hum then
-				hum.Jump = false
+				hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 			end
 		end
 	end)
@@ -1119,7 +1127,7 @@ function InputController.ReleaseJumpKey()
 	local char = localPlayer and localPlayer.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		hum.Jump = false
+		hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 	end
 end
 

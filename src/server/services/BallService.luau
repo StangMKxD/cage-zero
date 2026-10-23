@@ -579,32 +579,35 @@ function BallService.ExecuteKick(
 	end
 
 	local rootPart = char.PrimaryPart
-	local distToBall = (rootPart.Position - ballState.position).Magnitude
 	local isPossessor = (ballState.possessorUserId == userId)
-	local isFirstTimeReachable = (distToBall <= Constants.BALL_TOUCH_RADIUS)
 
-	if not isPossessor and not isFirstTimeReachable then
+	-- Decoupled 3D reach check matching Sandbox prototype3 (server:832-836)
+	local delta = ballState.position - rootPart.Position
+	local horizDist = Vector3.new(delta.X, 0, delta.Z).Magnitude
+	local vertDist = math.abs(delta.Y)
+
+	local isRealAirborne = (not rootPart.Anchored) and (humanoid.FloorMaterial == Enum.Material.Air) and (rootPart.Position.Y > 3.6)
+	local isAirborneKicker = st.isAirborne or (st.takeoffTime > 0 and (os.clock() - st.takeoffTime) < 1.5) or isRealAirborne
+
+	local maxHorizReach = if isAirborneKicker then (Constants.AERIAL_VOLLEY_REACH or 9.5) else (Constants.FIRST_TIME_KICK_REACH or 9.0)
+	local maxVertReach = Constants.FIRST_TIME_VERT_REACH or 8.5
+	local inKickRange = isPossessor or (horizDist <= maxHorizReach and vertDist <= maxVertReach)
+	local isFirstTimeReachable = inKickRange and not isPossessor
+
+	-- Whiff penalty if player kicks when ball is completely out of reach (matching prototype3:839-855)
+	if not inKickRange then
+		local offBallAction = actionType
+		if isAirborneKicker or actionType == "BicycleKick" or actionType == "Volley" then
+			offBallAction = if (actionType == "BicycleKick" or actionType == "CurveShoot") then "BicycleKick" else "Volley"
+		end
 		st.whiffRecoveryUntil = os.clock() + (Constants.WHIFF_RECOVERY_SEC or 0.35)
 		humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
-		return recordActionFailure(player, intentId, "OutOfReach")
-	end
-
-	-- Safe horizontal aim normalization (handles (0,1,0) and zero vectors without producing NaN)
-	local horizAim = Vector3.new(aimVector.X, 0, aimVector.Z)
-	local dir: Vector3
-	if horizAim.Magnitude > 1e-3 then
-		dir = horizAim.Unit
-	else
-		local fwd = rootPart.CFrame.LookVector
-		local flatFwd = Vector3.new(fwd.X, 0, fwd.Z)
-		dir = if flatFwd.Magnitude > 1e-3 then flatFwd.Unit else Vector3.new(0, 0, 1)
-	end
-
-	local rightVec = Vector3.new(-dir.Z, 0, dir.X)
-	if rightVec.Magnitude > 1e-3 then
-		rightVec = rightVec.Unit
-	else
-		rightVec = Vector3.new(1, 0, 0)
+		char:SetAttribute("LastResolvedAction", offBallAction)
+		char:SetAttribute("LastActionStatus", "Rejected")
+		char:SetAttribute("LastActionReason", "OutOfReach")
+		char:SetAttribute("LastActionIntentId", intentId or "")
+		recordActionFailure(player, intentId, "OutOfReach")
+		return false
 	end
 
 	-- Authoritative charge & numeric validation (rejects NaN/Inf)
@@ -634,75 +637,110 @@ function BallService.ExecuteKick(
 	local shotMod = cardCfg.statModifiers.shotMultiplier
 	local passMod = cardCfg.statModifiers.passMultiplier
 
+	-- Power scaling from kick charging gauge matching Sandbox:
+	-- Tap (50%) = 1.05x, 60% = 1.15x, 70% = 1.25x, 80% = 1.35x, 100% MAX = 1.55x!
+	local powerMult = (0.55 + charge * 1.00) * shotMod * boostMult
+
+	-- Safe 3D aim normalization (supports true 3D aim, downward smashes, and ceiling shots)
+	local rawAim = aimVector
+	if typeof(rawAim) ~= "Vector3" or rawAim.Magnitude < 0.001 then
+		rawAim = rootPart.CFrame.LookVector
+	end
+	local aimDir = rawAim.Unit
+
+	local horizAim = Vector3.new(aimDir.X, 0, aimDir.Z)
+	if horizAim.Magnitude < 0.01 then
+		horizAim = Vector3.new(rootPart.CFrame.LookVector.X, 0, rootPart.CFrame.LookVector.Z)
+	end
+	local horizUnit = if horizAim.Magnitude > 0.01 then horizAim.Unit else Vector3.new(0, 0, 1)
+
+	local rightVec = Vector3.new(-horizUnit.Z, 0, horizUnit.X)
+	if rightVec.Magnitude > 1e-3 then
+		rightVec = rightVec.Unit
+	else
+		rightVec = Vector3.new(1, 0, 0)
+	end
+
 	local finalVel = Vector3.zero
 	local curveForce: Vector3? = nil
 	local resolvedAction = actionType
-
-	local isRealAirborne = (not rootPart.Anchored) and (humanoid.FloorMaterial == Enum.Material.Air) and (rootPart.Position.Y > 3.6)
-	local isAirborneKicker = st.isAirborne or (st.takeoffTime > 0 and (os.clock() - st.takeoffTime) < 1.5) or isRealAirborne
 
 	if not isPossessor and isFirstTimeReachable then
 		-- First-time play: preserves player intent (Pass, CurveShoot, DirectShoot/Header/Volley/BicycleKick)
 		if actionType == "BicycleKick" or (actionType == "CurveShoot" and isAirborneKicker) then
 			resolvedAction = "BicycleKick"
-			local speed = (Constants.BICYCLE_KICK_SPEED * (0.80 + charge * 0.25)) * shotMod * boostMult
-			finalVel = (dir * speed) + Vector3.new(0, 3.5 + charge * 3.0, 0)
-			curveForce = rightVec * (-45.0 * (0.8 + charge * 0.4))
 		elseif actionType == "Volley" or (actionType == "DirectShoot" and isAirborneKicker) then
 			resolvedAction = "Volley"
-			local speed = (Constants.AERIAL_VOLLEY_SPEED * (0.80 + charge * 0.25)) * shotMod * boostMult
-			finalVel = (dir * speed) + Vector3.new(0, 4.5 + charge * 3.0, 0)
 		elseif actionType == "DirectShoot" then
 			local relY = ballState.position.Y - rootPart.Position.Y
 			if relY >= 0.5 then
 				resolvedAction = "Header"
-				finalVel = (dir * Constants.HEADER_SPEED * shotMod * boostMult) + Vector3.new(0, 3.0, 0)
-			else
+			elseif relY > -0.5 then
 				resolvedAction = "Volley"
-				finalVel = (dir * Constants.AERIAL_VOLLEY_SPEED * shotMod * boostMult) + Vector3.new(0, 6.0, 0)
+			else
+				resolvedAction = "DirectShoot"
 			end
 		elseif actionType == "CurveShoot" then
 			resolvedAction = "CurveShoot"
-			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(rootPart.CFrame, dir, ballState.position)
-			st.resolvedKickFoot = curveRes.foot
-			st.resolvedCurveStyle = curveRes.style
-			local speed = (curveRes.speed * (0.70 + charge * 0.30)) * shotMod * boostMult
-			finalVel = (dir * speed) + Vector3.new(0, 6.0 + charge * 4.0, 0)
-			curveForce = rightVec * (curveRes.spinY * curveRes.magnusFactor * (0.6 + (charge * 0.4)))
 		elseif actionType == "Pass" then
 			resolvedAction = "Pass"
-			local passSpeed = (Constants.PASS_BASE_SPEED * (0.75 + charge * 0.35)) * passMod * boostMult
-			local vertSpeed = math.clamp(aimVector.Y * passSpeed, -5.0, 20.0) + (passSpeed * Constants.PASS_UPWARD_BIAS * (0.8 + charge * 0.4))
-			finalVel = (dir * passSpeed) + Vector3.new(0, vertSpeed, 0)
 		else
 			return recordActionFailure(player, intentId, "InvalidPayload")
 		end
 	elseif actionType == "BicycleKick" or (actionType == "CurveShoot" and isAirborneKicker) then
 		resolvedAction = "BicycleKick"
-		local speed = (Constants.BICYCLE_KICK_SPEED * (0.80 + charge * 0.25)) * shotMod * boostMult
-		finalVel = (dir * speed) + Vector3.new(0, 3.5 + charge * 3.0, 0)
-		curveForce = rightVec * (-45.0 * (0.8 + charge * 0.4))
 	elseif actionType == "Volley" or (actionType == "DirectShoot" and isAirborneKicker) then
 		resolvedAction = "Volley"
-		local speed = (Constants.AERIAL_VOLLEY_SPEED * (0.80 + charge * 0.25)) * shotMod * boostMult
-		finalVel = (dir * speed) + Vector3.new(0, 4.5 + charge * 3.0, 0)
-	elseif actionType == "DirectShoot" then
-		local speed = (Constants.SHOOT_STRAIGHT_SPEED * (0.65 + charge * 0.35)) * shotMod * boostMult
-		local loft = 4.0 + (charge * 10.0)
-		finalVel = (dir * speed) + Vector3.new(0, loft, 0)
-	elseif actionType == "CurveShoot" then
-		local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(rootPart.CFrame, dir, ballState.position)
-		st.resolvedKickFoot = curveRes.foot
-		st.resolvedCurveStyle = curveRes.style
-		local speed = (curveRes.speed * (0.70 + charge * 0.30)) * shotMod * boostMult
-		finalVel = (dir * speed) + Vector3.new(0, 6.0 + charge * 4.0, 0)
-		curveForce = rightVec * (curveRes.spinY * curveRes.magnusFactor * (0.6 + (charge * 0.4)))
-	elseif actionType == "Pass" then
-		local passSpeed = (Constants.PASS_BASE_SPEED * (0.75 + charge * 0.35)) * passMod * boostMult
-		local vertSpeed = math.clamp(aimVector.Y * passSpeed, -5.0, 20.0) + (passSpeed * Constants.PASS_UPWARD_BIAS * (0.8 + charge * 0.4))
-		finalVel = (dir * passSpeed) + Vector3.new(0, vertSpeed, 0)
+	end
+
+	-- Core 3D Kick Physics Solver (Strictly adhering to Sandbox reference prototype3)
+	if resolvedAction == "Header" then
+		local kickSpeed = Constants.HEADER_SPEED * powerMult
+		local headerLaunchY = math.clamp(aimDir.Y + (if aimDir.Y < -0.1 then -0.05 else 0.04), -0.75, 0.75)
+		local hScale = math.sqrt(math.max(0.15, 1 - headerLaunchY * headerLaunchY))
+		finalVel = (horizUnit * hScale + Vector3.new(0, headerLaunchY, 0)).Unit * kickSpeed
+	elseif resolvedAction == "Pass" then
+		local passSpeed = Constants.PASS_BASE_SPEED * (0.55 + charge * 1.00) * passMod * boostMult
+		if aimDir.Y < -0.14 and ballState.position.Y <= Constants.BALL_RADIUS + 0.35 then
+			local bounceUp = math.abs(aimDir.Y) * passSpeed * (Constants.FLOOR_SMASH_RESTITUTION or 0.84) * 1.15
+			local forwardSpeed = math.sqrt(math.max(0.15, 1 - aimDir.Y * aimDir.Y)) * passSpeed * 0.95
+			finalVel = horizUnit * forwardSpeed + Vector3.new(0, bounceUp, 0)
+		else
+			local launchY = math.clamp(aimDir.Y + Constants.PASS_UPWARD_BIAS, 0.0, 0.82)
+			local horizScale = math.sqrt(math.max(0.15, 1 - launchY * launchY))
+			finalVel = (horizUnit * horizScale + Vector3.new(0, launchY, 0)).Unit * passSpeed
+		end
 	else
-		return recordActionFailure(player, intentId, "InvalidPayload")
+		local kickSpeed = Constants.SHOOT_STRAIGHT_SPEED * powerMult
+		local upwardBias = Constants.SHOOT_STRAIGHT_UPWARD_BIAS or 0.05
+
+		if resolvedAction == "Volley" then
+			kickSpeed = Constants.AERIAL_VOLLEY_SPEED * powerMult
+			upwardBias = 0.04
+		elseif resolvedAction == "BicycleKick" then
+			kickSpeed = Constants.BICYCLE_KICK_SPEED * powerMult
+			upwardBias = 0.05
+			curveForce = nil -- User requirement: true straight projectile overhead strike ("ยิงตรงเหมือนเดิม")
+		elseif resolvedAction == "CurveShoot" then
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(rootPart.CFrame, horizUnit, ballState.position)
+			st.resolvedKickFoot = curveRes.foot
+			st.resolvedCurveStyle = curveRes.style
+			kickSpeed = curveRes.speed * powerMult
+			upwardBias = curveRes.upwardBias
+			curveForce = rightVec * (curveRes.spinY * curveRes.magnusFactor * (0.6 + (charge * 0.4)))
+		end
+
+		-- Downward Floor Smash Rebound (Sandbox: aimDir.Y < -0.16)
+		if aimDir.Y < -0.16 and ballState.position.Y <= Constants.BALL_RADIUS + 0.35 then
+			local bounceUp = math.abs(aimDir.Y) * kickSpeed * (Constants.FLOOR_SMASH_RESTITUTION or 0.84)
+			local fwd = math.sqrt(math.max(0.2, 1 - aimDir.Y * aimDir.Y)) * kickSpeed
+			finalVel = horizUnit * fwd + Vector3.new(0, bounceUp, 0)
+		else
+			local launchY = math.clamp(aimDir.Y + upwardBias, -0.65, 0.82)
+			local horizScale = math.sqrt(math.max(0.15, 1 - launchY * launchY))
+			local launchDir = (horizUnit * horizScale + Vector3.new(0, launchY, 0)).Unit
+			finalVel = launchDir * kickSpeed
+		end
 	end
 
 	-- Elevating Ramp boost if kicker is standing on a ramp
@@ -989,18 +1027,36 @@ function BallService.ExecuteDirectionalJump(player: Player | { UserId: number, C
 	end
 
 	local rootPart = char.PrimaryPart
-	local dir = if jumpDirection.Magnitude > 1e-3 then jumpDirection.Unit else rootPart.CFrame.LookVector
-	local flatDir = Vector3.new(dir.X, 0, dir.Z)
-	dir = if flatDir.Magnitude > 1e-3 then flatDir.Unit else Vector3.new(0, 0, 1)
+	local isStationaryJump = (jumpDirection.Magnitude <= 0.08)
+	local flatDir = Vector3.new(jumpDirection.X, 0, jumpDirection.Z)
+	local dir = if flatDir.Magnitude > 0.08 then flatDir.Unit else Vector3.zero
 
 	st.isAirborne = true
 	st.takeoffTime = now
-	st.jumpLockedVelocity = Vector3.new(dir.X * Constants.WALK_SPEED, 0, dir.Z * Constants.WALK_SPEED)
 
-	-- Apply initial directional velocity to rootPart with boosted jump height
-	local jumpVert = Constants.DIRECTIONAL_JUMP_VERTICAL_SPEED or 56.0
-	local vertY = math.max(rootPart.AssemblyLinearVelocity.Y, jumpVert)
-	rootPart.AssemblyLinearVelocity = Vector3.new(st.jumpLockedVelocity.X, vertY, st.jumpLockedVelocity.Z)
+	if isStationaryJump then
+		st.jumpLockedVelocity = nil
+	else
+		local horizSpeed = if st.isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+		st.jumpLockedVelocity = dir * horizSpeed
+	end
+
+	-- For mock players or server physics where Humanoid JumpPower is not simulated by client:
+	local isMockPlayer = (typeof(player) == "table") or (not (typeof(player) == "Instance" and player:IsA("Player")))
+	if isMockPlayer and rootPart and st.jumpLockedVelocity then
+		local currentVY = rootPart.AssemblyLinearVelocity.Y
+		local vertY = if currentVY > 1.0 then currentVY else (Constants.DIRECTIONAL_JUMP_VERTICAL_SPEED or 56.0)
+		rootPart.AssemblyLinearVelocity = Vector3.new(st.jumpLockedVelocity.X, vertY, st.jumpLockedVelocity.Z)
+	end
+
+	-- If possessing ball, jumping drops ball into free/loose ball (matching Sandbox prototype3:1717)
+	if ballState.possessorUserId == userId then
+		ballState.possessorUserId = nil
+		ballState.state = "Free"
+		ballState.lastPossessingTeam = st.teamSide
+		syncBallAttributes()
+		updateTeamContexts()
+	end
 
 	local p = Players:GetPlayerByUserId(userId)
 	syncPlayerAttributes(p, st)
@@ -1193,7 +1249,9 @@ function BallService.StepPhysics(dt: number)
 				end
 
 				if not isLanded then
-					if st.jumpLockedVelocity then
+					local playerObj = Players:GetPlayerByUserId(userId)
+					local isRealPlayer = (playerObj ~= nil and playerObj:IsA("Player"))
+					if not isRealPlayer and st.jumpLockedVelocity and rootPart then
 						rootPart.AssemblyLinearVelocity = Vector3.new(
 							st.jumpLockedVelocity.X,
 							rootPart.AssemblyLinearVelocity.Y,
@@ -1442,6 +1500,10 @@ local function setupPlayerLifecycle(player: Player)
 		end
 
 		if humanoid then
+			humanoid.UseJumpPower = true
+			humanoid.JumpPower = Constants.HIGH_JUMP_POWER or 72.0
+			humanoid.JumpHeight = Constants.HIGH_JUMP_HEIGHT or 15.5
+
 			local diedConn: RBXScriptConnection? = nil
 			diedConn = humanoid.Died:Connect(function()
 				if diedConn then

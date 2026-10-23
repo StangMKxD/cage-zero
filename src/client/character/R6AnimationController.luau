@@ -512,14 +512,14 @@ local function setupCharacter(character: Model)
 			local targetState = "walk"
 			if speed > 22 and activeTracks["sprint"] ~= nil then
 				targetState = "sprint"
-			elseif speed > 18 and activeTracks["run"] ~= nil then
+			elseif speed > 16 and activeTracks["run"] ~= nil then
 				targetState = "run"
 			end
 			playState(targetState)
 			local track = activeTracks[targetState]
 			if track and track.IsPlaying then
-				local targetPlaySpeed = if targetState == "sprint" then 1.85 elseif targetState == "run" then 1.45 else 1.35
-				track:AdjustSpeed(targetPlaySpeed)
+				local naturalSpeed = math.clamp(speed / 16.0, 0.85, 1.35)
+				track:AdjustSpeed(naturalSpeed)
 			end
 		else
 			playState("idle")

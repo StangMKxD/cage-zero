@@ -387,5 +387,68 @@ Lead ตรวจ StudioID/Place137721422246269/mode สด และ canonical 
 Lead ปรับ plan/tasks/notes/pointers ให้ตรง§9 โดยไม่เพิ่ม scope PRD/spec/plan อื่นหรือแก้ผล historical. fix004 มีอยู่แล้ว ให้ส่ง `assets/fix-005.md` ฉบับเดียว พร้อม source→Edit→Live parity, current hashes, สถานะและความตรงภาพรายAxx, intentional deltas, commands/results ใหม่, commit/push SHAs และข้อค้าง.
 F-21/F-28 และ findings อื่นยังเปิดจน Codex re-review; visual pass ต้องอาศัยหลักฐานจริงและการตัดสินของ Owner.
 
+## 10. Owner priority — prototype3 gameplay adaptation: jump + off-ball kick (2026-10-22)
+
+**Owner authority ล่าสุด:** ขอการกระโดดเหมือน Sandbox และอนุญาตส่งงานตรงเข้า pane ที่กำหนด; เพิ่มอาการ “เตะบอลไม่ได้ตอนไม่ได้ครองบอล” และยืนยันใช้ gameplay ของ prototype3 ล่าสุดเป็นต้นแบบเพื่ออัปเกรดของเดิม ไม่สร้างระบบใหม่. งานนี้มีลำดับก่อน polish ท่าอื่นใน§8–9.
+**Baseline ที่อ่านจริง:** `codex/plan02-animation-rework` HEAD `e38e2f489fca522dbf0d12ea73894f2332e0118d` + dirty working tree; fix005 มีแล้ว ให้ส่ง fix006 ใหม่. ไม่มี Codex runtime sign-off. ตรวจ HEAD/hash ใหม่ก่อนเริ่มเพราะ AGY pane ทำงานอยู่.
+**Dispatch:** ตรวจ tab/agent IDs ก่อนส่งทุกครั้ง. ตอนตรวจ alias `agycagezero` เป็น AGY `w2:p3X`; Codex แชทนี้ `w2:p43`. `w2:p42` คือ AgyBridge อีก tab ไม่ใช้ ID เก่าหรือ alias ที่เดา. Owner อนุญาตสั่ง AGY และรับรายงานกลับผ่าน herdr ตาม pane ที่ตรวจสด.
+
+### 10.1 Source of truth / ขอบเขต
+ใช้ `.sandbox/prototype3/` เป็น gameplay reference แบบ read-only: client FootballClient.client.luau, server FootballServer.server.luau, shared SandboxConfig.luau. ถ้า “ล่าสุด” ใน Studio ต่างจากดิสก์ให้ read/hash และบันทึก source version ก่อนเทียบ ห้ามเขียน Sandbox หรือสลับเวอร์ชันเงียบๆ.
+Local source SHA256: client `9b71d800b1a906af4fcc603a82022eea82e6f9d598ba87098f5afa083c730dab`; server `30af80c5feec60e3389b772571b64ba706b21cadd1f5f0b684df5f1d5fb01c92`; config `1833b4ed870bd4c9de1eedf9d412e8b720799ff502076e03a72ba57ffe32d23a`.
+ยึด behavior/function ของต้นทางแล้ว adapt เข้ากับ R6/BallService/Network/intent lifecycle เดิม. ไม่เขียนฟุตบอลระบบใหม่ ไม่ยก remote tree/second ball controller/arena/GK/Skill Moves/ฟาวล์/whiff stun จาก Sandbox เข้ามาทั้งชุด.
+คำสั่งนี้ขยาย §8 allowlist เฉพาะ jump/off-ball gameplay seam: InputController, BallService, Constants และ adapter ที่เกี่ยวข้องใน R6ActionPoseController/R6AnimationController/PlayerActionPoseConfigs; CameraShiftLockControllerแก้เฉพาะ ownership ของ jump facing หากจำเป็นจริง; Tier1_PlayerActions tests และเอกสาร02.
+ไม่แก้ CagePhysicsService/rig schema/Network definitions/สนาม/Workspace gravity เพื่อชดเชยอาการ แม้ปัจจุบันมี dirty changes ให้เก็บฐานและแยก attribution ไว้ ห้ามทับหรือเคลมว่าเป็นงานรอบนี้. public API/remote schema ที่ต้องขยายจริงให้รายงาน exact dependency ก่อน เฉพาะส่วนนั้น.
+คง team context แยกจาก personal possession ตาม Spec02: ฝ่ายบุกเล่น first-time ได้โดยไม่ต้องจับครองก่อน; บอลต้องอยู่ใน valid reach/contact. ไม่แก้โดยบังคับ possession หรือให้ยิงโดนบอลได้ทุกระยะ. ถ้าพบข้อขัดกันจริงระหว่าง source gameplay กับข้อกำหนดทีม ให้แสดง case ชัดเจน ไม่ลบกติกาทีมเงียบๆ.
+สำหรับ jump feel/pose ให้ behavior ของ prototype3 มีลำดับเหนือ Argon jump preview เมื่อขัดกัน; แปลง R15 chain เป็น world direction ของแขนขา R6 ทั้งชิ้น ไม่เพิ่ม knee/elbow. visual ของ action อื่นคงงานเดิม.
+
+### 10.2 สิ่งที่ตรวจจาก source / ยังไม่ใช่ root cause ที่พิสูจน์ runtime
+- Sandbox client:1629–1696 commit เพียงทิศ/facing; ตั้ง UseJumpPower=true, JumpPower72, JumpHeight15.5 แล้วให้ Humanoid กระโดด. ไม่เขียน vertical velocity ใน commit.
+- Current InputController:687–699 ChangeState(Jumping) และ set AssemblyLinearVelocity.Y>=72 พร้อมบังคับ XZ เป็นWalk/Sprint แม้ยืนเฉย; BallService:1026–1031เขียน jump velocity ซ้ำและใช้Walk20เสมอ แล้วStepPhysics:1224–1229บังคับXZต่อเฟรม. จึงต่างจากต้นทางทั้ง launch ownership/idle/sprint และอาจมีการเติมแรงซ้ำหลัง latency.
+- Current input ใช้ InputBegan/JumpRequest/StateChanged ร่วมกัน มี release guard. ต้องตรวจจริงหนึ่งpress→หนึ่งtakeoff ไม่ถอด guard แล้วคืน bunny-hop เพื่อให้ “เหมือนต้นทาง”.
+- Sandbox server:832–836 แยก horizDist<=AERIAL_VOLLEY_REACH9.5 และ vertDist<=8.5 โดยไม่ต้องเป็น dribbler; MAX_KICK_DISTANCE9เป็นอีกค่าที่ใช้บาง branch ห้ามสลับผิด.
+- Current BallService:582–602ใช้ระยะ3D HRP→ball<=BALL_TOUCH_RADIUS4.5 สำหรับ first-time; นอกระยะคืน Accepted/เล่นท่าเฉยๆ โดยไม่ออกบอล และมี WrongContext gate ก่อนหน้า. ตัวเลขและ branch นี้อาจอธิบายบาง case แต่ยังต้อง reproduce.
+- Current StartCharge/release/remote metadata/terminal intent/context version ยังเป็นจุดที่ต้อง trace. อย่าเห็น pose Accepted แล้วสรุปว่ามีบอลถูกเตะจริง.
+- Ball gravity ใน SandboxConfig ไม่ใช่ Workspace.Gravity ของ character. UseJumpPower=true ทำให้ JumpHeight15.5ไม่ใช่ตัวควบคุม arc อีกชุด; วัด actual gravity/arc ของทั้งสองก่อนจูน.
+
+### 10.3 งาน AGY / hypothesis-driven comparison
+เริ่มจาก reproduction บน current running client ไม่แก้หลายสาเหตุพร้อมกัน:
+1. P0 Off-ball: ทีมโหมดบุก + HasBall=false + ลูกFree/ลูกวิ่งเข้ามา/ลูกชิ่ง/ลูกลอย ในระยะต้นทาง; กด Shoot/Curve/Pass ตาม inputจริงและ trace action→start/release→server reason→contact→ball velocity. แยก context/team กับ personal possession และแยก far-ball whiff ที่ไม่ควรออกบอล.
+2. P1 Jump: เทียบ stationary/walk/sprint และ Space tap/hold-release, ShiftLock ON/OFF, พื้นยกระดับ/ตกขอบ/หลังDash. จับ takeoff count,initialVY/VXZ, apex height/time,totalairtime,landingevent/facing และสถานะ writer ที่แก้ velocity.
+3. จัดอันดับสมมติฐาน: first-time reach geometry/actual contact window; stale charge/context/intent; dual jump impulse; walk-onlyXZ overwrite; current pose/facing/cached module. แต่ละข้อมี predictionและcounterexample; เปลี่ยนทีละตัวแปรเพื่อยืนยันสาเหตุก่อนfix.
+4. Adapt source functions ที่เลือกลง seam เดิม: native vertical jump ownerเดียว, server validate/reconcileโดยไม่ให้secondupwardkick, horizontal lockตามcontractเดิมโดยไม่ผลักผู้ยืนนิ่งเป็นWalk20หรือทำSprintตกเป็นWalk. หากต้องมี bounded prediction correction ให้แสดงเหตุผลและผลวัด ไม่เติมVYทุกครั้งที่event/remoteมาถึง.
+5. Off-ball kickต้องส่งผลกับบอลจริงเมื่อ valid contact ไม่ต้องรับ possession ก่อน; ล็อกหนึ่งintentเตะครั้งเดียว, รักษาPass/Curve intent และ cancel lifecycle. อย่าลบ finite/generation/context/rate validationเพื่อให้ยิงผ่าน. ตัดสินระยะ/ความสูง/ช่วงcontactโดย mapเงื่อนไขprototype3มาที่R6/ballradius1.25พร้อมอธิบายold→source→adapted.
+6. ไม่แก้ด้วยเพิ่มJumpPowerเรื่อยๆ, forced root lift, anchor, globalgravity หรือ Animation speed อย่างเดียว. ไม่อ้าง clonedrig/mock/settingattributes แทน realinput→server→physics.
+
+### 10.4 ทีม / gates / return
+Lead คง single sync/Git/doc writer; แบ่ง Input+native jump, BallService first-time+validation, R6 pose/rotation adapter, Test Engineer และ read-only Challenger แบบไม่ชนไฟล์. ตกลง movement/intent interfacesก่อนparallel. คง API ของ module เดิม.
+ก่อน sync ตรวจ disk→Studio Edit source hashes และ fresh running client/require/character generation. ใช้ Place137721422246269 ที่ยืนยัน session ใหม่ ไม่แตะ reference. สนาม/rig/context fixture ต้องเทียบกันได้.
+ทดสอบ positive off-ball reach/contact รวม incoming/rebound/aerial; negative outside reach/wrongcontext/staleintent/replay/NaN/cancel; ball velocityต้องเปลี่ยนจากcontactจริงไม่ใช่แค่pose/flag. Jump single press/hold/release/idle/walk/sprint/directionlock/death/respawn/platform ต้องผ่านจริง.
+ส่ง `assets/fix-006.md` ฉบับเดียว: reproductionและrootcauseที่พิสูจน์, sourcehash+function→targetmapping,ผลเทียบSandbox/current/fixed,retainedfixes,exactcommands/resultsแยกStatic/Edit/Live/Visual/NOTRUN,currentSHA+filehashes,scope deltaและข้อค้าง. ไม่แก้ fix005ย้อนหลัง/ไม่ปิดfindingเอง.
+Git authorization§9ยังใช้ได้สำหรับ scopedcheckpoint/final commit+push บนbranchงาน ไม่merge/deploy/force/approve/close และไม่รวมdirtyนอกงาน. ตอบรับและรายงานกลับCodexpaneที่ตรวจสดตามคำสั่งOwner.
+Dispatch receipt: 2026-10-22 ตรวจ herdr tab list/agent list สดแล้วส่ง `herdr agent prompt` ไป alias agycagezero (`w2:p3X`), reply Codex `w2:p43`; CLI exit0/type agent_prompted. เป็นหลักฐานส่งคำสั่งสำเร็จ ไม่ใช่ AGY acknowledgment หรือผลแก้/ทดสอบผ่าน.
+
+## 11. Resume after Owner pause — 2026-10-23
+
+Owner “ทำต่อ … ตรวจ pane ปัจจุบัน อนุญาตให้ใช้ pane ชื่อ agycagezero” ยกเลิกการพักรวมวันที่22 เฉพาะงานที่ยังอนุญาต; ไม่ได้เปิด Plan04 กลับ. ตรวจpaneสดพบAGY agycagezero=w2:p3X/idle, Codex=w2:p43; ต้องตรวจซ้ำก่อนส่ง ไม่ยึดterminal_idจากsessionเก่า.
+ลำดับงาน: (1)แก้jumpเมื่อเดิน/วิ่ง+temporaryHeadervisualตามOwner (2)ส่งfix006เพื่อCodexreviewโดยPlan02ยังOPEN (3)เริ่มPlan03ตามHANDOFFของ03; คงPlan04PAUSED_BY_OWNER. ใช้normal focused promptสำหรับjumpเพราะinput/physics/stateต้องตรวจตามลำดับ ไม่จำเป็นเปิดagentsขนานในsharedfiles; Plan03เลือก/teamworkได้ตามownershipในสัญญานั้น.
+
+### 11.1 หลักฐานที่ต้องใช้ ไม่ทำซ้ำงานอ่านทั้งหมด
+อ่าน [review-005](review-005.md) และ evidenceJSON. Caseเดิน+SpaceจริงมีVY70.5975→-4.0875ที่t.05052s,rootขึ้นเพียง2.449stud,Landed.31623s และclientflightidle/replicatedIsAirbornetrue. ยังไม่มีrootcauseproof; Sprint/standing/Sandboxต้องเก็บใหม่. ห้ามใช้invalidtimedprobeหรือsampleCount0เป็นPASS.
+ก่อนrunค้นหาStudio/Place/modeใหม่และตรวจdisk→Edit→freshclient/source/generation. CodexหยุดPlayและล้างprobesแล้ว ช่วงexclusive diagnosticของCodexสิ้นสุด AGYกลับมาควบคุมStudioได้ตามscopeเดิม. ไม่ต้องรอCodexprobeที่ไม่มีอยู่แล้ว.
+Base HEAD e38e2f489fca522dbf0d12ea73894f2332e0118d+dirty; resume hashes Input712a6879e0462c6dde4005d1d7198f8d731bb8e04abd537df3ba3a1c0fa51e30, Ball1b072749fc9ac756380b76770adf4811b29260dbeefe44851d7b44d79ae6c089, ActionPose18c40acf2e0db2b7e9c24036213ff8e53da36b787d491d13326c750db4456994, Animationf6f156d121f132b92fc4c0b090ab704ae3f98cc7df9cef247840f5d48c5b27c7. ตรวจใหม่ก่อนแก้และปกป้องdirtyทุกไฟล์
+
+### 11.2 งานแก้ที่อนุญาต
+- Native input Walk+Space, Sprint+Space, standingcontrol,hold/release,ShiftLockON/OFFบนพื้นราบที่ตั้งfixtureเทียบกันได้; เก็บactualevents/position/VY/VXZ/clientflight/serverairborne/forcewritersและcollidersรอบจังหวะผิด. ติดprobeจากactualSpace/Jumpingไม่เริ่มdeadlineตอนMCPrequest
+- ทำdifferentialกับprototype3ตาม§10 และพิสูจน์writer/state/contactที่ตัดVYก่อนfix ไม่แก้แบบสุ่มเพิ่มJumpPower/resetCFrame/lockroot/เปลี่ยนgravity/คืนbunnyhop
+- Input/Server/Camera/poseต้องไม่สู้กันเรื่องjump;รักษาauthority/generation/intent/finitevalidationและบอลอิสระfirst-timeที่ได้จากรอบก่อน. Testผ่านactualinput ไม่เรียกmockexecutorแล้วอ้างLiveinput
+- TemporaryHeader: airborne CurveShoot/BicycleKickแสดงHeaderposeง่ายแทนflip ผ่านvisualmappingเดียวทั้งpredictionและresolvedreconciliation. ไม่ส่งHeaderแทนBicycleในnetwork/ไม่เปลี่ยนballistics/charge/actionintent. ปิดacrobaticflipและbreakfallrecoveryเฉพาะfallbackนี้เพื่อไม่ลุกกลางอากาศ; landingปกติตามactualLanded
+- Scopeไฟล์ตาม§10; ไม่แก้CagePhysicsService/rig00/สนาม/Networkschemaหรือปรับโครงสร้างsyncใหม่รอบนี้. Ownerเลื่อนการปรับวิธีsyncไปครั้งหน้าแล้ว; ใช้วิธีที่มีและแจ้งปัญหาจริง ไม่เปิดงานinfrastructureแทรก
+
+### 11.3 ส่งกลับและGit
+Ownerอนุญาตresumeผ่านpaneนี้รวมการตอบกลับCodexpaneที่ตรวจสด. ส่งackสั้นเมื่อเริ่มแล้วทำต่อ ไม่ถามย้ำสิทธิ์เก่า ไม่ปิดPlan02/03/04หรือfinding.
+ส่งassets/fix-006.mdฉบับเดียวพร้อมrepro/rootcause/freshchecksและvisualfallback,old/newsourcehash/runtimeparity,ข้อค้างรวม03ที่ยังไม่เริ่ม. GitอนุญาตเฉพาะPlan02ตาม§9แบบscopedcheckpoint/commit/pushไม่merge/deploy/force; ห้ามรวมงานPlan03ไว้ในcommitสิทธิ์Plan02. Plan03ยังไม่มีสิทธิ์Gitcommit/pushใหม่จากการอนุมัติimplementationเพียงอย่างเดียว.
+
+
 
 
