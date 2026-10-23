@@ -7,6 +7,7 @@ Ownerdelta2026-10-22: ใช้ArgonR6Packเป็นต้นแบบvisual�
 ยังเว้นท่าโยก/Poke/Shoulder; ไม่มีLobPassแยก; 00/01ยังเปิดและพัก
 
 ## งานส่งแก้
+- [x] T-11 PRIORITY§17/review007: F35 client getAimDirection แก้ต้นทาง camera yaw ใน air คืนเป้า 3D จริงทั้ง ground/air + real camera→payload→server→ball trace คง body lock/physics/BallPop ส่ง fix-010
 - [x] T-10 OWNERDELTA§16: groundpersonalpossessorSpace=BallPopตามmovement/playergrounded;releaseSpace+pressใหม่เมื่อballfree=normaljump;คงballphysicsทั้งชุดเปลี่ยนเฉพาะinitialpoplaunch,ไม่auto-jump/แย่งball/เปิดSombreroSkill03;รวมในfix009
 - [x] T-09 OWNERDELTA§15: adaptstate-basedcustomjump/singlelaunch+momentum/yawlock;mouseaim3Dยังได้;airreleaseหนึ่งครั้งต่อflight+softapexดีที่สุด กดได้ทั้งช่วงลอย;ไม่เพิ่มStyles/JumpMeter/SnakeJump;ทำหลังbaseline§13–14นิ่ง;รวมในfix009
 - [x] T-08 OWNERDELTA§14: F-33W/Sworldtilt,F-34smoothlean;shotbase=aim3D+smallboundeddeviationแทนF0;ลดBloomซ้อน/Haze+ballNeonแบบpresentation-only คงyawlock/physicsgeometry;รวมในfix008
@@ -26,6 +27,7 @@ Ownerdelta2026-10-22: ใช้ArgonR6Packเป็นต้นแบบvisual�
 - [x] T-99: syncOwnerdelta§12เฉพาะscopeที่อนุญาต ส่งassets/fix-007.mdฉบับเดียว เก็บfix001–006historical;รายงานGitSHA/hash/test/ข้อค้าง ไม่ปิดแผนเอง
 
 ## Review queue
+- F-35 P1 OPEN: current5c33d5fclientairaimdiscardscamerayawก่อนส่งServer;ไม่ปิดจากsolverunitหรือ116PASSเดิม
 - F-33 P1 OPEN: signedpitchทำWเอนหลัง/Sเอนหน้า;F-34 P2 OPEN: rawleancompositeหลังbaseLerpข้ามsmoothing. AimF0ถูกOwnerเปลี่ยนเป็นaim3Dแล้วตาม§14 ไม่อ้างchoiceเก่าบังคับต่อ
 - F-31 P0 OPEN: duplicatechargetailInput345–347ทำให้Clientrequireที่65ล้ม/HUDไม่เริ่ม;F-32 P1 OPEN: fixtureRUN_SPEEDnil;F-17/F-18ยังไม่ผ่านจาก64PASSเดิม
 - F-25..F-30 OPEN ตามreview-003: intermediateclearance/A05-A16runtime/stopcancel/airbornelanding/contactauthority/foot-slip; freshnative/Edit/Live/visualหลังadaptNOT RUN

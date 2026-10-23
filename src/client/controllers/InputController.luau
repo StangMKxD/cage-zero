@@ -125,17 +125,12 @@ local function getAimDirection(): Vector3
 
 	if cam then
 		local look = cam.CFrame.LookVector
-		if isAirborneLocked and jumpCommitDir.Magnitude > 0.001 then
-			local pitchY = math.clamp(look.Y, -0.85, 0.85)
-			local horizScale = math.sqrt(math.max(0.01, 1 - pitchY * pitchY))
-			local lockedDir = Vector3.new(jumpCommitDir.X * horizScale, pitchY, jumpCommitDir.Z * horizScale)
-			return if lockedDir.Magnitude > 0.001 then lockedDir.Unit else jumpCommitDir
-		end
-		return look
+		return if look.Magnitude > 0.001 then look.Unit else Vector3.new(0, 0, 1)
 	end
 
 	if hrp then
-		return hrp.CFrame.LookVector
+		local hrpLook = hrp.CFrame.LookVector
+		return if hrpLook.Magnitude > 0.001 then hrpLook.Unit else Vector3.new(0, 0, 1)
 	end
 	return Vector3.new(0, 0, 1)
 end
@@ -1377,6 +1372,10 @@ end
 
 function InputController.IsAcrobaticInFlight(): boolean
 	return isAcrobaticInFlight
+end
+
+function InputController.GetAimDirection(): Vector3
+	return getAimDirection()
 end
 
 return table.freeze(InputController)

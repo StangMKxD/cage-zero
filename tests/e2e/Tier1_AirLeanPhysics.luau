@@ -371,8 +371,8 @@ local function runAirLeanPhysicsTests(TestHarness: any)
 			Expect(okJump).toBeTrue("Jump execution must succeed")
 			rootM.CFrame = CFrame.new(0, 5.0, 0)
 
-			-- Inject accepted air lean snapshot
-			task.wait(0.06)
+			-- Inject accepted air lean snapshot (allow slew rate to reach target 1.0)
+			task.wait(0.18)
 			BallService.HandleActionRequest(pMock :: any, {
 				action = "SetAirLean",
 				airLeanForward = 0.0,
@@ -421,6 +421,83 @@ local function runAirLeanPhysicsTests(TestHarness: any)
 			local snap = BallService.GetPlayerMovementSnapshot(1083)
 			Expect(snap.airLeanForward ~= snap.airLeanForward).toBeFalse("Lean forward must not be NaN")
 			Expect(snap.airLeanRight ~= snap.airLeanRight).toBeFalse("Lean right must not be NaN")
+		end)
+
+		-- TC-ALP-11: Client Aim Pipeline Camera Yaw Preservation During Airborne Flight (F-35 / §17)
+		SafeTest("TC-ALP-11_ClientAimPipelineYawPreservationDuringAirborneFlight", function()
+			local jumpFacingF0 = Vector3.new(0, 0, -1)
+			local testAngles = { 0, 60, -60, 180 }
+			local power = 100.0
+			local upwardBias = 0.05
+
+			for idx, deg in ipairs(testAngles) do
+				local rad = math.rad(deg)
+				local cameraAim = Vector3.new(math.sin(rad), 0.1, -math.cos(rad)).Unit
+
+				-- 1. Compute trajectory with S-lean (-1.0 fwd, 0.0 rgt)
+				local velS, spinS = AirLeanSolver.ComputeAirShotTrajectory(
+					cameraAim,
+					power,
+					upwardBias,
+					-1.0, -- S backward lean
+					0.0,
+					"Volley"
+				)
+
+				-- Verify ball trajectory horizontal azimuth matches camera aim, NOT locked facing F0
+				local velHoriz = Vector3.new(velS.X, 0, velS.Z).Unit
+				local aimHoriz = Vector3.new(cameraAim.X, 0, cameraAim.Z).Unit
+				local dotHoriz = math.clamp(velHoriz:Dot(aimHoriz), -1, 1)
+				local angleDiffDeg = math.deg(math.acos(dotHoriz))
+
+				Expect(angleDiffDeg).toBeLessThan(0.001, "S-lean pitch deflection must not alter horizontal aim azimuth")
+
+				-- S-lean must scoop trajectory upward
+				local velNeutral, _ = AirLeanSolver.ComputeAirShotTrajectory(cameraAim, power, upwardBias, 0.0, 0.0, "Volley")
+				Expect(velS.Y).toBeGreaterThan(velNeutral.Y, "S-lean must deflect launch trajectory upward")
+
+				-- Energy conservation
+				Expect(math.abs(velS.Magnitude - power)).toBeLessThan(0.01, "Airborne volley speed must conserve kick power")
+
+				-- 2. Server Seam Verification with Mock Player
+				local uid = 1084 + idx
+				local pMock, charM, rootM = createMockAirPlayer(uid, "AirAimPlayer_" .. tostring(deg), Vector3.new(0, 2.0, 0), jumpFacingF0)
+				BallService.SetPlayerTeamSide(uid, "North")
+				BallService.SetPossessor(uid)
+				BallService.SetPossessor(nil)
+
+				local okJump = BallService.ExecuteDirectionalJump(pMock :: any, jumpFacingF0)
+				Expect(okJump).toBeTrue("Airborne jump execution must succeed")
+				rootM.CFrame = CFrame.lookAt(Vector3.new(0, 5.0, 0), Vector3.new(0, 5.0, 0) + jumpFacingF0)
+
+				-- Set S-lean snapshot
+				BallService.HandleActionRequest(pMock :: any, {
+					action = "SetAirLean",
+					airLeanForward = -1.0,
+					airLeanRight = 0.0,
+					intentId = "intent_lean_f35_" .. tostring(deg),
+					characterGeneration = 1,
+					contextVersion = 1,
+				})
+
+				-- Position ball within reach along camera aim
+				BallService.SetBallPositionAndVelocity(rootM.Position + cameraAim * 2.0, Vector3.zero)
+
+				-- Server ExecuteKick with cameraAim
+				local okKick = BallService.ExecuteKick(pMock :: any, "Volley", cameraAim, 0.8, "intent_kick_f35_" .. tostring(deg))
+				Expect(okKick).toBeTrue("Airborne kick with camera aim must succeed")
+
+				local bState = BallService.GetBallState()
+				local bHoriz = Vector3.new(bState.velocity.X, 0, bState.velocity.Z).Unit
+				local serverDot = math.clamp(bHoriz:Dot(aimHoriz), -1, 1)
+				local serverAngleDiff = math.deg(math.acos(serverDot))
+				Expect(serverAngleDiff).toBeLessThan(5.001, "Server launched ball horizontal azimuth must track camera aim within 5 deg")
+
+				-- Character body yaw invariant: HumanoidRootPart must remain 100% locked to jumpFacingF0
+				local bodyLook = rootM.CFrame.LookVector
+				local bodyFacingDot = bodyLook:Dot(jumpFacingF0)
+				Expect(bodyFacingDot).toBeGreaterThan(0.9999, "Character body facing must remain strictly locked to jumpFacingF0 (§17.1)")
+			end
 		end)
 	end)
 
