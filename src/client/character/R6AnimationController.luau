@@ -99,6 +99,7 @@ local function isProceduralCustomPoseActive(char: Model?): boolean
 		return false
 	end
 	if char:GetAttribute("IsCustomPoseActive") == true
+		or char:GetAttribute("IsCustomLocomotionActive") == true
 		or char:GetAttribute("IsSliding") == true
 		or char:GetAttribute("IsDashing") == true
 	then
@@ -797,6 +798,16 @@ function R6AnimationController.SetChargingSuppressed(suppressed: boolean)
 	else
 		R6AnimationController.RestoreLocomotion()
 	end
+end
+
+function R6AnimationController.GetActiveLocomotionState(): string
+	if currentCharacter then
+		local locState = currentCharacter:GetAttribute("ActiveLocomotionState") :: string?
+		if locState and #locState > 0 then
+			return locState
+		end
+	end
+	return currentState
 end
 
 return table.freeze(R6AnimationController)

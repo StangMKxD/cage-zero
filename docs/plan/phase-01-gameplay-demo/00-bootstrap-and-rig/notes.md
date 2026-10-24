@@ -126,3 +126,94 @@ Stangตอบ “ยอมรับช่องว่างเดิม แล�
     - **V-05:** Alive character at `(25, 3.09, 25)` respawned at Candidate 1 `[25, 3.14, 25]`; 3x deaths at `(30, 3.09, 30)` skipped Candidate 1 and respawned at `[0, 3.14, 0]` in `2.0491s`, `2.0492s`, `2.0653s`; void fall (`Y = -55`) cut `Health` to `0` in `0.0338s` and respawned at `[0, 3.14, 0]` in `2.0664s`; timer generation race guard preserved `charB`; player leave mid-timer spawned `0` ghost rigs.
     - **V-06:** Floor validation rejected unanchored, non-collidable, non-queryable, and undersized (`2x2x2`) floors; edge margin (`X = 79.2 > 78.0`) rejected Candidate 1 and fell back to `[0, 3.14, 0]`; `60°` tilted floor (`Normal.Y = 0.50 < 0.70`) rejected all 3 candidates with aggregated reason log.
     - **V-07:** Scope & rollback readiness PASS; Studio returned cleanly to `Edit` mode; 3D viewport visual aesthetic and physical multi-client WAN observer explicitly recorded as `NOT VERIFIED`.
+
+
+## DOCS-ARCH-20261024 — Foundation Architecture Extension (2026-10-24)
+
+Owner Stang มอบหมายให้ **agyplan w2:p49** จัดทำสเปกสถาปัตยกรรมรากฐาน 2 ฉบับใน Plan 00 (STILL-OPEN) สำหรับเตรียมการระบบอัปเกรด/Limit Break และ Monetization/Identity/Celebration โดยเป็นการขยายเฉพาะ **DOCUMENTATION ONLY** เพื่อรอ commit แยกในอนาคต:
+- **[Upgrade & Limit Break Architecture](assets/designs/upgrade-limit-break.md):**
+  - **U1 / U6:** การปลดขีดจำกัด `+0` ถึง `+5` ใช้การ์ดซ้ำ/เศษการ์ด (1, 1, 2, 2, 3 ใบตามลำดับ รวม 9 ใบ สุ่มไม่แตก 100%).
+  - แต้มสเตตัสกำหนดเอง: `+2` ได้ 2 แต้ม, `+3` ได้ 3 แต้ม รวมทั้งสิ้น 5 แต้ม (+0.01 ต่อแต้ม) แคปเพดาน base + custom ที่ 1.15; `+1` และ `+4` ไม่มีแจกแต้มสเตตัส.
+  - **U1 / U9:** การเบิกเนตร Trait (Awakening): ที่ `+3` เลือกเบิกเนตร 1 Trait ที่มีอยู่แล้วให้กลายเป็น Tier II; หากตัวละครมี 0 Trait ให้เก็บสิทธิ์ไว้เบิกเนตรภายหลังเมื่อได้รับ Trait เพิ่ม (เช่น สล็อต Trait เพิ่มเติมที่ `+5`).
+  - **U1 / U10 / U13:** สล็อต Trait เพิ่มเติม: ที่ `+5` ปลดล็อกสล็อต Trait ติดตัวละครเพิ่มแน่นอน 1 ช่อง โดยเลือกได้จาก Trait ใดก็ได้ที่เปิดตัวแล้วในเกม แต่ห้ามเลือกซ้ำกับ Trait เดิมที่มีอยู่บนตัวละครเด็ดขาด.
+  - **U5:** เพดานดาวสกิล +1★ (สูงสุด 5★) ย้ายมาอยู่ที่ `+5` (ไม่เพิ่มที่ `+3`); ช่องสวมใส่สกิลคงที่ 3 ช่องเสมอ.
+  - **U2 / U3 / U11 / U12:** Stamina Profile: ที่ `+4` ลด Stamina cost ของ Skill และ Dash เหลือ 0.88x; ที่ `+5` ปรับเปลี่ยนเป็นลด Action cost ทั้งหมด (Skill, Dash, Slide, Poke, BodyCheck) เหลือ 0.80x (ไม่นำมาคูณทบซ้ำกับ 0.88x); การ์ดที่มี base 5★ ไม่ได้รับส่วนลด Stamina พิเศษ 15%; แอ็กชันที่ไม่มีค่า Stamina พื้นฐาน (0 cost เช่น ยิง/กระโดด) จะไม่มีการคิดค่า Stamina เพิ่ม.
+  - Tracing ครบทั้ง 16 Traits จาก Tier I สู่ Tier II Awakening อย่างครบถ้วน.
+
+- **[Monetization, Identity & Celebration Architecture](assets/designs/monetization-identity-celebration.md):**
+  - **U7:** Starter Pack จำกัด 1 ครั้งต่อบัญชี (`hasPurchasedStarterPack`) ภายในมีเพียง 1 การ์ด Tier A เลือกได้ + เงิน Cash เริ่มต้นเท่านั้น; ถอดเสื้อ Jacket, Mutations, เอฟเฟกต์ และหิน Trait ออกทั้งหมด.
+  - **U8:** Gamepasses ทั้ง 4 รายการ (VIP, FastRoll/MultiSummon, Tactical Loadouts, Pro Trader) ถูกระบุสถานะเป็น DEFERRED FOR GRILL รอพิจารณาเมื่อแผนที่เกี่ยวข้องเริ่มดำเนินการ.
+  - **Roblox Paid-Random Policy Compliance:** รองรับการตรวจสอบผ่าน `PolicyService.GetPolicyInfoForPlayerAsync` (`ArePaidRandomItemsRestricted`), แสดงอัตราความน่าจะเป็นอย่างโปร่งใส, ปิดกั้นการแลกเปลี่ยนไอเทมที่ได้จากสุ่มเงินจริง, และบันทึก `ItemProvenance` ใน Profile Data.
+  - **3-Layer Visual Identity บน Single Custom R6:** Team Readability Bib Overlay (Cyan/Crimson) + Signature Identity Kit + 6 ตัวละครอัตลักษณ์ตัวอย่างสำหรับ 5 Archetypes พร้อมข้อกำหนด Homage Naming และคำเตือนเรื่องความปลอดภัยทางกฎหมาย IP ที่ยังไม่ผ่านการตรวจรับรอง (Unverified).
+  - **3-Category FX Gacha:** สุ่มเฉพาะความสวยงาม (Ball Action FX, Movement FX, Celebration Cutscene) โดยไม่มีสเตตัส.
+  - **Celebration Cutscene:** ดีใจหลังทำประตู 3–4 วินาที พร้อม Anime Impact Frame 0.15 วินาที อยู่ภายใต้ Match Flow Authority (`00-match-flow`) ที่หยุดเวลาการแข่งขันชั่วคราว.
+  - **Signature Sync Bonus:** เป็นโบนัสความสวยงามและเสียงพิเศษเท่านั้น ไม่มีผลเพิ่มสเตตัสใด ๆ ในสนาม.
+
+- **Scope & Isolation Verification:**
+  - ไม่มีการแก้ไขไฟล์ใน Phase 2 (`docs/plan/phase-02-*`) ใด ๆ ทั้งสิ้น.
+  - ไฟล์ซอร์สโค้ดที่ได้รับการปกป้องทั้ง 9 ไฟล์ (`Constants.luau`, `Types.luau`, `Network.luau`, `CardConfigs.luau`, `RigAnimationConfigs.luau`, `init.server.luau`, `RigAndCardService.luau`, `init.client.luau`, `R6AnimationController.luau`) มีค่าแฮช SHA-256 ตรงกับก่อนเริ่มงาน 100%.
+  - สถานะ Runtime ของ Plan 00 เดิมยังคง PAUSED_BY_OWNER (F18/F19 OPEN, Review 010 / Round 5 NOT DISPATCHED) โดยไม่มีการรันโค้ด ทดสอบแอป หรือ Git commit/push ใด ๆ ในงานรอบนี้.
+
+
+## DOCS-ARCH-20261024 — Independent Review 001 Corrections (A-01..A-06) (2026-10-24)
+
+หลังได้รับผลการตรวจ [architecture-extension-review-001](assets/architecture-extension-review-001.md) (`CHANGES_REQUESTED`) ทีม `agyplan` ได้ดำเนินการแก้ไขข้อค้นพบ A-01 ถึง A-06 ภายใต้ขอบเขต **DOCUMENTATION ONLY** ของ Plan 00 ครบถ้วน:
+- **A-01 (Trait Table Units & Invariants):**
+  - ตาราง Tier II (§4) คงเงื่อนไข/ผลเดิมของ Tier I ไว้อย่างครบถ้วน
+  - กำหนดให้ `Wall-Breaker` Tier II รักษาระดับเพดานการเด้งสะท้อนสูงสุด (`restitution cap`) ที่ **`1.15`** เสมอ ไม่ให้ทะลุข้อกำหนดฟิสิกส์
+  - ถอดการลด Stamina ของเหยื่อ (`victimStaminaLoss`) ออกจาก `Bulldozer Impact` อย่างเด็ดขาด และคงเฉพาะระยะเวลาชะงัก (Stagger) ของผู้ถูกชน
+  - `Iron Wall Block` ใช้รัศมีตกกระทบเชิงกายภาพ (`Physical Target Band 3–4 Studs`) แทนการสุ่มตัวเลข `math.random`
+  - `Clean Sweeper` กำหนดระยะ Hitbox รวมเป็น `+1.1 Studs` เป็นการ **แทนที่** ระยะเดิม `+0.8 Studs` (ไม่ใช่การบวกทบ)
+  - รูปแบบฐานการฟื้นฟู Stamina (`% Max Stamina` vs `Flat Stamina`), การ Dedupe ทริกเกอร์, และตัวเลขจูน ระบุสถานะเป็น **PROPOSED / PENDING TUNING**
+- **A-02 (Durable Single-Owner Aggregate Invariants):**
+  - ตัดข้อความอ้างอิง Generic Cross-Store ACID Transactions หรือ Universal Rollback ออก
+  - วางลำดับความปลอดภัยของธุรกรรม: (1) Server Validation, (2) Client Idempotency Key Registration ล่วงหน้า/ร่วมกับการเขียน, (3) Atomic Consumption & Level Mutation บน Single-Owner DataStore Aggregate, (4) Publish สถานะเฉพาะหลังการบันทึกสำเร็จ (Durable Success), (5) Reconcile ผลลัพธ์ที่ไม่แน่นอนผ่าน Retry หรือ Pending State
+  - โมดูล Storage Provider (`ProfileStore` vs Custom DataStore), Session Locking, และเงื่อนไขการห้ามตีบวกการ์ดใน Deck/Locked ระบุสถานะเป็น **PROPOSED / PENDING ARCHITECTURE**
+- **A-03 (Independent Paid Trading Policy Gate):**
+  - จำแนกเกตการตรวจสอบของ `PolicyService` ออกเป็น 2 เกตอิสระ: `ArePaidRandomItemsRestricted` (การซื้อ/สุ่ม) และ `IsPaidItemTradingAllowed` (การเทรด/ตั้งขายในตลาด)
+  - กำหนดหลักการ **Fail-Closed** ฝั่ง Server: หาก PolicyService ล้มเหลวหรือเกิด Network Error ให้ระงับสิทธิ์ Paid Gacha และ Paid Trading ไว้ก่อนโดยอัตโนมัติ
+  - แก้ไขนิยามใน `data-schema.md`: ข้อเสนอแบนการเทรดไอเทมสุ่มเงินจริงแบบเหมารวม (Blanket Ban) ระบุสถานะเป็น **PROPOSED PRODUCT CHOICE** (ไม่ใช่การตีความกฎ Roblox ผิดพลาด)
+- **A-04 (Canonical Schema Harmonization):**
+  - ประสานชื่อฟิลด์เป็นมาตรฐานเดียว: `cardUid`, `characterId`, `allocatedCustomStats`, `awakenedTraitId`, `bankedAwakeningRight`, `extraTraitId`, `provenance`
+  - แยก **Persistent State** (`OwnedCardInstance`) ออกจาก **Runtime Derived Profile** (`EffectiveCardProfile`) ชัดเจน โดยไม่มีการเก็บค่าอนุพันธ์ (`effectiveSkillCeiling`, `staminaProfile`) ใน Datastore และมีสัญญา Cache Invalidation ชัดเจน
+  - `CelebrationDefinition` แยก `cutsceneDurationSec` (3.0–4.0s) ออกจาก `impactFrameDurationSec` (0.15s) และ `impactFrameTriggerOffsetSec`
+  - `PlayerProfileDataExtension.cardShards` ระบุเป็นหน่วยนับดิบ โดยอัตราการแปลงเป็น Shard คงสถานะ **PENDING GRILL**
+- **A-05 (Proposal vs Approved Status & Illustrative Roster):**
+  - ปรับ Header สเปกทั้งสองฉบับเป็น `FOUNDATION ARCHITECTURE SPECIFICATION` (ระบุสถานะ PROPOSED / PENDING ชัดเจน)
+  - Starter Pack: คง U7 (1 การ์ด Tier A + Cash) ส่วนกลไกการเลือกการ์ดระบุเป็น **PROPOSED PENDING DECISION**
+  - อธิบายเหตุผลของสเกล Ney `0.98` ในตารางตัวอย่างเทียบกับ Playmaker `0.92` ว่าเป็นเพียงตัวอย่างเชิงภาพลักษณ์ (Illustrative Concept)
+  - ตัดการอ้างสิทธิ์ "ปลอดภัยทางกฎหมาย 100%" ออก และคงคำเตือนทางกฎหมายทรัพย์สินทางปัญญา (IP Legal Disclaimer)
+- **A-06 (Celebration Timeline & Deadline Origin):**
+  - กำหนดจุดเริ่มต้นของเส้นเวลา ณ จุดลูกบอลข้ามเส้นประตู (**`T_goal`**)
+  - กำหนด Request Window `1.0s` สำหรับ Client ผู้ทำประตู พร้อมระบบสลับใช้ Default Card Celebration อัตโนมัติหากไม่ตอบสนอง
+  - กำหนด Server Hard Deadline สูงสุดไม่เกิน `4.5s จาก T_goal` เพื่อบังคับคืนมุมกล้องและรีเซ็ตสู่จุดเขี่ยบอลโดยไม่มีเงื่อนไข
+
+
+## DOCS-ARCH-20261024 — Independent Review 002 Corrections (A-01..A-06) (2026-10-24)
+
+หลังได้รับผลการตรวจรอบที่ 2 [architecture-extension-review-002](assets/architecture-extension-review-002.md) (`CHANGES_REQUESTED`) ทีม `agyplan` ได้ดำเนินการแก้ไขข้อค้นพบ A-01 ถึง A-06 รอบที่ 2 ภายใต้ขอบเขต **DOCUMENTATION ONLY** ของ Plan 00 ครบถ้วน:
+- **A-01 (Trait Table Units & Source Parity):**
+  - `Bulldozer Impact`: คืนเอฟเฟกต์ทำให้เหยื่อที่ถูกชนเสีย Stamina เพิ่มขึ้นตาม Source ดั้งเดิม โดยระบุปริมาณตัวเลขเป็น **`PENDING TUNING`** (ไม่แต่งตัวเลขลอยๆ) และคงระยะชะงักของผู้ถูกชนที่ **`+0.15s` ตาม Tier I เดิม** (ถอด `+0.25s` ที่แต่งเพิ่มออก)
+  - `Velvet Touch`: กำหนดต้นทุนดูดบอลแรกไม่เสีย Stamina (`trapStaminaCost = 0`) ตาม Source (ถอดทางเลือก 80% ออกเด็ดขาด)
+  - ขนาดยอดคืน Stamina ในตาราง Tier II: คงขนาดตัวเลขตาม Source ดั้งเดิม (Trivela `+10%`, Wall-Breaker `+12%`, Lightning Poke `+15%`, Iron Wall `+20%`) โดยระบุรูปแบบฐานการคิด (`% Max Stamina` vs `% Action Cost` หรือ Flat Points) และการ Dedupe (1 ครั้ง/ทริกเกอร์) เป็น **PROPOSED / PENDING TUNING**
+- **A-02 (Durable Single-Owner Invariants & Uncertain Transactions):**
+  - กำหนดหลักการชัดเจนว่า **ผลลัพธ์ที่ไม่แน่นอน (Uncertain Result / Timeout) ไม่ได้แปลว่าธุรกรรมไม่เกิดขึ้น (An uncertain result does NOT establish non-commit)**
+  - รวมการตรวจสอบสิทธิ์กับสถานะปัจจุบันที่กำลังจะคอมมิต, การตัดวัตถุดิบ/เงิน Cash, การเพิ่มระดับ, และการบันทึกประวัติคำขอสำเร็จ (`processedRequestIds[requestId]`) **ร่วมกันภายใน Durable Atomic Commit เดียวกันผ่าน `DataStore:UpdateAsync`** บนคีย์โปรไฟล์ผู้เล่นเจ้าของ
+  - กำหนดโพรโทคอล Reconcile: เมื่อ Client ลองใหม่ (Retry) หรือโหลดโปรไฟล์ใหม่ Server จะต้องตรวจสอบ `processedRequestIds[requestId]` ก่อนเพื่อส่งคืนผลลัพธ์เดิมโดยไม่ตัดวัตถุดิบซ้ำ
+  - ปรับตัวอย่างโค้ดสถาปัตยกรรม (Illustrative Pseudocode) ให้เรียกผ่าน DataStore Object (`playerProfileDataStore:UpdateAsync`) ไม่เรียกผ่าน DataStoreService ตรงๆ; ส่วนการเลือกโมดูลจัดเก็บและ Session Locking คงสถานะ **PROPOSED / PENDING ARCHITECTURE**
+- **A-03 (Roblox Paid-Random & Paid-Item Trading Coverage):**
+  - ขยายขอบเขตการกำกับดูแลการเทรดให้ครอบคลุมไอเทมทุกชิ้นที่ได้จากเงินจริง (`PaidGacha`, `StarterPack`, `DirectRobuxPurchase`, etc. ในโมเดล `ItemProvenance`)
+  - กำหนดให้ Server ตรวจเช็ก `PolicyService:GetPolicyInfoForPlayerAsync` สด ณ เวลาทำธุรกรรม ครอบคลุม **ทั้งสองฝ่าย (Both Sender AND Receiver)** ในการเทรดแบบ P2P และครอบคลุมทั้ง **ผู้ตั้งขาย (Listing Time) และผู้ซื้อ (Purchase Time)** ในตลาด
+  - ระบุชัดเจนว่าแฟล็ก `isTradeable` ที่บันทึกค้างในตัวไอเทมไม่สามารถนำมาใช้ทดแทนการตรวจเช็กสิทธิ์จริงจาก `PolicyService` ได้; ส่วนข้อเสนอ Blanket Trade Ban คงสถานะ **PROPOSED PRODUCT CHOICE**
+- **A-04 (Canonical Schema Harmonization & Dynamic Context Separation):**
+  - ประสานชื่อฟิลด์ใน `CharacterDefinition` ตรงกัน 100%: `heightScale`, `widthScale`, `baseSkillMoveStarsCeiling`, `baseStats`, `innateTraitIds` (พร้อมระบุ alias สำหรับ baseHeightScale และ baseStatModifiers)
+  - ประสานชื่อฟิลด์ใน `PlayerProfileDataExtension`: กำหนด `ownedCelebrationIds: { string }` เป็น Canonical Field Name (alias: ownedCelebrations)
+  - แยก **Static Derived Profile** (`StaticCardProfile` คำนวณครั้งเดียวตอน Spawn และแคชได้ พร้อมสัญญา Invalidation) ออกจาก **Dynamic Action Context Evaluation** (`EvaluateActionStat` ประเมินสดรายแอ็กชันในสนาม ห้ามแคชค้าง)
+  - ส่วนลด Stamina ที่ระดับ `+5` ระบุเจาะจง **5 กลุ่มแอ็กชันตามคำสั่ง Owner U3** อย่างเคร่งครัด: (1) Skill Moves (3 ช่อง), (2) Sprint/Dash, (3) Slide Tackle, (4) Quick Poke, (5) Body Check (ไม่ใช้คำว่า All Actions กำกวม)
+- **A-05 (IP Assurances Removal):**
+  - ตัดข้อความและถ้อยคำรับรองความปลอดภัยทางกฎหมาย ("ปลอดลิขสิทธิ์", "ไม่ละเมิดเครื่องหมายการค้า", "ปลอดภัยทางกฎหมาย 100%") ออกทั้งหมดใน Mermaid ไดอะแกรมและเนื้อหา
+  - คงตัวละครต้นแบบทั้ง 6 เป็นเพียงกรณีศึกษาตัวอย่างเพื่อการออกแบบสถาปัตยกรรม (Illustrative Architectural Examples) โดยระบุชัดเจนว่าสิทธิ์ในเครื่องหมายการค้ายังไม่ได้รับการตรวจรับรอง (Unresolved Rights)
+- **A-06 (Celebration Timeline Constraints & Headings):**
+  - แก้ไข Heading ที่พิมพ์ติดกับย่อหน้าก่อนหน้า (`## 4.`, `## 5.`, `### 5.3`) ให้แยกบรรทัดอย่างถูกต้องเพื่อรักษาสมบูรณ์ของ Heading Anchors
+  - แจกแจงความสัมพันธ์เชิงคณิตศาสตร์: คำขอ $1.0\text{s}$ + คัตซีน $4.0\text{s} = 5.0\text{s}$ ซึ่งจะเกินเส้นตายหากกำหนดไว้ที่ $4.5\text{s}$
+  - นำเสนอทางเลือกเชิงสถาปัตยกรรม (Architectural Alternatives) เป็น **PROPOSED PENDING OWNER SELECTION** (เช่น Dynamic Deadline เพดาน 5.0s, Request Window 0.5s ใต้ Deadline 4.5s, Server Pre-selection, หรือ Graceful Truncation) โดยรักษาสัญญาคัตซีน 3.0–4.0s และ Impact Frame 0.15s ไว้อย่างถูกต้อง

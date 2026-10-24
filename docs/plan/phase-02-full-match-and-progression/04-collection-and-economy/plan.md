@@ -11,7 +11,9 @@
 - **Hard gate:** ต้องจบและตรวจรับ Phase 1 ครบก่อน ห้ามเปิดงานแผนนี้ระหว่างเก็บ phase แรก
 
 ## Scope
-- Battle Threads/Trait/Mutations, Cash/EXP/Level, reward/celebrations และข้อมูล ownership
+- Battle Threads (ชุดตกแต่ง), Mutations (VFX + คูณ Cash/EXP หลังแข่ง), Cash/EXP/Level, reward/celebrations และข้อมูล ownership ตัวละคร/สกิล
+- Traits ติดตัวละครเท่านั้น (Innate Traits ใน [03-player-gacha-and-stats](../03-player-gacha-and-stats/plan.md)): ถอดช่องใส่ Trait บนชุด Battle Threads, ถอดหิน Trait Stone และถอดเส้นทางการเทรดหิน Trait ออกจาก Target Design ทั้งหมด (คงข้อมูลเดิมเป็นประวัติศาสตร์แบบมีป้ายกำกับ)
+- หน้าจอ Collection แสดงตัวละครพร้อม Innate Traits ประจำตัว (0, 1, 2, ... รายการ); ไม่มีการแสดงผลหรือจัดการหิน Trait แยกต่างหาก
 - เป็นเจ้าของสุ่มสกิล/สะสมท่า/Skill Inventory/ownershipและloadout3ช่องตามเพดานดาวต่อจากPhase1 มีท่าเพิ่มเติมที่Ownerเลือกเมื่อเปิดPhase2 คงcost/CD/recoveryและการถูกสกัดได้
 - ไม่มีรองเท้าสตั๊ดและ Mutations ไม่เพิ่มพลังสนาม; รองรับฐานข้อมูลสำหรับเอฟเฟค/ตลาดภายหลัง
 
@@ -27,4 +29,4 @@
 
 ต้องมีสุ่มสกิลแยกจากสุ่มตัวละคร03และเอฟเฟค05 ธุรกรรม02ต้องพร้อมก่อน การสุ่ม/ของซ้ำ/เรต/pity/ราคา/ช่องทางได้ฟรี/การซื้อขายท่าและdata schemaยังต้องgrill ไม่อนุมัติให้ขายหรือเทรดสกิลโดยอัตโนมัติจากการเพิ่มSkill Inventory
 
-ไม่เปิดSignature Choice/การชนะmatrix/ยิงส่งการันตีจากbaseline และไม่ตีความฟรี5ท่าในDemoว่าได้ทำinventory/persistenceแล้ว
+ไม่เปิดSignature Choice/การชนะmatrix/ยิงส่งการันตีจากbaseline และไม่ตีความท่าฟรีในDemoว่าได้ทำinventory/persistenceแล้ว

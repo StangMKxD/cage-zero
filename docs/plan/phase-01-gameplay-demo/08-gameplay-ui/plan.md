@@ -8,9 +8,11 @@
 - **ข้อสรุปกติกา:** [accepted decisions](../01-cage-physics/notes.md)
 - **Prerequisites:** [03-dribble-duel](../03-dribble-duel/plan.md), [04-goalkeepers](../04-goalkeepers/plan.md), [05-fouls-and-set-pieces](../05-fouls-and-set-pieces/plan.md), [06-training-ground](../06-training-ground/plan.md), [07-dynamic-field-events](../07-dynamic-field-events/plan.md)
 
+**Ownerexception2026-10-21:** segmentedchargegauge/controlsของSprint/Dash/kick/Pass/curve/Slideที่เลือกจากSandboxให้adaptในTrainingHUDของ02ก่อน; 08รับต่อและจัดUIรวมภายหลัง ไม่สร้างgauge/chargeauthorityอีกชุด ไม่อนุมัติ08ทั้งแผน
+
 ## Scope
 - HUD/ปุ่ม3คู่ตามทีมครองล่าสุด/กล้อง/feedbackสำหรับบอล Skill3ช่อง เกมรับ โกล ลูกนิ่ง อีเวนต์และสนามซ้อม
-- ไม่มีDuel Modal/Parry prompt/สโลว์เปิดดวล/คัตซีนล็อกคู่; แสดงดาว/CD/Stamina/recoveryและloadout3จาก5ท่าฟรีก่อนรอบ/หยุดรีเซ็ตซ้อม
+- ไม่มีDuel Modal/Parry prompt/สโลว์เปิดดวล/คัตซีนล็อกคู่; แสดงดาว/CD/Stamina/recoveryและloadout 3 ช่อง (จากเป้าหมาย 7 ท่าไม่ซ้ำ) ก่อนรอบ/หยุดรีเซ็ตซ้อม
 - หน้าระบบสุ่ม/ตลาด/collection/สรุปแมตช์อยู่แผน UI ของ Phase 2 ไม่เปิดทำงานหรือใช้ข้อมูลปลอมอ้างว่าส่งแล้ว
 
 ## Acceptance / ก่อนลงมือ

@@ -23,6 +23,18 @@ local Services = script.Parent
 local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
 local RigAndCardService = require(Services:WaitForChild("RigAndCardService"))
 
+type PendingSkillContacts = {
+	skillId: Types.SkillMoveId,
+	characterGeneration: number,
+	startedAt: number,
+	forward: Vector3,
+	right: Vector3,
+	side: number,
+	impulse: number,
+	stages: { { time: number, lateral: number, forward: number, vertical: number } },
+	nextStage: number,
+}
+
 export type PlayerMovementState = {
 	userId: number,
 	teamSide: Types.TeamSide,
@@ -49,6 +61,9 @@ export type PlayerMovementState = {
 	chargeIntentId: string?,
 	chargeGeneration: number,
 	chargeContextVersion: number,
+	chargeCurveSide: Types.CurveSideIntent?,
+	chargeCurveStyle: ("Finesse" | "Trivela")?,
+	chargeKickFoot: ("Left" | "Right")?,
 	isSliding: boolean,
 	slideStartTime: number,
 	slideEndTime: number,
@@ -67,6 +82,11 @@ export type PlayerMovementState = {
 	resolvedKickFoot: string?,
 	resolvedCurveStyle: string?,
 	whiffRecoveryUntil: number?,
+	whiffRecoveryAction: string?,
+	fakeShotRecoveryUntil: number,
+	fakeShotSourceAction: string?,
+	fakeShotDirection: Vector3?,
+	fakeShotSide: ("Left" | "Right" | "Neutral")?,
 	jumpFacingF0: Vector3?,
 	airLeanForward: number?,
 	airLeanRight: number?,
@@ -78,6 +98,24 @@ export type PlayerMovementState = {
 	landingLagUntil: number,
 	takeoffY: number,
 	lastGroundedTime: number,
+	activeSkillMove: Types.SkillMoveId?,
+	skillEndTime: number,
+	commonSkillRecoveryUntil: number,
+	activeTackle: Types.TackleActionType?,
+	tackleEndTime: number,
+	pokeCooldownUntil: number,
+	cagePressCooldownUntil: number,
+	tackleRecoveryUntil: number,
+	cagePressSlowUntil: number,
+	cagePressSlowMultiplier: number,
+	opponentContactSlowUntil: number,
+	dislodgedCooldownUntil: number,
+	pendingSkillContacts: PendingSkillContacts?,
+	lastDribbleTouchTime: number?,
+	dribbleFoot: ("Right" | "Left")?,
+	dragBackEndTime: number?,
+	isCloseControl: boolean?,
+	offBalanceUntil: number?,
 }
 
 local BALL_PART_NAME = Constants.BALL_PART_NAME or "CageMatchBall"
@@ -96,7 +134,18 @@ local ballState = {
 }
 
 local playerStates: { [number]: PlayerMovementState } = {}
+type PendingCagePress = {
+	targetUserId: number,
+	targetGeneration: number,
+	attackerGeneration: number,
+	attackerContextVersion: number,
+	direction: Vector3,
+	expiresAt: number,
+	previousRootCFrame: CFrame,
+}
+local pendingCagePresses: { [number]: PendingCagePress } = {}
 local ballPart: Part? = nil
+local ballSpinRotation: CFrame = CFrame.identity
 local isInitialized = false
 local heartbeatConn: RBXScriptConnection? = nil
 
@@ -136,6 +185,9 @@ local function getOrCreatePlayerState(userId: number): PlayerMovementState
 		chargeIntentId = nil,
 		chargeGeneration = 0,
 		chargeContextVersion = 0,
+		chargeCurveSide = nil,
+		chargeCurveStyle = nil,
+		chargeKickFoot = nil,
 		isSliding = false,
 		slideStartTime = 0,
 		slideEndTime = 0,
@@ -154,6 +206,11 @@ local function getOrCreatePlayerState(userId: number): PlayerMovementState
 		resolvedKickFoot = nil,
 		resolvedCurveStyle = nil,
 		whiffRecoveryUntil = 0,
+		whiffRecoveryAction = nil,
+		fakeShotRecoveryUntil = 0,
+		fakeShotSourceAction = nil,
+		fakeShotDirection = nil,
+		fakeShotSide = nil,
 		jumpFacingF0 = nil,
 		airLeanForward = 0.0,
 		airLeanRight = 0.0,
@@ -165,6 +222,24 @@ local function getOrCreatePlayerState(userId: number): PlayerMovementState
 		landingLagUntil = 0,
 		takeoffY = 0,
 		lastGroundedTime = 0,
+		activeSkillMove = nil,
+		skillEndTime = 0,
+		commonSkillRecoveryUntil = 0,
+		activeTackle = nil,
+		tackleEndTime = 0,
+		pokeCooldownUntil = 0,
+		cagePressCooldownUntil = 0,
+		tackleRecoveryUntil = 0,
+		cagePressSlowUntil = 0,
+		cagePressSlowMultiplier = 1.0,
+		opponentContactSlowUntil = 0,
+		dislodgedCooldownUntil = 0,
+		pendingSkillContacts = nil,
+		lastDribbleTouchTime = 0,
+		dribbleFoot = "Right",
+		dragBackEndTime = 0,
+		isCloseControl = false,
+		offBalanceUntil = 0,
 	}
 	playerStates[userId] = newState
 	return newState
@@ -179,7 +254,108 @@ local function getPlayerCharacter(userId: number): Model?
 	return player and player.Character
 end
 
-local function syncPlayerAttributes(player: Player?, st: PlayerMovementState)
+local syncBallAttributes: () -> ()
+local syncPlayerAttributes: (Player?, PlayerMovementState) -> ()
+
+local function traceEligibleCageWall(
+	attackerChar: Model,
+	targetChar: Model,
+	startCFrame: CFrame,
+	displacement: Vector3,
+	pressDirection: Vector3
+): RaycastResult?
+	local arena = CagePhysicsService.GetActiveArena() or Workspace:FindFirstChild(CagePhysicsService.ARENA_MODEL_NAME)
+	if not arena then
+		return nil
+	end
+	local profile = CagePhysicsService.GetArenaGeometryProfile(CagePhysicsService.GetActiveVariantId())
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { attackerChar, targetChar }
+	local castSize = Vector3.new(2.0, 2.0, 1.2)
+	local displacementToCheck = if displacement.Magnitude > 0.02 then displacement else pressDirection * 0.12
+	local hit = Workspace:Blockcast(startCFrame, castSize, displacementToCheck, params)
+	if not hit or not hit.Instance:IsDescendantOf(arena) then
+		return nil
+	end
+	for _, surface in ipairs(profile.surfaces) do
+		local isPhysicalWall = (surface.kind == "Wall" or surface.kind == "CornerWall")
+			and surface.canCollide and not surface.isGuideOnly
+		if isPhysicalWall and hit.Instance.Name == surface.surfaceId
+			and hit.Normal:Dot(surface.normal) >= 0.75
+			and pressDirection:Dot(-surface.normal) >= 0.35
+		then
+			return hit
+		end
+	end
+	return nil
+end
+
+local function clearPendingCagePress(attackerUserId: number)
+	pendingCagePresses[attackerUserId] = nil
+end
+
+local function tryResolveCagePressWallSplat(attackerUserId: number, now: number): boolean
+	local pending = pendingCagePresses[attackerUserId]
+	if not pending then
+		return false
+	end
+	local attackerSt = playerStates[attackerUserId]
+	local targetSt = playerStates[pending.targetUserId]
+	local attackerChar = getPlayerCharacter(attackerUserId)
+	local targetChar = getPlayerCharacter(pending.targetUserId)
+	local attackerRoot = attackerChar and attackerChar.PrimaryPart
+	local targetRoot = targetChar and targetChar.PrimaryPart
+	local targetHumanoid = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
+	if now > pending.expiresAt or not attackerSt or not targetSt or not attackerRoot or not targetRoot
+		or not targetHumanoid or targetHumanoid.Health <= 0
+		or attackerSt.characterGeneration ~= pending.attackerGeneration
+		or attackerSt.contextVersion ~= pending.attackerContextVersion
+		or targetSt.characterGeneration ~= pending.targetGeneration
+		or attackerSt.teamSide == targetSt.teamSide
+	then
+		clearPendingCagePress(attackerUserId)
+		return false
+	end
+
+	local displacement = targetRoot.Position - pending.previousRootCFrame.Position
+	local hit = traceEligibleCageWall(attackerChar, targetChar, pending.previousRootCFrame * CFrame.new(0, 1, 0), displacement, pending.direction)
+	pending.previousRootCFrame = targetRoot.CFrame
+	if not hit then
+		return false
+	end
+
+	clearPendingCagePress(attackerUserId)
+	targetSt.tackleRecoveryUntil = math.max(targetSt.tackleRecoveryUntil, now + (Constants.CAGE_PRESS_WALL_STUN_SEC or 0.65))
+	targetSt.cagePressSlowUntil = math.max(targetSt.cagePressSlowUntil, now + (Constants.CAGE_PRESS_WALL_STUN_SEC or 0.65))
+	targetSt.cagePressSlowMultiplier = 0.0
+	targetSt.activeTackle = "CagePress"
+	targetSt.tackleEndTime = targetSt.tackleRecoveryUntil
+	targetSt.dislodgedCooldownUntil = now + 0.25
+	attackerSt.dislodgedCooldownUntil = math.max(attackerSt.dislodgedCooldownUntil, now + 0.15)
+
+	if ballState.possessorUserId == pending.targetUserId then
+		ballState.possessorUserId = nil
+		ballState.state = "Free"
+		ballState.velocity = Vector3.zero
+		ballState.curveImpulse = nil
+		ballState.inFlightAction = nil
+		ballState.lastKickerUserId = nil
+		ballState.lastKickTime = 0
+		syncBallAttributes()
+	end
+
+	local priorSequence = targetChar:GetAttribute("CagePressWallSplatSequence")
+	targetChar:SetAttribute("CagePressWallSplatSequence", (if type(priorSequence) == "number" then priorSequence else 0) + 1)
+	targetChar:SetAttribute("CagePressWallSplatPosition", hit.Position)
+	targetChar:SetAttribute("CagePressWallSplatSurface", hit.Instance.Name)
+	targetHumanoid.WalkSpeed = BallService.ResolvePlayerSpeed(targetSt)
+	syncPlayerAttributes(Players:GetPlayerByUserId(pending.targetUserId), targetSt)
+	syncPlayerAttributes(Players:GetPlayerByUserId(attackerUserId), attackerSt)
+	return true
+end
+
+syncPlayerAttributes = function(player: Player?, st: PlayerMovementState)
 	local char = (player and player.Character) or st.characterOverride
 	if not char then
 		return
@@ -190,6 +366,9 @@ local function syncPlayerAttributes(player: Player?, st: PlayerMovementState)
 	char:SetAttribute("IsSprinting", st.isSprinting)
 	char:SetAttribute("IsDashing", st.isDashing)
 	char:SetAttribute("DashCooldownRemaining", math.max(0, math.round((st.dashCooldownUntil - now) * 100) / 100))
+	if not st.isAirborne and char:GetAttribute("IsAirborne") == true and st.flightState ~= "Landed" and st.flightState ~= "Grounded" then
+		st.isAirborne = true
+	end
 	char:SetAttribute("IsAirborne", st.isAirborne)
 	char:SetAttribute("FlightState", st.flightState)
 	char:SetAttribute("FlightId", st.flightId or "")
@@ -201,14 +380,38 @@ local function syncPlayerAttributes(player: Player?, st: PlayerMovementState)
 	char:SetAttribute("ActionContextVersion", st.contextVersion)
 	char:SetAttribute("IsSliding", st.isSliding)
 	char:SetAttribute("SlideCooldownRemaining", math.max(0, math.round((st.slideCooldownUntil - now) * 100) / 100))
-	char:SetAttribute("RecoveryRemaining", math.max(0, math.round((st.slideRecoveryUntil - now) * 100) / 100))
+	local whiffRemaining = math.max(0, (st.whiffRecoveryUntil or 0) - now)
+	local fakeShotRemaining = math.max(0, st.fakeShotRecoveryUntil - now)
+	local totalRec = math.max(st.slideRecoveryUntil - now, st.tackleRecoveryUntil - now, whiffRemaining, fakeShotRemaining)
+	char:SetAttribute("RecoveryRemaining", math.max(0, math.round(totalRec * 100) / 100))
+	char:SetAttribute("WhiffRecoveryRemaining", math.round(whiffRemaining * 100) / 100)
+	char:SetAttribute("WhiffRecoveryAction", st.whiffRecoveryAction or "")
+	char:SetAttribute("FakeShotRecoveryRemaining", math.round(fakeShotRemaining * 100) / 100)
+	char:SetAttribute("FakeShotSourceAction", st.fakeShotSourceAction or "")
+	char:SetAttribute("FakeShotDirection", st.fakeShotDirection)
+	char:SetAttribute("FakeShotSide", st.fakeShotSide or "")
+	char:SetAttribute("ActiveSkillMove", if now < st.skillEndTime and st.activeSkillMove then st.activeSkillMove else "")
+	char:SetAttribute("ActiveTackle", if now < st.tackleEndTime and st.activeTackle then st.activeTackle else "")
+	char:SetAttribute("CommonSkillRecoveryRemaining", math.max(0, math.round((st.commonSkillRecoveryUntil - now) * 100) / 100))
+	char:SetAttribute("PokeCooldownRemaining", math.max(0, math.round((st.pokeCooldownUntil - now) * 100) / 100))
+	char:SetAttribute("CagePressCooldownRemaining", math.max(0, math.round((st.cagePressCooldownUntil - now) * 100) / 100))
+	char:SetAttribute("IsCagePressSlowed", now < st.cagePressSlowUntil)
 	char:SetAttribute("ChargeAction", st.chargeAction or "")
+	char:SetAttribute("ChargeCurveSide", st.chargeCurveSide or "")
+	char:SetAttribute("ChargeCurveStyle", st.chargeCurveStyle or "")
+	char:SetAttribute("ChargeKickFoot", st.chargeKickFoot or "")
 	local chargePower = 0.0
 	if st.isCharging and st.chargeStartTime > 0 then
 		local elapsed = now - st.chargeStartTime
-		chargePower = if elapsed < 0.12
-			then Constants.CHARGE_MIN_POWER
-			else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+		local minP = Constants.CHARGE_MIN_POWER or 0.20
+		local maxP = Constants.CHARGE_MAX_POWER or 1.00
+		local isPass = (st.chargeAction == "Pass" or st.chargeAction == "GroundPass")
+		local maxT = if isPass
+			then (Constants.CHARGE_TIME_MAX_PASS or 0.45)
+			else (Constants.CHARGE_TIME_MAX_SHOOT or Constants.CHARGE_TIME_MAX or 0.90)
+		chargePower = if elapsed < 0.10
+			then minP
+			else math.clamp(minP + (elapsed / maxT) * (maxP - minP), minP, maxP)
 	end
 	char:SetAttribute("ChargePower", math.round(chargePower * 100) / 100)
 	char:SetAttribute("LastResolvedAction", st.lastResolvedAction)
@@ -226,6 +429,7 @@ end
 local function recordActionFailure(player: Player | { UserId: number, Character: Model? }, intentId: string?, reason: Types.ActionRejectReason): boolean
 	local userId = player.UserId
 	local st = getOrCreatePlayerState(userId)
+	local now = os.clock()
 	st.lastActionIntentId = intentId or ""
 	st.lastActionStatus = "Rejected"
 	st.lastActionReason = reason
@@ -246,7 +450,10 @@ local function recordActionSuccess(player: Player | { UserId: number, Character:
 	syncPlayerAttributes(p, st)
 end
 
-local function syncBallAttributes()
+BallService.RecordActionFailure = recordActionFailure
+BallService.RecordActionSuccess = recordActionSuccess
+
+syncBallAttributes = function()
 	if not ballPart then
 		return
 	end
@@ -278,6 +485,11 @@ local function updateTeamContexts()
 				st.chargeStartTime = 0
 				st.chargeAction = nil
 				st.chargeIntentId = nil
+				st.chargeGeneration = 0
+				st.chargeContextVersion = 0
+				st.chargeCurveSide = nil
+				st.chargeCurveStyle = nil
+				st.chargeKickFoot = nil
 				st.lastActionStatus = "Cancelled"
 				st.lastActionReason = "WrongContext"
 				local char = getPlayerCharacter(userId)
@@ -296,6 +508,12 @@ end
 function BallService.SetPlayerCharacterOverride(userId: number, character: Model?)
 	if character == nil then
 		playerStates[userId] = nil
+		pendingCagePresses[userId] = nil
+		for attackerUserId, pending in pairs(pendingCagePresses) do
+			if pending.targetUserId == userId then
+				pendingCagePresses[attackerUserId] = nil
+			end
+		end
 		if ballState.possessorUserId == userId then
 			ballState.possessorUserId = nil
 			ballState.state = "Free"
@@ -311,6 +529,12 @@ end
 
 function BallService.ResetPlayerState(userId: number)
 	playerStates[userId] = nil
+	pendingCagePresses[userId] = nil
+	for attackerUserId, pending in pairs(pendingCagePresses) do
+		if pending.targetUserId == userId then
+			pendingCagePresses[attackerUserId] = nil
+		end
+	end
 	if ballState.possessorUserId == userId then
 		ballState.possessorUserId = nil
 		ballState.state = "Free"
@@ -320,6 +544,7 @@ end
 
 function BallService.ClearAllPlayerStates()
 	table.clear(playerStates)
+	table.clear(pendingCagePresses)
 	ballState.possessorUserId = nil
 	ballState.state = "Free"
 	syncBallAttributes()
@@ -391,6 +616,10 @@ function BallService.SetPossessor(userId: number?)
 	ballState.possessorUserId = userId
 	if userId ~= nil then
 		local st = getOrCreatePlayerState(userId)
+		st.lastDribbleTouchTime = 0
+		st.dribbleFoot = "Right"
+		st.dragBackEndTime = 0
+		st.offBalanceUntil = 0
 		ballState.state = "Possessed"
 		ballState.velocity = Vector3.zero
 		ballState.curveImpulse = nil
@@ -489,8 +718,12 @@ end
 function BallService.GetPlayerMovementSnapshot(userId: number): Types.PlayerMovementSnapshot
 	local st = getOrCreatePlayerState(userId)
 	local now = os.clock()
+	local isPass = (st.chargeAction == "Pass" or st.chargeAction == "GroundPass")
+	local maxT = if isPass
+		then (Constants.CHARGE_TIME_MAX_PASS or 0.45)
+		else (Constants.CHARGE_TIME_MAX_SHOOT or Constants.CHARGE_TIME_MAX or 0.90)
 	local power = if st.isCharging and st.chargeStartTime > 0
-		then math.clamp((now - st.chargeStartTime) / Constants.CHARGE_TIME_MAX, Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+		then math.clamp((now - st.chargeStartTime) / maxT, Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 		else nil
 	return {
 		userId = st.userId,
@@ -506,10 +739,22 @@ function BallService.GetPlayerMovementSnapshot(userId: number): Types.PlayerMove
 		chargePower = power,
 		isSliding = st.isSliding,
 		slideCooldownRemaining = math.max(0.0, st.slideCooldownUntil - now),
-		recoveryRemaining = math.max(0.0, st.slideRecoveryUntil - now),
+		recoveryRemaining = math.max(
+			0.0,
+			st.slideRecoveryUntil - now,
+			st.tackleRecoveryUntil - now,
+			(st.whiffRecoveryUntil or 0) - now,
+			st.fakeShotRecoveryUntil - now
+		),
+		whiffRecoveryRemaining = math.max(0.0, (st.whiffRecoveryUntil or 0) - now),
+		fakeShotRecoveryRemaining = math.max(0.0, st.fakeShotRecoveryUntil - now),
+		whiffRecoveryAction = st.whiffRecoveryAction,
 		characterGeneration = st.characterGeneration,
 		contextVersion = st.contextVersion,
 		chargeAction = st.chargeAction,
+		chargeCurveSide = st.chargeCurveSide,
+		chargeCurveStyle = st.chargeCurveStyle,
+		chargeKickFoot = st.chargeKickFoot,
 		lastResolvedAction = st.lastResolvedAction,
 		actionSequence = st.actionSequence,
 		resolvedKickFoot = st.resolvedKickFoot,
@@ -521,6 +766,9 @@ function BallService.GetPlayerMovementSnapshot(userId: number): Types.PlayerMove
 		flightId = st.flightId,
 		airOffensiveBudget = st.airOffensiveBudget,
 		landingLagRemaining = math.max(0.0, st.landingLagUntil - now),
+		activeSkillMove = if now < st.skillEndTime then st.activeSkillMove else nil,
+		activeTackle = if now < st.tackleEndTime then st.activeTackle else nil,
+		commonSkillRecoveryRemaining = math.max(0.0, st.commonSkillRecoveryUntil - now),
 	}
 end
 
@@ -541,25 +789,48 @@ end
 -- F-23: Single authoritative server movement speed resolver based on strict priority
 function BallService.ResolvePlayerSpeed(st: PlayerMovementState): number
 	local now = os.clock()
+	local slowMult = 1.0
+	if now < st.cagePressSlowUntil then
+		slowMult = math.min(slowMult, st.cagePressSlowMultiplier)
+	end
+	if now < st.opponentContactSlowUntil then
+		slowMult = math.min(slowMult, 0.80)
+	end
+
 	if st.isSliding then
 		return Constants.SLIDE_SPEED
 	end
 	if not st.slideHitBall and now < st.slideRecoveryUntil then
-		return Constants.WALK_SPEED * Constants.SLIDE_WHIFF_SPEED_RATIO
+		return Constants.WALK_SPEED * Constants.SLIDE_WHIFF_SPEED_RATIO * slowMult
 	end
-	if st.whiffRecoveryUntil and now < st.whiffRecoveryUntil then
-		return Constants.WALK_SPEED * 0.45
+	if now < st.tackleRecoveryUntil then
+		return Constants.WALK_SPEED * 0.55 * slowMult
+	end
+	if st.whiffRecoveryUntil and now < st.whiffRecoveryUntil and st.whiffRecoveryAction ~= "AirWhiff" then
+		return Constants.WALK_SPEED * 0.45 * slowMult
+	end
+	if now < st.fakeShotRecoveryUntil then
+		return Constants.WALK_SPEED * 0.80 * slowMult
 	end
 	if st.isDashing and now < st.dashEndTime then
-		return Constants.DASH_SPEED_BURST
+		return Constants.DASH_SPEED_BURST * slowMult
 	end
 	if st.isCharging then
-		return Constants.WALK_SPEED * 0.50
+		return Constants.WALK_SPEED * 0.50 * slowMult
+	end
+	if ballState.possessorUserId == st.userId and now < (st.dragBackEndTime or 0) then
+		return 6.0 * slowMult
+	end
+	if ballState.possessorUserId == st.userId and st.isCloseControl == true then
+		return 10.0 * slowMult
+	end
+	if ballState.possessorUserId == st.userId and now < (st.offBalanceUntil or 0) then
+		return 12.0 * slowMult
 	end
 	if st.isSprinting and st.stamina > 0.05 then
-		return Constants.SPRINT_SPEED
+		return Constants.SPRINT_SPEED * slowMult
 	end
-	return Constants.WALK_SPEED
+	return Constants.WALK_SPEED * slowMult
 end
 
 -- Section 4.3: Shooting Zone check
@@ -570,16 +841,29 @@ function BallService.IsInShootingZone(ballPosition: Vector3, attackingTeam: stri
 	return ballPosition.Z >= 10.0
 end
 
-local function isCharacterAirborne(char: Model, humanoid: Humanoid, rootPart: BasePart): boolean
+local function isCharacterAirborne(char: Model, humanoid: Humanoid, rootPart: BasePart?): boolean
 	if char:GetAttribute("IsAirborne") == true or humanoid:GetAttribute("IsAirborne") == true then
 		return true
 	end
-	if humanoid.FloorMaterial == Enum.Material.Air then
+	if rootPart ~= nil and rootPart.Position.Y > 3.0 then
 		local rayParams = RaycastParams.new()
 		rayParams.FilterDescendantsInstances = { char }
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude
 		local rayResult = Workspace:Raycast(rootPart.Position, Vector3.new(0, -3.1, 0), rayParams)
 		if not rayResult then
+			return true
+		end
+	end
+	if humanoid.FloorMaterial == Enum.Material.Air then
+		if rootPart ~= nil then
+			local rayParams = RaycastParams.new()
+			rayParams.FilterDescendantsInstances = { char }
+			rayParams.FilterType = Enum.RaycastFilterType.Exclude
+			local rayResult = Workspace:Raycast(rootPart.Position, Vector3.new(0, -3.1, 0), rayParams)
+			if not rayResult then
+				return true
+			end
+		else
 			return true
 		end
 	end
@@ -611,6 +895,7 @@ function BallService.ExecuteKick(
 
 	local userId = player.UserId
 	local st = getOrCreatePlayerState(userId)
+	local now = os.clock()
 
 	-- Defending players cannot execute kicks per Spec 02 §2 & plan.md
 	if st.actionContext ~= "Attacking" then
@@ -637,6 +922,12 @@ function BallService.ExecuteKick(
 
 	local isRealAirborne = (not rootPart.Anchored) and (humanoid.FloorMaterial == Enum.Material.Air) and (rootPart.Position.Y > 3.6)
 	local isAirborneKicker = st.isAirborne or (st.takeoffTime > 0 and (os.clock() - st.takeoffTime) < 1.5) or isRealAirborne
+	if now < st.fakeShotRecoveryUntil then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+	if now < (st.whiffRecoveryUntil or 0) and (actionType ~= "Pass" or isAirborneKicker) then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
 
 	if isAirborneKicker then
 		if st.airOffensiveBudget <= 0 then
@@ -656,11 +947,20 @@ function BallService.ExecuteKick(
 		local offBallAction = actionType
 		if isAirborneKicker then
 			offBallAction = if actionType == "Volley" or actionType == "CurveShoot" then "Volley" else "DirectShoot"
-			-- Valid airborne attempt that whiffs consumes budget once but does not add whiff stun (§15.3)
-		else
-			st.whiffRecoveryUntil = os.clock() + (Constants.WHIFF_RECOVERY_SEC or 0.35)
-			humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
 		end
+		if actionType ~= "Pass" then
+			local recoverySec = if isAirborneKicker
+				then Constants.AIR_SHOT_WHIFF_RECOVERY_SEC or 0.90
+				elseif actionType == "CurveShoot"
+				then Constants.CURVE_SHOT_WHIFF_RECOVERY_SEC or 0.95
+				else Constants.GROUND_SHOT_WHIFF_RECOVERY_SEC or 0.85
+			st.whiffRecoveryUntil = now + recoverySec
+			st.whiffRecoveryAction = if isAirborneKicker then "AirWhiff" elseif actionType == "CurveShoot" then "CurveShootWhiff" else "DirectWhiff"
+			if not isAirborneKicker then
+				humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
+			end
+		end
+		st.lastResolvedAction = offBallAction
 		char:SetAttribute("LastResolvedAction", offBallAction)
 		char:SetAttribute("LastActionStatus", "Rejected")
 		char:SetAttribute("LastActionReason", "OutOfReach")
@@ -683,9 +983,14 @@ function BallService.ExecuteKick(
 		st.chargeStartTime = 0
 		st.chargeAction = nil
 		st.chargeIntentId = nil
+		st.chargeGeneration = 0
+		st.chargeContextVersion = 0
+		st.chargeCurveSide = nil
+		st.chargeCurveStyle = nil
+		st.chargeKickFoot = nil
 		charge = if elapsed < 0.12
 			then Constants.CHARGE_MIN_POWER
-			else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+			else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / (Constants.CHARGE_TIME_MAX_PASS or 0.45)) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 		humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
 	else
 		charge = math.clamp(chargePower or 0.5, 0.0, 1.0)
@@ -696,9 +1001,15 @@ function BallService.ExecuteKick(
 	local shotMod = cardCfg.statModifiers.shotMultiplier
 	local passMod = cardCfg.statModifiers.passMultiplier
 
-	-- Power scaling from kick charging gauge matching Sandbox:
-	-- Tap (50%) = 1.05x, 60% = 1.15x, 70% = 1.25x, 80% = 1.35x, 100% MAX = 1.55x!
-	local powerMult = (0.55 + charge * 1.00) * shotMod * boostMult
+	-- Power scaling from kick charging gauge:
+	-- Tap (20%) = 0.65x, 50% = 1.00x, 75% = 1.25x, 100% MAX = 1.55x!
+	-- Wide distinct power tiers per Owner directive ("ไล่ระดับ เกจการยิงใหม่ ให้มันห่างกันเยอะๆ")
+	local minP = Constants.CHARGE_MIN_POWER or 0.20
+	local maxP = Constants.CHARGE_MAX_POWER or 1.00
+	local chargeAlpha = if maxP > minP
+		then math.clamp((charge - minP) / (maxP - minP), 0.0, 1.0)
+		else 0.0
+	local powerMult = (0.65 + chargeAlpha * 0.90) * shotMod * boostMult
 
 	-- Safe 3D aim normalization (supports true 3D aim, downward smashes, and ceiling shots)
 	local rawAim = aimVector
@@ -766,19 +1077,30 @@ function BallService.ExecuteKick(
 		local hScale = math.sqrt(math.max(0.15, 1 - headerLaunchY * headerLaunchY))
 		finalVel = (horizUnit * hScale + Vector3.new(0, headerLaunchY, 0)).Unit * kickSpeed
 	elseif resolvedAction == "Pass" then
-		local passSpeed = Constants.PASS_BASE_SPEED * (0.55 + charge * 1.00) * passMod * boostMult
+		local passSpeed: number
 		if isAirborneKicker then
+			passSpeed = (Constants.PASS_BASE_SPEED or 46.0) * (0.55 + charge * 1.00) * passMod * boostMult
 			local timeInFlight = math.max(0, os.clock() - st.takeoffTime)
 			local currentVY = rootPart.AssemblyLinearVelocity.Y
 			local softQuality = JumpModel.CalculateSoftQuality(timeInFlight, currentVY)
 			passSpeed = passSpeed * softQuality
+		else
+			local minCharge = Constants.CHARGE_MIN_POWER
+			local maxCharge = Constants.CHARGE_MAX_POWER
+			local chargeAlpha = if maxCharge > minCharge
+				then math.clamp((charge - minCharge) / (maxCharge - minCharge), 0.0, 1.0)
+				else 0.0
+			local tapSpeed = Constants.PASS_GROUND_TAP_SPEED or 28.0
+			local fullSpeed = Constants.PASS_GROUND_FULL_SPEED or 46.0
+			passSpeed = (tapSpeed + (fullSpeed - tapSpeed) * chargeAlpha) * passMod * boostMult
 		end
-		if aimDir.Y < -0.14 and ballState.position.Y <= Constants.BALL_RADIUS + 0.35 then
-			local bounceUp = math.abs(aimDir.Y) * passSpeed * (Constants.FLOOR_SMASH_RESTITUTION or 0.84) * 1.15
-			local forwardSpeed = math.sqrt(math.max(0.15, 1 - aimDir.Y * aimDir.Y)) * passSpeed * 0.95
+		-- Floaty Pass Physics: lofted chip arc when aiming at turf, gentle launch when aiming straight/up
+		if aimDir.Y < -0.12 and ballState.position.Y <= Constants.BALL_RADIUS + 0.35 then
+			local bounceUp = math.abs(aimDir.Y) * passSpeed * (Constants.PASS_FLOOR_LOFT_RESTITUTION or 0.75)
+			local forwardSpeed = math.sqrt(math.max(0.20, 1 - aimDir.Y * aimDir.Y)) * passSpeed
 			finalVel = horizUnit * forwardSpeed + Vector3.new(0, bounceUp, 0)
 		else
-			local launchY = math.clamp(aimDir.Y + Constants.PASS_UPWARD_BIAS, 0.0, 0.82)
+			local launchY = math.clamp(aimDir.Y + (Constants.PASS_UPWARD_BIAS or 0.20), 0.08, 0.75)
 			local horizScale = math.sqrt(math.max(0.15, 1 - launchY * launchY))
 			finalVel = (horizUnit * horizScale + Vector3.new(0, launchY, 0)).Unit * passSpeed
 		end
@@ -794,12 +1116,25 @@ function BallService.ExecuteKick(
 			upwardBias = 0.05
 			curveForce = nil
 		elseif resolvedAction == "CurveShoot" then
-			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(rootPart.CFrame, horizUnit, ballState.position, curveSideIntent)
+			-- Owner Delta §22: Live curve selection during charge - resolve from release curveSideIntent or current movement
+			local effectiveSide: Types.CurveSideIntent? = nil
+			if curveSideIntent == "Left" or curveSideIntent == "Right" or curveSideIntent == "Neutral" then
+				effectiveSide = curveSideIntent
+			else
+				local moveVec = if humanoid.MoveDirection.Magnitude > 0.08
+					then humanoid.MoveDirection
+					else Vector3.new(rootPart.AssemblyLinearVelocity.X, 0, rootPart.AssemblyLinearVelocity.Z)
+				effectiveSide = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(rootPart.CFrame, moveVec, false, false)
+			end
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(rootPart.CFrame, horizUnit, ballState.position, effectiveSide)
 			st.resolvedKickFoot = curveRes.foot
 			st.resolvedCurveStyle = curveRes.style
 			kickSpeed = curveRes.speed * powerMult
 			upwardBias = curveRes.upwardBias
-			curveForce = rightVec * (curveRes.spinY * curveRes.magnusFactor * (0.6 + (charge * 0.4)))
+			-- Owner Delta §19: For a right-foot kicker:
+			--   Finesse (inside right foot) curls RIGHT-TO-LEFT across the aim line (-rightVec)
+			--   Trivela (outside right foot) curls LEFT-TO-RIGHT across the aim line (+rightVec)
+			curveForce = -rightVec * (curveRes.spinY * curveRes.magnusFactor * (0.6 + (charge * 0.4)))
 		end
 
 		if isAirborneKicker then
@@ -812,14 +1147,22 @@ function BallService.ExecuteKick(
 			-- Airborne Shot: Aim-Relative Lean Trajectory Deflection & Bounded Physical Spin (Owner Delta §14.3)
 			local leanFwd = st.airLeanForward or 0.0
 			local leanRgt = st.airLeanRight or 0.0
+			local contactFrame, neutralContactFrame = PlayerActionPoseConfigs.GetAirContactFrames(
+				resolvedAction,
+				rootPart.CFrame,
+				leanFwd,
+				leanRgt
+			)
 
-			local airVel, spinVec = AirLeanSolver.ComputeAirShotTrajectory(
+			local airVel, spinVec = AirLeanSolver.ComputeContactShotTrajectory(
 				aimDir,
 				kickSpeed,
 				upwardBias,
 				leanFwd,
 				leanRgt,
-				resolvedAction
+				resolvedAction,
+				contactFrame,
+				neutralContactFrame
 			)
 			finalVel = airVel
 			if spinVec.Magnitude > 0.01 then
@@ -912,7 +1255,7 @@ function BallService.ExecuteSlide(
 	end
 
 	-- Recovery check
-	if now < st.slideRecoveryUntil then
+	if now < st.slideRecoveryUntil or now < (st.whiffRecoveryUntil or 0) or now < st.fakeShotRecoveryUntil then
 		return recordActionFailure(player, intentId, "Recovery")
 	end
 
@@ -939,9 +1282,12 @@ function BallService.ExecuteSlide(
 		st.chargeIntentId = nil
 		st.chargeGeneration = 0
 		st.chargeContextVersion = 0
+		st.chargeCurveSide = nil
+		st.chargeCurveStyle = nil
+		st.chargeKickFoot = nil
 		charge = if elapsed < 0.12
 			then Constants.CHARGE_MIN_POWER
-			else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+			else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / (Constants.CHARGE_TIME_MAX or 0.90)) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 	else
 		charge = math.clamp(chargePower or Constants.CHARGE_MIN_POWER, Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 	end
@@ -979,9 +1325,10 @@ function BallService.ExecuteSlide(
 		slideDir.Z * curSlideSpeed
 	)
 
-	-- Check contact with ball / possessor immediately
+	-- Check contact with ball / possessor immediately (ground slide only reaches ground/low balls, not high overhead Sombrero arcs)
 	local distToBall = (rootPart.Position - ballState.position).Magnitude
-	if distToBall <= Constants.SLIDE_TACKLE_REACH then
+	local slideVertDelta = math.abs(ballState.position.Y - rootPart.Position.Y)
+	if distToBall <= Constants.SLIDE_TACKLE_REACH and slideVertDelta <= 3.0 then
 		st.slideHitBall = true
 		st.slideRecoveryUntil = 0
 		ballState.possessorUserId = nil
@@ -996,6 +1343,335 @@ function BallService.ExecuteSlide(
 	end
 
 	recordActionSuccess(player, intentId, "Slide")
+	local p = Players:GetPlayerByUserId(userId)
+	syncPlayerAttributes(p, st)
+	return true
+end
+
+-- Plan 03: Quick Poke always knocks the ball free before ordinary contest can award it.
+function BallService.ExecutePokeTackle(
+	player: Player | { UserId: number, Character: Model? },
+	aimVector: Vector3?,
+	intentId: string?
+): boolean
+	local userId = player.UserId
+	local st = getOrCreatePlayerState(userId)
+	local now = os.clock()
+
+	if st.actionContext ~= "Defending" or ballState.possessorUserId == userId then
+		return recordActionFailure(player, intentId, "WrongContext")
+	end
+
+	local char = getPlayerCharacter(userId) or (if typeof(player) == "Instance" and player:IsA("Player") then player.Character else (player :: any).Character)
+	if not char or not char.PrimaryPart then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local rootPart = char.PrimaryPart
+	if isCharacterAirborne(char, humanoid, rootPart) or st.isAirborne or now < st.landingLagUntil then
+		return recordActionFailure(player, intentId, "InvalidPayload")
+	end
+
+	if st.isSliding or now < st.slideRecoveryUntil or now < st.tackleRecoveryUntil or now < st.commonSkillRecoveryUntil
+		or now < (st.whiffRecoveryUntil or 0) or now < st.fakeShotRecoveryUntil
+	then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+
+	if now < st.pokeCooldownUntil then
+		return recordActionFailure(player, intentId, "Cooldown")
+	end
+
+	local cost = Constants.POKE_TACKLE_STAMINA_COST or 0.10
+	if st.stamina < cost then
+		return recordActionFailure(player, intentId, "InsufficientStamina")
+	end
+
+	st.stamina = math.max(0.0, st.stamina - cost)
+	st.lastStaminaUseTime = now
+	st.pokeCooldownUntil = now + (Constants.POKE_TACKLE_COOLDOWN_SEC or 1.0)
+	st.activeTackle = "Poke"
+	st.tackleEndTime = now + (Constants.POKE_TACKLE_DURATION_SEC or 0.28)
+
+	local pokeDir = rootPart.CFrame.LookVector
+	if aimVector and Network.IsFiniteVector3(aimVector) then
+		local flat = Vector3.new(aimVector.X, 0, aimVector.Z)
+		if flat.Magnitude > 0.05 then
+			pokeDir = flat.Unit
+		end
+	elseif humanoid.MoveDirection.Magnitude > 0.05 then
+		pokeDir = humanoid.MoveDirection.Unit
+	end
+	local flatPoke = Vector3.new(pokeDir.X, 0, pokeDir.Z)
+	pokeDir = if flatPoke.Magnitude > 0.05 then flatPoke.Unit else Vector3.new(0, 0, -1)
+
+	local reach = Constants.POKE_TACKLE_REACH or 4.5
+	local horizDist = Vector2.new(ballState.position.X - rootPart.Position.X, ballState.position.Z - rootPart.Position.Z).Magnitude
+	local relY = ballState.position.Y - rootPart.Position.Y
+	local toBall = Vector3.new(ballState.position.X - rootPart.Position.X, 0, ballState.position.Z - rootPart.Position.Z)
+	local facing = Vector3.new(rootPart.CFrame.LookVector.X, 0, rootPart.CFrame.LookVector.Z)
+	facing = if facing.Magnitude > 0.05 then facing.Unit else Vector3.new(0, 0, -1)
+	local isInFront = toBall.Magnitude > 0.05 and facing:Dot(toBall.Unit) >= 0.0
+	local isInsidePokeCone = toBall.Magnitude > 0.05 and pokeDir:Dot(toBall.Unit) >= (Constants.POKE_TACKLE_MIN_FACING_DOT or 0.35)
+
+	if horizDist <= reach and relY >= -2.5 and relY <= 2.5 and isInFront and isInsidePokeCone then
+		local previousHolder = ballState.possessorUserId
+		ballState.possessorUserId = nil
+		ballState.state = "InFlight"
+		ballState.velocity = (pokeDir * (Constants.POKE_TACKLE_BALL_IMPULSE or 24.0)) + Vector3.new(0, Constants.POKE_TACKLE_BALL_LIFT or 2.5, 0)
+		ballState.lastKickerUserId = userId
+		ballState.lastKickTime = now
+		ballState.inFlightAction = "QuickPoke"
+		st.dislodgedCooldownUntil = now + (Constants.POKE_TACKLE_REACQUIRE_GRACE_SEC or 0.15)
+		if previousHolder and playerStates[previousHolder] then
+			playerStates[previousHolder].dislodgedCooldownUntil = now + (Constants.POKE_PREVIOUS_HOLDER_GRACE_SEC or 0.25)
+		end
+		syncBallAttributes()
+	else
+		-- Missed/out-of-cone Poke keeps the existing ball state and pays recovery.
+		st.tackleRecoveryUntil = now + (Constants.POKE_TACKLE_RECOVERY_SEC or 0.20)
+		humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
+	end
+
+	recordActionSuccess(player, intentId, "Poke")
+	local p = Players:GetPlayerByUserId(userId)
+	syncPlayerAttributes(p, st)
+	return true
+end
+
+-- Cage Press is a short forward collision. The opponent keeps possession in
+-- open space; only a swept impact into an eligible arena wall releases the ball.
+function BallService.ExecuteCagePress(
+	player: Player | { UserId: number, Character: Model? },
+	aimVector: Vector3?,
+	intentId: string?
+): boolean
+	local userId = player.UserId
+	local st = getOrCreatePlayerState(userId)
+	local now = os.clock()
+
+	if st.actionContext ~= "Defending" or ballState.possessorUserId == userId then
+		return recordActionFailure(player, intentId, "WrongContext")
+	end
+
+	local char = getPlayerCharacter(userId) or (if typeof(player) == "Instance" and player:IsA("Player") then player.Character else (player :: any).Character)
+	if not char or not char.PrimaryPart then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local rootPart = char.PrimaryPart
+	if isCharacterAirborne(char, humanoid, rootPart) or st.isAirborne or now < st.landingLagUntil then
+		return recordActionFailure(player, intentId, "InvalidPayload")
+	end
+
+	if st.isSliding or now < st.slideRecoveryUntil or now < st.tackleRecoveryUntil or now < st.commonSkillRecoveryUntil
+		or now < (st.whiffRecoveryUntil or 0) or now < st.fakeShotRecoveryUntil
+	then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+
+	if now < st.cagePressCooldownUntil then
+		return recordActionFailure(player, intentId, "Cooldown")
+	end
+
+	local cost = Constants.CAGE_PRESS_STAMINA_COST or 0.14
+	if st.stamina < cost then
+		return recordActionFailure(player, intentId, "InsufficientStamina")
+	end
+
+	st.stamina = math.max(0.0, st.stamina - cost)
+	st.lastStaminaUseTime = now
+	st.cagePressCooldownUntil = now + (Constants.CAGE_PRESS_COOLDOWN_SEC or 2.0)
+	st.activeTackle = "CagePress"
+	st.tackleEndTime = now + (Constants.CAGE_PRESS_DURATION_SEC or 0.16)
+
+	local chargeDir = rootPart.CFrame.LookVector
+	if aimVector and Network.IsFiniteVector3(aimVector) then
+		local flat = Vector3.new(aimVector.X, 0, aimVector.Z)
+		if flat.Magnitude > 0.05 then
+			chargeDir = flat.Unit
+		end
+	elseif humanoid.MoveDirection.Magnitude > 0.05 then
+		chargeDir = humanoid.MoveDirection.Unit
+	end
+	chargeDir = Vector3.new(chargeDir.X, 0, chargeDir.Z).Unit
+	local pressSpeed = Constants.CAGE_PRESS_BURST_SPEED or 15.0
+	rootPart.AssemblyLinearVelocity = Vector3.new(chargeDir.X * pressSpeed, rootPart.AssemblyLinearVelocity.Y, chargeDir.Z * pressSpeed)
+
+	local reach = Constants.CAGE_PRESS_REACH or 2.8
+	local hitOpponentSt: PlayerMovementState? = nil
+	local hitOpponentRoot: BasePart? = nil
+	local hitOpponentHum: Humanoid? = nil
+	local bestDist = reach + 0.001
+
+	for otherUserId, otherSt in pairs(playerStates) do
+		if otherUserId ~= userId and otherSt.teamSide ~= st.teamSide then
+			local otherChar = getPlayerCharacter(otherUserId)
+			local otherRoot = otherChar and otherChar.PrimaryPart
+			local otherHum = otherChar and otherChar:FindFirstChildOfClass("Humanoid")
+			if otherRoot and otherHum and otherHum.Health > 0 then
+				local dist = Vector2.new(otherRoot.Position.X - rootPart.Position.X, otherRoot.Position.Z - rootPart.Position.Z).Magnitude
+				local vertDiff = math.abs(otherRoot.Position.Y - rootPart.Position.Y)
+				local toTarget = Vector3.new(otherRoot.Position.X - rootPart.Position.X, 0, otherRoot.Position.Z - rootPart.Position.Z)
+				local facingDot = if toTarget.Magnitude > 0.05 then chargeDir:Dot(toTarget.Unit) else -1
+				if dist <= bestDist and vertDiff <= 3.0 and facingDot >= 0.15 then
+					bestDist = dist
+					hitOpponentSt = otherSt
+					hitOpponentRoot = otherRoot
+					hitOpponentHum = otherHum
+				end
+			end
+		end
+	end
+
+	if hitOpponentSt and hitOpponentRoot and hitOpponentHum then
+		local targetChar = getPlayerCharacter(hitOpponentSt.userId)
+		local attackerGeneration = st.characterGeneration
+		local targetGeneration = hitOpponentSt.characterGeneration
+		local pressCFrame = rootPart.CFrame
+		hitOpponentSt.cagePressSlowUntil = now + (Constants.CAGE_PRESS_OPEN_FIELD_SLOW_SEC or 0.22)
+		hitOpponentSt.cagePressSlowMultiplier = Constants.CAGE_PRESS_OPEN_FIELD_SLOW_MULTIPLIER or 0.85
+		hitOpponentHum.WalkSpeed = BallService.ResolvePlayerSpeed(hitOpponentSt)
+		local oppPlayer = Players:GetPlayerByUserId(hitOpponentSt.userId)
+		syncPlayerAttributes(oppPlayer, hitOpponentSt)
+		local push = chargeDir * (Constants.CAGE_PRESS_OPEN_FIELD_KNOCKBACK_SPEED or 7.0)
+		hitOpponentRoot.AssemblyLinearVelocity = Vector3.new(push.X, hitOpponentRoot.AssemblyLinearVelocity.Y, push.Z)
+		if targetChar and targetChar.PrimaryPart then
+			pendingCagePresses[userId] = {
+				targetUserId = hitOpponentSt.userId,
+				attackerGeneration = attackerGeneration,
+				targetGeneration = targetGeneration,
+				attackerContextVersion = st.contextVersion,
+				direction = chargeDir,
+				expiresAt = now + (Constants.CAGE_PRESS_WALL_ATTRIBUTION_SEC or 0.35),
+				previousRootCFrame = targetChar.PrimaryPart.CFrame,
+			}
+		end
+	else
+		st.tackleRecoveryUntil = now + (Constants.CAGE_PRESS_MISS_RECOVERY_SEC or 0.28)
+		humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
+	end
+
+	recordActionSuccess(player, intentId, "CagePress")
+	local p = Players:GetPlayerByUserId(userId)
+	syncPlayerAttributes(p, st)
+	return true
+end
+
+-- Plan 03 Narrow Validated Seam 3: Authoritative Skill Move Ball & Movement Impulse
+function BallService.ApplySkillBallImpulse(
+	player: Player | { UserId: number, Character: Model? },
+	skillDef: Types.SkillMoveDefinition,
+	direction: Vector3,
+	resolvedSide: number,
+	intentId: string?,
+	slotIndex: number?
+): boolean
+	local userId = player.UserId
+	local st = getOrCreatePlayerState(userId)
+	local now = os.clock()
+
+	-- Must be in Attacking context and personal possessor of the ball
+	if st.actionContext ~= "Attacking" or ballState.possessorUserId ~= userId then
+		return recordActionFailure(player, intentId, "WrongContext")
+	end
+
+	local char = getPlayerCharacter(userId) or (if typeof(player) == "Instance" and player:IsA("Player") then player.Character else (player :: any).Character)
+	if not char or not char.PrimaryPart then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+
+	local rootPart = char.PrimaryPart
+	if isCharacterAirborne(char, humanoid, rootPart) or st.isAirborne or now < st.landingLagUntil then
+		return recordActionFailure(player, intentId, "InvalidPayload")
+	end
+
+	if st.isSliding or now < st.slideRecoveryUntil or now < st.tackleRecoveryUntil
+		or (st.whiffRecoveryUntil and now < st.whiffRecoveryUntil) or now < st.fakeShotRecoveryUntil
+	then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+
+	-- Skills have 0 cooldown and can be used continuously based purely on stamina per Owner directive
+	if st.stamina < skillDef.staminaCost then
+		return recordActionFailure(player, intentId, "InsufficientStamina")
+	end
+
+	-- Debit stamina and trigger skill
+	st.stamina = math.max(0.0, st.stamina - skillDef.staminaCost)
+	st.lastStaminaUseTime = now
+	st.activeSkillMove = skillDef.id
+	st.skillEndTime = now + skillDef.totalDurationSec
+	st.commonSkillRecoveryUntil = now + (skillDef.commonRecoverySec or 0.0)
+
+	local flatDir = Vector3.new(direction.X, 0, direction.Z)
+	if flatDir.Magnitude < 1e-3 then
+		local look = rootPart.CFrame.LookVector
+		flatDir = Vector3.new(look.X, 0, look.Z)
+	end
+	flatDir = if flatDir.Magnitude > 1e-3 then flatDir.Unit else Vector3.new(0, 0, 1)
+	local rightDir = Vector3.new(-flatDir.Z, 0, flatDir.X)
+
+	-- Lateral contacts are catalog-authored and scheduled. Possession remains with the player through the windup; each contact below is applied by BallService's physics step.
+	if skillDef.directionPolicy == "LateralCut" then
+		local side = if resolvedSide < 0 then -1 else 1
+		st.pendingSkillContacts = {
+			skillId = skillDef.id,
+			characterGeneration = st.characterGeneration,
+			startedAt = now,
+			forward = flatDir,
+			right = rightDir,
+			side = side,
+			impulse = skillDef.ballImpulseMagnitude,
+			stages = skillDef.contactStages,
+			nextStage = 1,
+		}
+		local travelDirection = if skillDef.retreatSpeed > 0 then -flatDir else (flatDir * 0.45 + rightDir * side * 0.89).Unit
+		local travelSpeed = if skillDef.retreatSpeed > 0 then skillDef.retreatSpeed else skillDef.playerVelocityBurst
+		rootPart.AssemblyLinearVelocity = Vector3.new(travelDirection.X * travelSpeed, rootPart.AssemblyLinearVelocity.Y, travelDirection.Z * travelSpeed)
+	elseif skillDef.directionPolicy == "LiftForward" then
+		ballState.possessorUserId = nil
+		ballState.state = "InFlight"
+		ballState.inFlightAction = nil
+		ballState.lastKickerUserId = userId
+		ballState.lastKickTime = now
+		ballState.position = Vector3.new(rootPart.Position.X + flatDir.X * 2.2, math.max(Constants.BALL_RADIUS + 1.2, rootPart.Position.Y + 1.2), rootPart.Position.Z + flatDir.Z * 2.2)
+		ballState.velocity = flatDir * skillDef.ballImpulseMagnitude + Vector3.new(0, skillDef.ballImpulseVertical, 0)
+		rootPart.AssemblyLinearVelocity = Vector3.new(flatDir.X * skillDef.playerVelocityBurst, rootPart.AssemblyLinearVelocity.Y, flatDir.Z * skillDef.playerVelocityBurst)
+	else
+		ballState.possessorUserId = nil
+		ballState.state = "InFlight"
+		ballState.inFlightAction = "KnockOn"
+		ballState.lastKickerUserId = userId
+		ballState.lastKickTime = now
+		-- Forward skill (e.g. HeavyKnockOn): knock ball far ahead (45.0 studs/s), short modest acceleration (22.0 studs/s for 0.18s) that does not reach the ball
+		ballState.position = Vector3.new(rootPart.Position.X + flatDir.X * 4.0, Constants.BALL_RADIUS, rootPart.Position.Z + flatDir.Z * 4.0)
+		ballState.velocity = flatDir * (skillDef.ballImpulseMagnitude or 45.0) + Vector3.new(0, skillDef.ballImpulseVertical or 1.0, 0)
+		if (skillDef.burstDurationSec or 0) > 0 and (skillDef.playerVelocityBurst or 0) > 0 then
+			st.isDashing = true
+			st.dashEndTime = now + skillDef.burstDurationSec
+			humanoid.WalkSpeed = skillDef.playerVelocityBurst
+			rootPart.AssemblyLinearVelocity = Vector3.new(flatDir.X * skillDef.playerVelocityBurst, rootPart.AssemblyLinearVelocity.Y, flatDir.Z * skillDef.playerVelocityBurst)
+		end
+	end
+	if skillDef.directionPolicy ~= "LateralCut" then syncBallAttributes() end
+	syncBallAttributes()
+	recordActionSuccess(player, intentId, skillDef.id)
 	local p = Players:GetPlayerByUserId(userId)
 	syncPlayerAttributes(p, st)
 	return true
@@ -1041,8 +1717,10 @@ function BallService.ExecuteDash(player: Player | { UserId: number, Character: M
 	if st.isAirborne then
 		return false
 	end
-	-- F-23: Dash during slide or slide recovery is strictly rejected
-	if st.isSliding or now < st.slideRecoveryUntil then
+	-- F-23 & Plan 03: Dash during slide, tackle recovery, or common skill recovery is strictly rejected
+	if st.isSliding or now < st.slideRecoveryUntil or now < st.tackleRecoveryUntil or now < st.commonSkillRecoveryUntil
+		or now < (st.whiffRecoveryUntil or 0) or now < st.fakeShotRecoveryUntil
+	then
 		return false
 	end
 	-- Cannot dash while charging kick
@@ -1068,6 +1746,10 @@ function BallService.ExecuteDash(player: Player | { UserId: number, Character: M
 
 	-- Walking/falling off an edge or air material cannot initiate dash (F-15)
 	if isCharacterAirborne(char, humanoid, char.PrimaryPart) then
+		st.isAirborne = true
+		if st.flightState == "Grounded" or st.flightState == "Landed" then
+			st.flightState = "Falling"
+		end
 		return false
 	end
 
@@ -1134,6 +1816,13 @@ function BallService.ExecuteDirectionalJump(
 	end
 
 	local rootPart = char.PrimaryPart
+	if isCharacterAirborne(char, humanoid, rootPart) then
+		st.isAirborne = true
+		if st.flightState == "Grounded" or st.flightState == "Landed" then
+			st.flightState = "Falling"
+		end
+		return recordActionFailure(player, intentId, "Recovery")
+	end
 
 	-- Bounded recent ground tolerance (absorbs client prediction packet delay, but rejects edge fall)
 	local isFloorGrounded = (humanoid.FloorMaterial ~= Enum.Material.Air) or (rootPart.Position.Y <= 2.25)
@@ -1271,11 +1960,13 @@ end
 function BallService.StartCharge(
 	player: Player | { UserId: number, Character: Model? },
 	chargeAction: Types.ChargeActionType?,
-	intentId: string?
+	intentId: string?,
+	curveSideIntent: Types.CurveSideIntent?
 ): boolean
 	local userId = player.UserId
 	local st = getOrCreatePlayerState(userId)
 	local action = chargeAction or "DirectShoot"
+	local now = os.clock()
 
 	-- F-14: Reject starting a charge if another charge is already active
 	if st.isCharging then
@@ -1292,7 +1983,6 @@ function BallService.StartCharge(
 		if st.stamina < Constants.SLIDE_STAMINA_COST then
 			return recordActionFailure(player, intentId, "InsufficientStamina")
 		end
-		local now = os.clock()
 		if now < st.slideCooldownUntil then
 			return recordActionFailure(player, intentId, "Cooldown")
 		end
@@ -1310,6 +2000,37 @@ function BallService.StartCharge(
 	if not humanoid or humanoid.Health <= 0 then
 		return recordActionFailure(player, intentId, "NotAlive")
 	end
+	local rootPart = char and char.PrimaryPart
+	if now < st.fakeShotRecoveryUntil then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+	if now < (st.whiffRecoveryUntil or 0)
+		and (action ~= "Pass" or st.isAirborne or (rootPart ~= nil and isCharacterAirborne(char :: Model, humanoid, rootPart)))
+	then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+
+	-- Owner Delta §19 & §20: Snapshot curve selection at initial RMB charge press (actual movement priority, input fallback only when stationary)
+	local latchedSide: Types.CurveSideIntent? = nil
+	local latchedStyle: ("Finesse" | "Trivela")? = nil
+	local latchedFoot: ("Left" | "Right")? = nil
+	if action == "CurveShoot" then
+		if rootPart then
+			local moveVec = if humanoid.MoveDirection.Magnitude > 0.08
+				then humanoid.MoveDirection
+				else Vector3.new(rootPart.AssemblyLinearVelocity.X, 0, rootPart.AssemblyLinearVelocity.Z)
+			local keyA = (curveSideIntent == "Left")
+			local keyD = (curveSideIntent == "Right")
+			latchedSide = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(rootPart.CFrame, moveVec, keyA, keyD)
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(rootPart.CFrame, rootPart.CFrame.LookVector, ballState.position, latchedSide)
+			latchedStyle = curveRes.style
+			latchedFoot = curveRes.foot
+		else
+			latchedSide = if curveSideIntent == "Right" then "Right" elseif curveSideIntent == "Left" then "Left" else "Neutral"
+			latchedStyle = if latchedSide == "Right" then "Trivela" else "Finesse"
+			latchedFoot = "Right"
+		end
+	end
 
 	st.isCharging = true
 	st.chargeStartTime = os.clock()
@@ -1317,7 +2038,10 @@ function BallService.StartCharge(
 	st.chargeIntentId = intentId
 	st.chargeGeneration = st.characterGeneration
 	st.chargeContextVersion = st.contextVersion
-	humanoid.WalkSpeed = Constants.WALK_SPEED * 0.50
+	st.chargeCurveSide = latchedSide
+	st.chargeCurveStyle = latchedStyle
+	st.chargeKickFoot = latchedFoot
+	humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
 	recordActionSuccess(player, intentId, "StartCharge")
 	local p = Players:GetPlayerByUserId(userId)
 	syncPlayerAttributes(p, st)
@@ -1337,6 +2061,9 @@ function BallService.CancelCharge(player: Player | { UserId: number, Character: 
 	st.chargeIntentId = nil
 	st.chargeGeneration = 0
 	st.chargeContextVersion = 0
+	st.chargeCurveSide = nil
+	st.chargeCurveStyle = nil
+	st.chargeKickFoot = nil
 	local char = getPlayerCharacter(userId) or (if typeof(player) == "Instance" and player:IsA("Player") then player.Character else (player :: any).Character)
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	if humanoid and humanoid.Health > 0 then
@@ -1352,6 +2079,102 @@ function BallService.CancelCharge(player: Player | { UserId: number, Character: 
 	return true
 end
 
+function BallService.ExecuteFakeShot(
+	player: Player | { UserId: number, Character: Model? },
+	intentId: string,
+	aimDirection: Vector3?,
+	moveDirection: Vector3?,
+	keyADown: boolean?,
+	keyDDown: boolean?
+): boolean
+	local userId = player.UserId
+	local st = getOrCreatePlayerState(userId)
+	local now = os.clock()
+	if st.actionContext ~= "Attacking" then
+		return recordActionFailure(player, intentId, "WrongContext")
+	end
+	if not st.isCharging or st.chargeIntentId ~= intentId
+		or (st.chargeAction ~= "DirectShoot" and st.chargeAction ~= "CurveShoot")
+	then
+		return recordActionFailure(player, intentId, "StaleIntent")
+	end
+	if now < (st.whiffRecoveryUntil or 0) or now < st.fakeShotRecoveryUntil then
+		return recordActionFailure(player, intentId, "Recovery")
+	end
+
+	local char = getPlayerCharacter(userId) or (if typeof(player) == "Instance" and player:IsA("Player") then player.Character else (player :: any).Character)
+	if not char or not char.PrimaryPart then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return recordActionFailure(player, intentId, "NotAlive")
+	end
+	if st.isAirborne or isCharacterAirborne(char, humanoid, char.PrimaryPart) then
+		return recordActionFailure(player, intentId, "InvalidPayload")
+	end
+
+	local rootPart = char.PrimaryPart
+	local look = rootPart.CFrame.LookVector
+	local forward = Vector3.new(look.X, 0, look.Z)
+	forward = if forward.Magnitude > 0.05 then forward.Unit else Vector3.new(0, 0, -1)
+	local right = Vector3.new(-forward.Z, 0, forward.X)
+
+	-- Owner Delta §23: Resolve character-relative lateral cut side from A/D movement or validated aim
+	local resolvedSide, sideSign = PlayerActionPoseConfigs.ResolveFakeShotSideFromAim(
+		rootPart.CFrame,
+		aimDirection,
+		moveDirection,
+		keyADown,
+		keyDDown
+	)
+	local exitDir = (forward * 0.55 + right * (sideSign * 0.85)).Unit
+
+	-- A successful FakeShot touches the ball laterally into space and temporarily releases possession
+	-- allowing defenders an interception window before the attacker surges forward to reclaim it.
+	if ballState.possessorUserId == userId then
+		local dribbleDist = if st.stamina < 0.05
+			then math.abs(Constants.BALL_DRIBBLE_EXHAUSTED_OFFSET_Z)
+			else math.abs(Constants.BALL_DRIBBLE_OFFSET_Z)
+		local lateralCutDist = Constants.FAKE_SHOT_BALL_CUT_OFFSET_STUDS or 2.8
+		local cutPos = rootPart.Position + (forward * dribbleDist) + (right * (sideSign * lateralCutDist))
+		ballState.position = Vector3.new(cutPos.X, Constants.BALL_RADIUS, cutPos.Z)
+		ballState.velocity = (right * (sideSign * 16.0)) + (forward * 14.0)
+		st.fakeShotSide = resolvedSide
+
+		-- Release possession into flight so ball is genuinely free to be contested
+		ballState.possessorUserId = nil
+		ballState.state = "InFlight"
+		ballState.inFlightAction = "FakeShot"
+		ballState.lastKickerUserId = userId
+		ballState.lastKickTime = now
+		if ballPart then
+			ballPart.CFrame = CFrame.new(ballState.position)
+		end
+		syncBallAttributes()
+
+		-- Character bursts toward the cut ("ตัวละครตามไปทีหลัง เหมือนท่า กระชากบอล แต่ไม่ไกลเท่า")
+		local burstSpeed = Constants.FAKE_SHOT_BURST_SPEED or 22.0
+		if humanoid and humanoid.Health > 0 then
+			humanoid.WalkSpeed = burstSpeed
+		end
+		if not rootPart.Anchored then
+			rootPart.AssemblyLinearVelocity = Vector3.new(exitDir.X * burstSpeed, rootPart.AssemblyLinearVelocity.Y, exitDir.Z * burstSpeed)
+		end
+	else
+		st.fakeShotSide = nil
+	end
+
+	-- This terminalizes the held shot intent. The ball remains under its ordinary
+	-- possession/dribble owner and can still be contested during the feint.
+	st.fakeShotRecoveryUntil = now + (Constants.FAKE_SHOT_RECOVERY_SEC or 0.35)
+	st.fakeShotSourceAction = st.chargeAction
+	st.fakeShotDirection = exitDir
+	BallService.CancelCharge(player, intentId)
+	recordActionSuccess(player, intentId, "FakeShot")
+	return true
+end
+
 function BallService.ResetBall(customPos: Vector3?, initialPossessingTeam: Types.TeamSide?)
 	for _, st in pairs(playerStates) do
 		if st.isCharging then
@@ -1362,6 +2185,11 @@ function BallService.ResetBall(customPos: Vector3?, initialPossessingTeam: Types
 			st.chargeStartTime = 0
 			st.chargeAction = nil
 			st.chargeIntentId = nil
+			st.chargeGeneration = 0
+			st.chargeContextVersion = 0
+			st.chargeCurveSide = nil
+			st.chargeCurveStyle = nil
+			st.chargeKickFoot = nil
 			st.lastActionStatus = "Cancelled"
 			st.lastActionReason = "Reset"
 			local char = getPlayerCharacter(st.userId)
@@ -1372,6 +2200,8 @@ function BallService.ResetBall(customPos: Vector3?, initialPossessingTeam: Types
 		end
 		st.isSliding = false
 		st.slideHitBall = false
+		st.fakeShotSide = nil
+		st.fakeShotRecoveryUntil = 0
 		st.contextVersion += 1
 		local p = Players:GetPlayerByUserId(st.userId)
 		syncPlayerAttributes(p, st)
@@ -1394,11 +2224,57 @@ function BallService.ResetBall(customPos: Vector3?, initialPossessingTeam: Types
 	syncBallAttributes()
 end
 
+local function advancePendingSkillContact(userId: number, st: PlayerMovementState, now: number)
+	local pending = st.pendingSkillContacts
+	if not pending then return end
+	local char = getPlayerCharacter(userId)
+	local root = char and char.PrimaryPart
+	if not root or pending.characterGeneration ~= st.characterGeneration or now - pending.startedAt > 1.5 then
+		st.pendingSkillContacts = nil
+		return
+	end
+	local stage = pending.stages[pending.nextStage]
+	if not stage or now - pending.startedAt < stage.time then return end
+	if pending.nextStage == 1 then
+		if ballState.possessorUserId ~= userId then
+			st.pendingSkillContacts = nil
+			return
+		end
+	elseif ballState.inFlightAction ~= "SkillMove" or ballState.lastKickerUserId ~= userId then
+		-- A defender already contested the free ball; the later feint contact cancels.
+		st.pendingSkillContacts = nil
+		return
+	end
+
+	local contactVector = pending.forward * stage.forward + pending.right * stage.lateral * pending.side
+	local contactDirection = if contactVector.Magnitude > 0.05 then contactVector.Unit else pending.forward
+	ballState.possessorUserId = nil
+	ballState.state = "InFlight"
+	ballState.inFlightAction = "SkillMove"
+	ballState.lastKickerUserId = userId
+	ballState.lastKickTime = now
+	ballState.position = Vector3.new(
+		root.Position.X + contactDirection.X * 2.2,
+		Constants.BALL_RADIUS,
+		root.Position.Z + contactDirection.Z * 2.2
+	)
+	ballState.velocity = contactDirection * pending.impulse + Vector3.new(0, stage.vertical + (if stage.forward < 0 then 0.15 else 0), 0)
+	if pending.nextStage == #pending.stages then
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + contactDirection)
+		st.pendingSkillContacts = nil
+	else
+		pending.nextStage += 1
+	end
+	syncBallAttributes()
+end
+
 function BallService.StepPhysics(dt: number)
 	local now = os.clock()
 
 	-- 1. Step Player Stamina & Movement States
 	for userId, st in pairs(playerStates) do
+		tryResolveCagePressWallSplat(userId, now)
+		advancePendingSkillContact(userId, st, now)
 		local char = getPlayerCharacter(userId)
 		local rootPart = char and char.PrimaryPart
 		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
@@ -1507,7 +2383,8 @@ function BallService.StepPhysics(dt: number)
 				-- Continuous slide tackle contact during active slide window (only once per slide!)
 				if rootPart and not st.slideHitBall then
 					local distToBall = (rootPart.Position - ballState.position).Magnitude
-					if distToBall <= Constants.SLIDE_TACKLE_REACH then
+					local slideVertDelta = math.abs(ballState.position.Y - rootPart.Position.Y)
+					if distToBall <= Constants.SLIDE_TACKLE_REACH and slideVertDelta <= 3.0 then
 						st.slideHitBall = true
 						st.slideRecoveryUntil = 0
 						ballState.possessorUserId = nil
@@ -1533,6 +2410,36 @@ function BallService.StepPhysics(dt: number)
 			end
 		end
 
+		if st.activeSkillMove and now >= st.skillEndTime then
+			st.activeSkillMove = nil
+		end
+		if st.activeTackle and now >= st.tackleEndTime then
+			if st.activeTackle == "CagePress" and rootPart then
+				rootPart.AssemblyLinearVelocity = Vector3.new(0, rootPart.AssemblyLinearVelocity.Y, 0)
+			end
+			st.activeTackle = nil
+		end
+
+		-- Plan 03: Ordinary opponent body contact slows; teammates pass through without slow
+		if rootPart and humanoid and humanoid.Health > 0 then
+			for otherUserId, otherSt in pairs(playerStates) do
+				if otherUserId ~= userId and otherSt.teamSide ~= st.teamSide then
+					local otherChar = getPlayerCharacter(otherUserId)
+					local otherRoot = otherChar and otherChar.PrimaryPart
+					local otherHum = otherChar and otherChar:FindFirstChildOfClass("Humanoid")
+					if otherRoot and otherHum and otherHum.Health > 0 then
+						local bodyDist = Vector2.new(otherRoot.Position.X - rootPart.Position.X, otherRoot.Position.Z - rootPart.Position.Z).Magnitude
+						local vertDiff = math.abs(otherRoot.Position.Y - rootPart.Position.Y)
+						if bodyDist <= 3.2 and vertDiff <= 3.0 then
+							st.opponentContactSlowUntil = math.max(st.opponentContactSlowUntil, now + 0.15)
+							otherSt.opponentContactSlowUntil = math.max(otherSt.opponentContactSlowUntil, now + 0.15)
+						end
+					end
+				end
+			end
+			humanoid.WalkSpeed = BallService.ResolvePlayerSpeed(st)
+		end
+
 		if now >= st.boostUntil then
 			st.boostMultiplier = 1.0
 		end
@@ -1553,41 +2460,260 @@ function BallService.StepPhysics(dt: number)
 			ballState.state = "Free"
 		else
 			local st = getOrCreatePlayerState(ballState.possessorUserId)
-			local dribbleDist = if st.stamina < Constants.STAMINA_EXHAUSTED_THRESHOLD
-				then math.abs(Constants.BALL_DRIBBLE_EXHAUSTED_OFFSET_Z)
-				else math.abs(Constants.BALL_DRIBBLE_OFFSET_Z)
+			local isSkillBusy = (st.pendingSkillContacts ~= nil) or (now < st.skillEndTime)
 
-			local fwd = rootPart.CFrame.LookVector
-			local flatFwd = Vector3.new(fwd.X, 0, fwd.Z)
-			flatFwd = if flatFwd.Magnitude > 1e-3 then flatFwd.Unit else Vector3.new(0, 0, 1)
+			if not isSkillBusy then
+				local horizVel = Vector3.new(rootPart.AssemblyLinearVelocity.X, 0, rootPart.AssemblyLinearVelocity.Z)
+				local speed = horizVel.Magnitude
 
-			local groundY = Constants.BALL_RADIUS
-			local targetY = groundY
-			if rootPart.Position.Y > 3.5 then
-				targetY = math.max(groundY, rootPart.Position.Y - 1.75)
+				local isExhausted = st.stamina < Constants.STAMINA_EXHAUSTED_THRESHOLD
+				local fwd = rootPart.CFrame.LookVector
+				local flatFwd = Vector3.new(fwd.X, 0, fwd.Z)
+				flatFwd = if flatFwd.Magnitude > 1e-3 then flatFwd.Unit else Vector3.new(0, 0, 1)
+				local rightVec = Vector3.new(-flatFwd.Z, 0, flatFwd.X)
+
+				local groundY = Constants.BALL_RADIUS
+				local targetY = groundY
+				if rootPart.Position.Y > 3.5 then
+					targetY = math.max(groundY, rootPart.Position.Y - 1.75)
+				end
+
+				-- Read CloseControl attribute from character or state
+				local isCloseControl = (st.isCloseControl == true) or (char:GetAttribute("IsCloseControl") == true)
+				st.isCloseControl = isCloseControl
+
+				local moveDir = if humanoid and humanoid.MoveDirection.Magnitude > 0.05
+					then humanoid.MoveDirection.Unit
+					else (if speed > 0.8 then horizVel.Unit else flatFwd)
+				local backwardDot = moveDir:Dot(flatFwd)
+
+				-- Auto DragBack trigger:
+				local isDraggingBack = (now < (st.dragBackEndTime or 0))
+				if not isDraggingBack and speed > 1.0 and not st.isSprinting and backwardDot < -0.55 and (isCloseControl or (char:GetAttribute("RequestDragBack") == true)) then
+					isDraggingBack = true
+					st.dragBackEndTime = now + 0.25
+					char:SetAttribute("RequestDragBack", false)
+					ballState.velocity = Vector3.zero
+				end
+
+				local ballPos = ballState.position
+				local ballVel = ballState.velocity
+
+				if isDraggingBack then
+					-- STATE 4: DragBack (0.25s controlled backward pull to plant foot and turn)
+					local dragTarget = rootPart.Position - (flatFwd * 0.8)
+					local targetPos = Vector3.new(dragTarget.X, targetY, dragTarget.Z)
+					ballPos = ballPos:Lerp(targetPos, math.clamp(dt * 14.0, 0, 1))
+					ballVel = Vector3.zero
+					if (st.dragBackEndTime - now) < 0.03 then
+						ballVel = moveDir * (speed * 1.15 + 1.5)
+					end
+				elseif st.isCharging == true then
+					-- Charging Shoot/Pass: ball rests safely at foot without dribble tap
+					local restPos = rootPart.Position + (flatFwd * 1.8) + (rightVec * 0.35)
+					ballPos = Vector3.new(restPos.X, targetY, restPos.Z)
+					ballVel = Vector3.zero
+					st.lastDribbleTouchTime = 0
+				elseif now < st.fakeShotRecoveryUntil and st.fakeShotSide ~= nil then
+					-- FakeShot cut
+					local sideSign = if st.fakeShotSide == "Left" then -1 else 1
+					local lateralCutDist = Constants.FAKE_SHOT_BALL_CUT_OFFSET_STUDS or 2.4
+					local cutPos = rootPart.Position + (flatFwd * 1.8) + (rightVec * (sideSign * lateralCutDist))
+					ballPos = ballPos:Lerp(Vector3.new(cutPos.X, targetY, cutPos.Z), math.clamp(dt * 12.0, 0, 1))
+					ballVel = Vector3.zero
+				elseif speed <= 0.8 and (not humanoid or humanoid.MoveDirection.Magnitude <= 0.05) then
+					-- STATE 1: IdleWithBall
+					st.lastDribbleTouchTime = 0
+					local restPos = rootPart.Position + (flatFwd * 1.9) + (rightVec * 0.35)
+					local targetPos = Vector3.new(restPos.X, targetY, restPos.Z)
+					ballPos = ballPos:Lerp(targetPos, math.clamp(dt * 12.0, 0, 1))
+					ballVel = Vector3.zero
+				elseif isCloseControl then
+					-- STATE 3: CloseControl & BallRoll (Hold Ctrl or Q)
+					local cadence = 0.14
+					local leadDist = 1.8
+					local lastTouch = st.lastDribbleTouchTime or 0
+					local relPos = ballPos - rootPart.Position
+					local fwdDist = relPos.X * flatFwd.X + relPos.Z * flatFwd.Z
+
+					local latDot = moveDir:Dot(rightVec)
+					local touchDir = moveDir
+					if math.abs(latDot) > 0.6 then
+						touchDir = rightVec * math.sign(latDot)
+					end
+
+					local isTouch = (lastTouch == 0) or (now - lastTouch >= cadence) or (fwdDist <= 1.4)
+					if isTouch then
+						st.lastDribbleTouchTime = now
+						local touchSpeed = math.max(speed * 1.05, 9.0)
+						local idealTarget = rootPart.Position + (touchDir * leadDist)
+						local toTarget = idealTarget - ballPos
+						local toDir = if toTarget.Magnitude > 0.05 then toTarget.Unit else touchDir
+						ballVel = toDir * touchSpeed
+						if fwdDist < 1.3 then
+							ballPos = Vector3.new(rootPart.Position.X + flatFwd.X * 1.5, targetY, rootPart.Position.Z + flatFwd.Z * 1.5)
+						end
+					end
+
+					local turfFriction = 3.8
+					ballVel = ballVel * math.clamp(1.0 - dt * turfFriction, 0, 1)
+					ballPos = ballPos + ballVel * dt
+
+					-- Soft Elastic Pull (no hard clamping)
+					local curRel = ballPos - rootPart.Position
+					local curFwd = curRel.X * flatFwd.X + curRel.Z * flatFwd.Z
+					local curRight = curRel.X * rightVec.X + curRel.Z * rightVec.Z
+					if curFwd > 2.4 then
+						ballVel = ballVel * math.exp(-dt * 8.0)
+						local excess = curFwd - 2.4
+						ballPos = ballPos - (flatFwd * (excess * math.clamp(dt * 10.0, 0, 1)))
+					elseif curFwd < 1.2 then
+						ballPos = Vector3.new(rootPart.Position.X + flatFwd.X * 1.4 + rightVec.X * curRight, targetY, rootPart.Position.Z + flatFwd.Z * 1.4 + rightVec.Z * curRight)
+						st.lastDribbleTouchTime = 0
+					end
+					if math.abs(curRight) > 2.0 then
+						local excess = math.abs(curRight) - 2.0
+						local sign = math.sign(curRight)
+						ballPos = ballPos - (rightVec * (sign * excess * math.clamp(dt * 10.0, 0, 1)))
+					end
+				elseif speed > 22.0 or st.isSprinting then
+					-- STATE 5: SprintKnock (Shift held)
+					local cadence = 0.48
+					local leadDist = 6.0
+					local lastTouch = st.lastDribbleTouchTime or 0
+					local relPos = ballPos - rootPart.Position
+					local fwdDist = relPos.X * flatFwd.X + relPos.Z * flatFwd.Z
+
+					local isTouch = (lastTouch == 0) or (now - lastTouch >= cadence) or (fwdDist <= 1.8)
+					if isTouch then
+						st.lastDribbleTouchTime = now
+						local touchDir = moveDir
+						local speedMult = if isExhausted then 1.35 else 1.30
+						local touchSpeed = speed * speedMult + 3.0
+						local idealTarget = rootPart.Position + (touchDir * leadDist)
+						local toTarget = idealTarget - ballPos
+						local toDir = if toTarget.Magnitude > 0.05 then toTarget.Unit else touchDir
+						ballVel = toDir * touchSpeed
+						if fwdDist < 1.6 then
+							ballPos = Vector3.new(rootPart.Position.X + flatFwd.X * 1.8, targetY, rootPart.Position.Z + flatFwd.Z * 1.8)
+						end
+					end
+
+					local turfFriction = 2.4
+					ballVel = ballVel * math.clamp(1.0 - dt * turfFriction, 0, 1)
+					ballPos = ballPos + ballVel * dt
+
+					-- Soft Elastic Pull (no hard clamping)
+					local curRel = ballPos - rootPart.Position
+					local curFwd = curRel.X * flatFwd.X + curRel.Z * flatFwd.Z
+					local curRight = curRel.X * rightVec.X + curRel.Z * rightVec.Z
+					if curFwd > 6.8 then
+						ballVel = ballVel * math.exp(-dt * 8.0)
+						local excess = curFwd - 6.8
+						ballPos = ballPos - (flatFwd * (excess * math.clamp(dt * 10.0, 0, 1)))
+					elseif curFwd < 1.5 then
+						ballPos = Vector3.new(rootPart.Position.X + flatFwd.X * 1.7 + rightVec.X * curRight, targetY, rootPart.Position.Z + flatFwd.Z * 1.7 + rightVec.Z * curRight)
+						st.lastDribbleTouchTime = 0
+					end
+					if math.abs(curRight) > 2.8 then
+						local excess = math.abs(curRight) - 2.8
+						local sign = math.sign(curRight)
+						ballPos = ballPos - (rightVec * (sign * excess * math.clamp(dt * 10.0, 0, 1)))
+					end
+				else
+					-- STATE 2: NormalDribble (Left Stick Dribble in FC 27)
+					local cadence = 0.32
+					local leadDist = 3.2
+					local lastTouch = st.lastDribbleTouchTime or 0
+					local relPos = ballPos - rootPart.Position
+					local fwdDist = relPos.X * flatFwd.X + relPos.Z * flatFwd.Z
+
+					local isTouch = (lastTouch == 0) or (now - lastTouch >= cadence) or (fwdDist <= 1.8)
+					if isTouch then
+						st.lastDribbleTouchTime = now
+						st.dribbleFoot = if st.dribbleFoot == "Right" then "Left" else "Right"
+						local footSign = if st.dribbleFoot == "Right" then 1 else -1
+						local footOffset = rightVec * (footSign * 0.25)
+						local idealTarget = rootPart.Position + (moveDir * leadDist) + footOffset
+
+						local speedMult = if isExhausted then 1.25 else 1.15
+						local touchSpeed = speed * speedMult + 1.5
+						local toTarget = idealTarget - ballPos
+						local toDir = if toTarget.Magnitude > 0.05 then toTarget.Unit else moveDir
+						ballVel = toDir * touchSpeed
+
+						if fwdDist < 1.6 then
+							ballPos = Vector3.new(rootPart.Position.X + flatFwd.X * 1.8 + footOffset.X, targetY, rootPart.Position.Z + flatFwd.Z * 1.8 + footOffset.Z)
+						end
+					end
+
+					local turfFriction = 2.6
+					ballVel = ballVel * math.clamp(1.0 - dt * turfFriction, 0, 1)
+					ballPos = ballPos + ballVel * dt
+
+					-- Soft Elastic Pull (no hard clamping)
+					local curRel = ballPos - rootPart.Position
+					local curFwd = curRel.X * flatFwd.X + curRel.Z * flatFwd.Z
+					local curRight = curRel.X * rightVec.X + curRel.Z * rightVec.Z
+					if curFwd > 4.5 then
+						ballVel = ballVel * math.exp(-dt * 8.0)
+						local excess = curFwd - 4.5
+						ballPos = ballPos - (flatFwd * (excess * math.clamp(dt * 10.0, 0, 1)))
+					elseif curFwd < 1.5 then
+						ballPos = Vector3.new(rootPart.Position.X + flatFwd.X * 1.7 + rightVec.X * curRight, targetY, rootPart.Position.Z + flatFwd.Z * 1.7 + rightVec.Z * curRight)
+						st.lastDribbleTouchTime = 0
+					end
+					if math.abs(curRight) > 2.5 then
+						local excess = math.abs(curRight) - 2.5
+						local sign = math.sign(curRight)
+						ballPos = ballPos - (rightVec * (sign * excess * math.clamp(dt * 10.0, 0, 1)))
+					end
+				end
+
+				ballPos = Vector3.new(ballPos.X, targetY, ballPos.Z)
+				ballState.position = ballPos
+				ballState.velocity = ballVel
+
+				-- Visual Ball Rolling Spin:
+				local hVel = Vector3.new(ballVel.X, 0, ballVel.Z)
+				local rollSpd = hVel.Magnitude
+				if rollSpd > 0.1 then
+					local velUnit = hVel.Unit
+					local rotAxis = Vector3.new(0, 1, 0):Cross(velUnit)
+					if rotAxis.Magnitude > 0.01 then
+						local rotAngle = (rollSpd / Constants.BALL_RADIUS) * dt
+						ballSpinRotation = CFrame.fromAxisAngle(rotAxis.Unit, rotAngle) * ballSpinRotation
+					end
+				end
+				if ballPart then
+					ballPart.CFrame = CFrame.new(ballPos) * ballSpinRotation
+				end
 			end
 
-			local targetPos = Vector3.new(
-				rootPart.Position.X + (flatFwd.X * dribbleDist),
-				targetY,
-				rootPart.Position.Z + (flatFwd.Z * dribbleDist)
-			)
-			ballState.position = targetPos
-			ballState.velocity = rootPart.AssemblyLinearVelocity
-
-			-- F-10: Continuous player contact during possession / dash
+			-- F-10: Player contact & Off-Balance Dribbling
 			local possTeam = st.teamSide
+			local isOffBalance = (now < (st.offBalanceUntil or 0))
 			for otherUserId, otherSt in pairs(playerStates) do
 				if otherUserId ~= ballState.possessorUserId and otherSt.teamSide ~= possTeam then
 					local otherChar = getPlayerCharacter(otherUserId)
 					local otherRoot = otherChar and otherChar.PrimaryPart
 					local otherHum = otherChar and otherChar:FindFirstChildOfClass("Humanoid")
 					if otherRoot and otherHum and otherHum.Health > 0 then
-						local dist = (otherRoot.Position - targetPos).Magnitude
-						if dist <= (Constants.BALL_COLLECT_RADIUS - 0.5) then
-							-- Defending player tackles/contests possession
-							BallService.SetPossessor(otherUserId)
-							break
+						local dist = (otherRoot.Position - ballState.position).Magnitude
+						if dist <= (Constants.BALL_COLLECT_RADIUS - 0.5) and now >= otherSt.dislodgedCooldownUntil then
+							local isTackling = (otherSt.activeTackle == "Poke" or otherSt.activeTackle == "CagePress" or otherSt.isSliding)
+							if isTackling or isOffBalance then
+								-- Active tackle or prolonged contact steals possession!
+								BallService.SetPossessor(otherUserId)
+								break
+							else
+								-- Off-Balance bump: Carrier stumbles/slows down but maintains touch capability!
+								st.offBalanceUntil = now + 0.40
+								otherSt.opponentContactSlowUntil = now + 0.30
+								if humanoid then
+									humanoid.WalkSpeed = math.max(8.0, humanoid.WalkSpeed * 0.75)
+								end
+							end
 						end
 					end
 				end
@@ -1610,7 +2736,11 @@ function BallService.StepPhysics(dt: number)
 			currentVel = Vector3.new(currentVel.X, 0, currentVel.Z)
 			ballState.position = Vector3.new(ballState.position.X, r, ballState.position.Z)
 		else
-			currentVel = currentVel + Vector3.new(0, Constants.GRAVITY_ACCELERATION_Y * dt, 0)
+			-- Pass has floaty low gravity for readable loft arcs ("ลอยๆ เหมือนแรงโน้มถ่วงต่ำ")
+			local effGravity = if ballState.inFlightAction == "Pass"
+				then (Constants.PASS_GRAVITY_ACCELERATION_Y or -22.0)
+				else Constants.GRAVITY_ACCELERATION_Y
+			currentVel = currentVel + Vector3.new(0, effGravity * dt, 0)
 			currentVel = currentVel * math.max(0.0, 1.0 - (0.20 * dt))
 		end
 
@@ -1629,8 +2759,11 @@ function BallService.StepPhysics(dt: number)
 				nextVel = Vector3.new(nextVel.X, 0, nextVel.Z)
 			end
 
-			-- Turf rolling friction
-			local frictionDecel = math.max(0.0, 1.0 - (Constants.GROUND_ROLLING_FRICTION * dt))
+			-- Turf rolling friction (Pass has smooth long glide with lower rolling resistance)
+			local rollFriction = if ballState.inFlightAction == "Pass"
+				then (Constants.PASS_GROUND_ROLLING_FRICTION or 0.55)
+				else Constants.GROUND_ROLLING_FRICTION
+			local frictionDecel = math.max(0.0, 1.0 - (rollFriction * dt))
 			nextVel = Vector3.new(nextVel.X * frictionDecel, nextVel.Y, nextVel.Z * frictionDecel)
 
 			if nextVel.Magnitude < Constants.BALL_REST_THRESHOLD_SPEED then
@@ -1647,8 +2780,17 @@ function BallService.StepPhysics(dt: number)
 		local ballSpeed = nextVel.Magnitude
 
 		for userId, st in pairs(playerStates) do
-			local kickerCooldownWindow = if ballState.inFlightAction == "BallPop" then (Constants.BALL_POP_REPOSSESS_COOLDOWN or 0.35) else 0.22
+			local kickerCooldownWindow = if ballState.inFlightAction == "BallPop"
+				then (Constants.BALL_POP_REPOSSESS_COOLDOWN or 0.35)
+				elseif ballState.inFlightAction == "QuickPoke"
+				then 0.0
+				elseif ballState.inFlightAction == "FakeShot"
+				then 0.14
+				elseif ballState.inFlightAction == "KnockOn"
+				then 0.16
+				else 0.22
 			local isKickerCooldown = (userId == ballState.lastKickerUserId and (now - ballState.lastKickTime) < kickerCooldownWindow)
+				or (now < st.dislodgedCooldownUntil)
 			if not isKickerCooldown then
 				local char = getPlayerCharacter(userId)
 				local rootPart = char and char.PrimaryPart
@@ -1690,8 +2832,19 @@ function BallService.StepPhysics(dt: number)
 		ballState.velocity = nextVel
 	end
 
+	local hVel = ballState.velocity
+	local rollSpd = hVel.Magnitude
+	if rollSpd > 0.1 then
+		local velUnit = hVel.Unit
+		local rotAxis = Vector3.new(0, 1, 0):Cross(velUnit)
+		if rotAxis.Magnitude > 0.01 then
+			local rotAngle = (rollSpd / Constants.BALL_RADIUS) * dt
+			ballSpinRotation = CFrame.fromAxisAngle(rotAxis.Unit, rotAngle) * ballSpinRotation
+		end
+	end
+
 	if ballPart then
-		ballPart.CFrame = CFrame.new(ballState.position)
+		ballPart.CFrame = CFrame.new(ballState.position) * ballSpinRotation
 	end
 	syncBallAttributes()
 end
@@ -1729,6 +2882,9 @@ local function setupPlayerLifecycle(player: Player)
 		st.chargeIntentId = nil
 		st.chargeGeneration = 0
 		st.chargeContextVersion = 0
+		st.chargeCurveSide = nil
+		st.chargeCurveStyle = nil
+		st.chargeKickFoot = nil
 		st.jumpLockedVelocity = nil
 		st.dashCooldownUntil = 0
 		st.slideCooldownUntil = 0
@@ -1790,6 +2946,9 @@ local function setupPlayerLifecycle(player: Player)
 						curSt.chargeIntentId = nil
 						curSt.chargeGeneration = 0
 						curSt.chargeContextVersion = 0
+						curSt.chargeCurveSide = nil
+						curSt.chargeCurveStyle = nil
+						curSt.chargeKickFoot = nil
 					end
 					curSt.jumpLockedVelocity = nil
 					curSt.lastActionStatus = "Cancelled"
@@ -1850,11 +3009,11 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 	end
 
 	local rawPhase = actionPayload.phase
-	if rawPhase ~= nil and rawPhase ~= "start" and rawPhase ~= "release" and rawPhase ~= "cancel" then
+	if rawPhase ~= nil and rawPhase ~= "start" and rawPhase ~= "release" and rawPhase ~= "cancel" and rawPhase ~= "feint" then
 		recordActionFailure(player, intentId, "InvalidPayload")
 		return
 	end
-	local phase: "start" | "release" | "cancel" = rawPhase or "start"
+	local phase: "start" | "release" | "cancel" | "feint" = rawPhase or "start"
 
 	-- Aim direction validation: if provided, must be finite Vector3
 	local aim = Vector3.zero
@@ -1887,6 +3046,7 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 		DirectionalJump = true,
 		StartCharge = true,
 		CancelCharge = true,
+		FakeShot = true,
 		DirectShoot = true,
 		Shoot = true,
 		CurveShoot = true,
@@ -1899,6 +3059,7 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 		AcrobaticFinishing = true,
 		SetAirLean = true,
 		BallPop = true,
+		SetDribbleControl = true,
 	}
 	if not allowedActions[act] then
 		recordActionFailure(player, intentId, "InvalidPayload")
@@ -1921,6 +3082,14 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 	local canonicalAct = act
 	if act == "GroundPass" then canonicalAct = "Pass"
 	elseif act == "Shoot" then canonicalAct = "DirectShoot"
+	end
+	if phase == "feint" and canonicalAct ~= "FakeShot" then
+		recordActionFailure(player, intentId, "InvalidPayload")
+		return
+	end
+	if canonicalAct == "FakeShot" and phase ~= "feint" then
+		recordActionFailure(player, intentId, "InvalidPayload")
+		return
 	end
 
 	if canonicalAct == "SetAirLean" then
@@ -1962,10 +3131,39 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 		return
 	end
 
+	if canonicalAct == "FakeShot" then
+		local intents = st.processedIntents[intentId]
+		if phase ~= "feint" or not intents or not intents.start or intents.release or intents.cancel or intents.feint then
+			recordActionFailure(player, intentId, "StaleIntent")
+			return
+		end
+		if not st.isCharging or st.chargeIntentId ~= intentId
+			or (st.chargeAction ~= "DirectShoot" and st.chargeAction ~= "CurveShoot")
+		then
+			recordActionFailure(player, intentId, "StaleIntent")
+			return
+		end
+		intents.feint = true
+		local fakeShotOk = BallService.ExecuteFakeShot(
+			player,
+			intentId,
+			actionPayload.aimDirection,
+			actionPayload.moveDirection,
+			actionPayload.keyADown,
+			actionPayload.keyDDown
+		)
+		if not fakeShotOk and st.isCharging and st.chargeIntentId == intentId then
+			local failureReason = st.lastActionReason
+			BallService.CancelCharge(player, intentId)
+			recordActionFailure(player, intentId, (failureReason :: Types.ActionRejectReason?) or "InvalidPayload")
+		end
+		return
+	end
+
 	-- F-14: Charge / Intent Latch & Lifecycle
 	st.processedIntents[intentId] = st.processedIntents[intentId] or {}
 
-	local isInstant = (canonicalAct == "Sprint" or canonicalAct == "StopSprint" or canonicalAct == "Dash" or canonicalAct == "DirectionalJump" or canonicalAct == "ResetBall" or canonicalAct == "BallPop")
+	local isInstant = (canonicalAct == "Sprint" or canonicalAct == "StopSprint" or canonicalAct == "Dash" or canonicalAct == "DirectionalJump" or canonicalAct == "ResetBall" or canonicalAct == "BallPop" or canonicalAct == "SetDribbleControl")
 
 	if phase == "start" then
 		if st.processedIntents[intentId]["start"] or st.processedIntents[intentId]["release"] or st.processedIntents[intentId]["cancel"] then
@@ -1985,7 +3183,7 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 				return
 			end
 			st.processedIntents[intentId]["start"] = true
-			BallService.StartCharge(player, cAct, intentId)
+			BallService.StartCharge(player, cAct, intentId, actionPayload.curveSideIntent)
 			return
 		elseif isInstant then
 			st.processedIntents[intentId]["start"] = true
@@ -2039,8 +3237,8 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 		return
 	end
 
-	-- Rate limiting: exempt CancelCharge, StopSprint, and phase release/cancel
-	local isRateExempt = (canonicalAct == "CancelCharge" or canonicalAct == "StopSprint" or phase == "release" or phase == "cancel")
+	-- Rate limiting: exempt CancelCharge, StopSprint, SetDribbleControl, and phase release/cancel
+	local isRateExempt = (canonicalAct == "CancelCharge" or canonicalAct == "StopSprint" or canonicalAct == "SetDribbleControl" or phase == "release" or phase == "cancel")
 	if not isRateExempt and (now - st.lastActionRequestTime < 0.033) then
 		recordActionFailure(player, intentId, "RateLimited")
 		return
@@ -2050,7 +3248,15 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 	end
 
 	-- Dispatch execution
-	if canonicalAct == "Sprint" then
+	if canonicalAct == "SetDribbleControl" then
+		if ballState.possessorUserId == userId then
+			st.isCloseControl = (actionPayload.isCloseControl == true)
+			if actionPayload.requestDragBack == true and now >= (st.dragBackEndTime or 0) then
+				st.dragBackEndTime = now + 0.25
+				ballState.velocity = Vector3.zero
+			end
+		end
+	elseif canonicalAct == "Sprint" then
 		BallService.ExecuteSprint(player, actionPayload.isSprinting ~= false)
 	elseif canonicalAct == "StopSprint" then
 		BallService.ExecuteSprint(player, false)
@@ -2065,30 +3271,47 @@ function BallService.HandleActionRequest(player: Player | { UserId: number, Char
 	elseif canonicalAct == "ResetBall" then
 		BallService.ResetBall()
 	elseif canonicalAct == "DirectShoot" or canonicalAct == "CurveShoot" or canonicalAct == "Pass" or canonicalAct == "Volley" or canonicalAct == "BicycleKick" then
-		-- Server is charge authority: calculate power internally from elapsed charge time!
+		-- Server is charge authority: calculate power internally from elapsed charge time.
+		-- (Owner Delta §22: Live curve selection during charge - resolve from release curveSideIntent)
 		local charge = 0.50
+		local effectiveCurveSide = actionPayload.curveSideIntent
 		if st.isCharging and st.chargeStartTime > 0 then
 			local elapsed = now - st.chargeStartTime
+			local isPass = (canonicalAct == "Pass" or canonicalAct == "GroundPass" or st.chargeAction == "Pass" or st.chargeAction == "GroundPass")
+			local maxT = if isPass
+				then (Constants.CHARGE_TIME_MAX_PASS or 0.45)
+				else (Constants.CHARGE_TIME_MAX_SHOOT or Constants.CHARGE_TIME_MAX or 0.90)
 			charge = if elapsed < 0.12
 				then Constants.CHARGE_MIN_POWER
-				else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+				else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / maxT) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 			st.isCharging = false
 			st.chargeStartTime = 0
 			st.chargeAction = nil
 			st.chargeIntentId = nil
+			st.chargeGeneration = 0
+			st.chargeContextVersion = 0
+			st.chargeCurveSide = nil
+			st.chargeCurveStyle = nil
+			st.chargeKickFoot = nil
 		end
-		BallService.ExecuteKick(player, canonicalAct :: Types.KickActionType, aim, charge, intentId, actionPayload.curveSideIntent)
+		BallService.ExecuteKick(player, canonicalAct :: Types.KickActionType, aim, charge, intentId, effectiveCurveSide)
 	elseif canonicalAct == "Slide" then
 		local charge = 0.50
 		if st.isCharging and st.chargeStartTime > 0 then
 			local elapsed = now - st.chargeStartTime
+			local maxT = Constants.CHARGE_TIME_MAX or 0.90
 			charge = if elapsed < 0.12
 				then Constants.CHARGE_MIN_POWER
-				else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+				else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / maxT) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
 			st.isCharging = false
 			st.chargeStartTime = 0
 			st.chargeAction = nil
 			st.chargeIntentId = nil
+			st.chargeGeneration = 0
+			st.chargeContextVersion = 0
+			st.chargeCurveSide = nil
+			st.chargeCurveStyle = nil
+			st.chargeKickFoot = nil
 		end
 		BallService.ExecuteSlide(player, aim, charge, intentId)
 	end
@@ -2125,6 +3348,12 @@ function BallService.Init()
 
 	Players.PlayerRemoving:Connect(function(player: Player)
 		playerStates[player.UserId] = nil
+		pendingCagePresses[player.UserId] = nil
+		for attackerUserId, pending in pairs(pendingCagePresses) do
+			if pending.targetUserId == player.UserId then
+				pendingCagePresses[attackerUserId] = nil
+			end
+		end
 		if ballState.possessorUserId == player.UserId then
 			ballState.possessorUserId = nil
 			ballState.state = "Free"

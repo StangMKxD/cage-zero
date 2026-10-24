@@ -230,6 +230,8 @@ export type KickActionType =
 	| "GroundPass"
 	| "Header"
 	| "Volley"
+	| "QuickPoke"
+	| "SkillMove"
 	| "BicycleKick"
 	| "AcrobaticFinishing"
 	| "BallPop"
@@ -244,6 +246,7 @@ export type ActionIntentName =
 	| "DirectionalJump"
 	| "StartCharge"
 	| "CancelCharge"
+	| "FakeShot"
 	| "DirectShoot"
 	| "CurveShoot"
 	| "Pass"
@@ -288,7 +291,7 @@ export type ActionIntentPayload = {
 	flightId: string?,
 	characterGeneration: number?,
 	contextVersion: number?,
-	phase: ("start" | "release" | "cancel")?,
+	phase: ("start" | "release" | "cancel" | "feint")?,
 	chargeAction: ChargeActionType?,
 	aimDirection: Vector3?,
 	isSprinting: boolean?,
@@ -330,9 +333,15 @@ export type PlayerMovementSnapshot = {
 	isSliding: boolean?,
 	slideCooldownRemaining: number?,
 	recoveryRemaining: number?,
+	whiffRecoveryRemaining: number?,
+	fakeShotRecoveryRemaining: number?,
+	whiffRecoveryAction: string?,
 	characterGeneration: number?,
 	contextVersion: number?,
 	chargeAction: ChargeActionType?,
+	chargeCurveSide: CurveSideIntent?,
+	chargeCurveStyle: ("Finesse" | "Trivela")?,
+	chargeKickFoot: ("Left" | "Right")?,
 	lastResolvedAction: string?,
 	actionSequence: number?,
 	resolvedKickFoot: ("Left" | "Right")?,
@@ -345,6 +354,65 @@ export type PlayerMovementSnapshot = {
 	flightId: string?,
 	airOffensiveBudget: number?,
 	landingLagRemaining: number?,
+	activeSkillMove: SkillMoveId?,
+	activeTackle: TackleActionType?,
+	commonSkillRecoveryRemaining: number?,
+}
+
+-- Plan 03: Skill Moves & Defense Domain Types
+export type SkillMoveId =
+	| "HeavyKnockOn"
+	| "OpenUpFakeShot"
+	| "BodyFeint"
+	| "HeelChop"
+	| "LaneChange"
+	| "SombreroFlick"
+	| "Elastico"
+	| "DragBackTurn"
+	| "LaCroqueta"
+
+export type SkillSlotIndex = number -- Validated runtime slot index: 1, 2, or 3
+
+export type SkillMoveDefinition = {
+	id: SkillMoveId,
+	displayName: string,
+	starRating: number,
+	staminaCost: number,
+	cooldownSec: number,
+	commonRecoverySec: number,
+	totalDurationSec: number,
+	contactTimeSec: number,
+	ballImpulseMagnitude: number,
+	ballImpulseVertical: number,
+	playerVelocityBurst: number,
+	burstDurationSec: number,
+	retreatSpeed: number,
+	description: string,
+	directionPolicy: "Forward" | "LateralCut" | "LiftForward",
+	neutralSide: number,
+	contactStages: { { time: number, lateral: number, forward: number, vertical: number } },
+}
+
+export type TackleActionType = "Slide" | "Poke" | "CagePress"
+
+export type TackleDefinition = {
+	action: TackleActionType,
+	displayName: string,
+	reachStuds: number,
+	staminaCost: number,
+	cooldownSec: number,
+	windupSec: number,
+	activeDurationSec: number,
+	recoverySec: number,
+	whiffRecoverySec: number,
+	slowMultiplier: number?,
+	slowDurationSec: number?,
+}
+
+export type PlayerSkillLoadout = {
+	slot1: SkillMoveId,
+	slot2: SkillMoveId,
+	slot3: SkillMoveId,
 }
 
 local Types = {}

@@ -1,5 +1,22 @@
 # HANDOFF CONTRACT — 02-player-actions (บอล การเคลื่อนที่ และปุ่มตามทีม)
 
+## 24. LATEST Owner visual rejection — base locomotion / runtime FakeShot (2026-10-24)
+
+Owner reports FakeShot ball still stationary, then reports walking/idle/running/jumping still look normal. Review008 F36–38 governs correction of current fix014/fix003;116 Edit tests do not override real input/visual failure. New narrow allowance: inspect/fix runtime animation wiring in `src/client/character/R6AnimationController.luau`, `src/shared/configs/RigAnimationConfigs.luau`, and `src/client/init.client.luau` ONLY as necessary for prepared custom base locomotion and lifecycle/priority integration. Existing PlayerActionPoseConfigs/R6ActionPoseController/InputController and focused relevant tests remain in scope. Do not redesign Module00 rig/default-card/stats, physics, unrelated bootstrap or gameplay; add proposed files only if a concrete missing seam requires scope resolution.
+
+Use actual prepared Idle/Walk/Run-Sprint/Jump-Fall-Landing poses/clips and source mapping, not fabricated public asset IDs or personal avatar packs. Preserve generation/reset/death cleanup, controller readiness, charge/action precedence and one track/pose writer. Existing default R6 fallback is not accepted as the custom animation result. Clearly show custom state changes on real player in Cage-Zero; keep visual acceptance with Owner. No upload/publish/new Studio or global settings/extra worker/Git authority. Same primary assignment, new correction report fix015 for F36–38; push report per Plan03§O, no polling.
+
+## 23. LATEST Owner delta — aimed lateral FakeShot ball touch (2026-10-24)
+
+Owner: “เวลากด fakeshot แล้ว ให้บอลโยกไปเลย ... แตะไปซ้ายหรือขวาตามทิศที่เป้าเล็ง ไม่เอา fakeshot อยู่กับที่ แบบล็อคบอลหนี”. This explicitly changes the EXISTING grounded core E-triggered FakeShot; it is not permission to merge/replace it with the separate OpenUpFakeShot1★ loadout skill.
+
+- Trigger remains grounded attacking Direct/Curve charge + E. Atomically terminalize the held shot intent; consume E press/release and stale LMB/RMB release, no accidental Shoot/Pass/recharge or repeated touch. Preserve recovery, generation/context, flight budget and no-bypass gates.
+- A successful FakeShot on an actually controlled/reachable ball must cause a **visible real lateral ball touch/cut** toward the left/right side selected by the current validated AIM at FakeShot activation. No stationary cancel-only result or cosmetic foot animation presented as ball movement. Do not substitute Humanoid.MoveDirection/A-D-only or world-X sign for the aimed side. Capture one shared character-relative side/exit descriptor for local prediction, Server ball/contact and replicated pose; revalidate the existing aim payload on Server, no client-authorized teleport/force/outcome.
+- Use existing authoritative BallService dribble/contact/impulse ownership and bounded movement paths. Preserve physical contest/tackling throughout; no weld/anchor/invulnerability/automatic successful dodge, unowned-ball capture or global ball-physics/shot-pass scaling. Nonpossessor/out-of-range/airborne/rejected attempts cannot move or gain the ball. Body/foot pose should clearly agree with the actual ball-contact direction.
+- Inspect the actual active call chain before editing: current InputController.RequestFakeShot sends aimDirection but predicts exit from movement; inspected BallService contained TWO ExecuteFakeShot definitions (approx2035/2083) based on movement and ordinary stationary dribble. Preserve partial work, resolve duplicate active definitions carefully and pass the validated aim through the real handler; do not edit an overridden/dead function and claim it changed gameplay.
+- Direction/neutral policy must be deterministic and documented using existing shared directional conventions; test left/right with character rotated, camera aim differing from movement/opposite A-D, changes just before E, near-neutral aim, stale/replayed E/mouse release, reset/death/context/recovery, ball ownership/range/air rejection. Do not invent Owner-approved tuning numbers; choose traceable tunable draft values from existing contact/action conventions, measure displacement/contact and leave visual tuning for Owner.
+- Acceptance includes actual input→validated Server intent→ball displacement/contact, current source parity and matching visible R6 pose. Static/fixture/clip playback alone does not prove the ball cut. Maintain legacy core FakeShot cancellation/recovery assertions and add behavioral coverage rather than weakening tests. Main writer agycage w2:p48 implements/tests; Codex reviews current ref. Keep Motion connection priority Plan03§M, then this delta as first gameplay correction. Same §L file allowlist; no Git/publish/closure/Phase2 authority.
+
 - **Date:** 2026-10-21 (Asia/Bangkok)
 - **Active Plan:** `02-player-actions`
 - **State:** `READY_FOR_AGY / SANDBOX_ADAPTATION_AUTHORIZED`
@@ -534,6 +551,243 @@ CagePhysicsService/rigschema/RigAndCardService/CardConfigs/Sandbox/rollback/.git
 - negativepayloadNaN/Inf/เกินrange/stalegeneration/context/replay/ส่งถี่/leanขณะground/releasewithfuturestateไม่mutationหรือไม่ข้ามvalidation. บันทึกratecapsและnormalshotไม่starve
 - Source→Edit→freshClientparityและrealinputtests/affected02regressionก่อนส่ง; ไม่อ้างfix006เป็นผลของsourceใหม่. Static/Edit/Live/Visual/NOTRUNแยกจริง
 - ส่งassets/fix-007.mdฉบับเดียวพร้อมbefore→after/mapping/approveddeltas/mathunits/trace/currentSHA+hashes/testcommands/resultsและข้อค้าง. ไม่แก้fix006ย้อนหลัง ไม่closePlan02หรือfindingเอง. Gitสิทธิ์Plan02§9ยังใช้แบบscopedcommit/pushไม่force/merge/deployและไม่รวมงาน03/04
+
+## 13. Urgent correction — HUD missing / all shooting input dead (2026-10-23)
+
+Ownerแจ้งUIหายและยิงไม่ได้หลังfix007. Codexตรวจcurrentb579530d9ad7f4ded3cfa2af754698d97e44578f+dirtyและPlayClientจริง พบstartupsyntaxblockerตาม[review-006](review-006.md). Plan02ยังOPEN; ไม่มีสิทธิ์ข้ามข้อผิดพลาดเพราะEdittestsแสดงPASS.
+**Priority:** แก้คืนClient startupก่อนfeature/polishอื่นทั้งหมด. ใช้normal focused prompt เพราะเป็นparse/fixture regressionในเส้นทางเดียว ไม่จำเป็นใช้/boostหรือ/teamwork.
+
+### 13.1 Exact correction / scope
+- InputController:345–347เป็นduplicate stale charge tailนอกRequestStartCharge ซึ่งจบที่344แล้ว; removeบล็อกซ้ำทั้ง3บรรทัด ไม่ใช่ลบendอย่างเดียว. คงcorrectvisualChargeActที่342–344 และ§12bindings/side/airDirectVolley/lean
+- Tier1_AirLeanPhysics:91ใช้Constants.RUN_SPEEDที่ไม่มีอยู่ แก้fixtureให้ใช้constantจริงตามความหมายและคงassertions/cleanup. ไม่สร้างRUN_SPEEDaliasเพื่อให้testsผ่าน
+- Clientinit:65 requireInputล้มจึงไม่ถึงTrainingHUD.Initข้างล่าง. ห้ามแก้ด้วยskiprequire,pcallกลืนerrorหรือHUDplaceholder. ถ้าพบbootstrapbudget/dependencyissueหลังparseผ่าน ให้รายงานเหตุจริงและแก้เฉพาะจำเป็น
+- Allowlist: InputController, Tier1_AirLeanPhysics, focused regression coverageในTier1_PlayerActions/TestRunnerเท่าที่จำเป็น และเอกสาร02. Clientinitแก้ได้เฉพาะพิสูจน์ว่ามีbootstrapissueเพิ่มเติม;ไม่แก้physics/BallService/Types/controls semanticsเพื่อแก้syntax
+- Leadคนเดียวทำsource+sync+testสำหรับfocusedrepair; read-onlyinternalreviewได้ ไม่เขียนชน. ปกป้องdirtyCagePhysicsService/.gitignore/notes01และdocsนอกงาน
+
+### 13.2 Verification ต้องทำจาก fresh default startup
+1. Reproduce native parse errorตามreview006และตรวจทุกLuauที่fix007เปลี่ยนว่าparse/loadในcontextที่ถูกต้อง ไม่ใช้delimitercountแทนparser
+2. Synccanonicalsourceและdependencyที่เปลี่ยนไปEdit;ตรวจsourceparity,ก่อนPlayเก็บbeforestateแล้วrestartPlayใหม่เพื่อไม่reusePlayerScripts/failedrequirecache. ตรวจStudioID/Place/modeใหม่ไม่ใช้sessionIDเก่า
+3. ให้defaultbootstrapเริ่มเอง ไม่เรียกInput.Init/TrainingHUD.Initด้วยมือเพื่อทำให้ดูผ่าน;ยืนยันไม่มีrequire/parseexception, PlayerGui.Module02_TrainingHUD.Enabled=true และcontrolscontainerจริง
+4. RealLMBstart/release→charge/serverintent→ballเปลี่ยนvelocity/contactจริงในvalidfixture, RMBgroundA/Dstyle, RMBairVolley, MMBPass,Space/Q/LeftShift/LeftAltตาม§12 และnegativekeysaliasesไม่มีผล. ขั้นต่ำต้องพิสูจน์HUD/input/ballจริงก่อนอ้างผ่าน
+5. RerunAirLeanfixturesหลังF32fixและPlayerActionsที่เกี่ยวข้อง;แยกfreshconsoleboundaryไม่เอาerrorเก่าหรือ64PASSเดิมมาสรุปsourceใหม่. ค่าtotal/failed/exceptionต้องตรงrunจริง;ไม่ลดassertionsหรือซ่อนerror
+6. แยกSyntax/Unit/Edit/Live/Visual/NOTRUN. ถ้ามีassetwarningหรือlegacyrunnerhangให้แยกว่าblockingหรือout-of-scope ไม่ใช้warningกลบสาเหตุparseที่พิสูจน์แล้ว
+
+### 13.3 Return
+ส่งassets/fix-008.mdฉบับเดียว ผูกF31/F32และF17/F18เดิม พร้อมcurrentSHA/filehash/Studiofreshparity/defaultstartup/HUD+actualinputevidence/commands/resultsและข้อค้าง;ไม่แก้fix007ย้อนหลังหรือปิดfinding/Plan02เอง.
+GitอนุญาตเฉพาะAGYLeadตาม§9 scopedcommit/pushไม่force/merge/deploy;currentbaselineb579530และreferenceSandbox/rig/physicsยังprotected. หลังส่งผลให้Codexตรวจcurrentrefใหม่ก่อนถือว่างานผ่าน.
+
+## 14. Owner tuning — smooth lean / correct W-S / aim-relative shot / crisp visuals (2026-10-23)
+
+**Owner latest:** UIเริ่มใช้ได้แต่leanไม่smooth, Wเอนหลัง/Sเอนหน้าสลับกัน; หลังA/D/Sลูกไปซ้าย/ขวา/หลังเป็นทิศใหม่มากเกิน จึงเปลี่ยนเป็น “อิงตามเป้าที่เราเล็ง แต่ไม่ตรงเป้า” และขอลดความฟุ้งของตัวละคร/เส้นสนาม/บอล.
+คำสั่งนี้ **แทนฐานairshotที่ผูกlockedF0ใน§12.6**: ballaimใช้validatedcamera/reticle3Dเป็นฐาน ส่วนcharacterfacing/yawและjumptrajectoryยังล็อกเดิม. ห้ามแก้ด้วยunlockตัวละครหรือให้leanเปลี่ยนmovement.
+คง§12singlebindings/groundA=Finesse,D=Trivela,groundLMBDirect/RMBCurve,airLMBDirect/RMBVolley;ไม่คืนHeader/Bicyclefallback. Plan02ยังOPEN,03ยังรอฐานร่วม/สัญญา,04ยังพัก.
+AGYกำลังทำstartuphotfix§13: ให้จบoperationที่กำลังรันและเก็บF31/F32fixก่อน แล้วรวมtuningนี้ในfix008ถ้ายังไม่ส่งreport. หากfix008ถูกส่ง/commitแล้ว ให้รอบนี้ใช้fix009และบอกเลขจริง ไม่แก้รายงานhistoricalย้อนหลัง. ไม่ทำreportซ้ำของรอบเดียว
+
+### 14.1 Source observations / bug IDs
+- **F-33 P1 OPEN:** AirLeanSolver.ComputeLeanAnglesให้W(+forward)เป็น+pitch แล้วComputeLeanCFrameใช้+pitchในPart0X;ทำให้Torso.UpเอียงไปหลังตามR6frame ขัดทิศW/Sที่Ownerต้องการ. แก้rotation convention ไม่ใช่สลับชื่อinputฝั่งเดียวจนserver/visualคนละความหมาย
+- **F-34 P2 OPEN:** Inputส่งcleanF/cleanRดิบเข้าSetAirLeanทุกRenderStepped; ActionPoseController:666–668คูณleanCFหลังbaseposeLerp. จึงข้ามsmoothingของbasepose. ServerSlewอย่างเดียวไม่ทำให้clientpreviewsmooth
+- CurrentBallService:758–770ใช้st.jumpFacingF0เป็นbaseazimuthและใช้aimเฉพาะelevation. นี่ตรงกับข้อเลือกOwnerก่อนหน้า แต่ถูกsupersedeใน§14แล้ว ไม่ใช่ให้แก้แค่อัตราsideimpulseโดยยังฐานF0เดิม
+- LiveClientที่ตรวจ: Lighting.Bloom enabled intensity1/size24/threshold2 และ Lighting.GrittyBloom enabled intensity.55/size28/threshold.8; Atmosphere density.38/haze2.5/glare.1. DOFdisabled. CharacterPlastic/reflectance0, fieldlineConcrete, ballCageMatchBallNeon. เป็นactualread-onlyinspection ไม่ใช่ผลว่าภาพหลังแก้ผ่านแล้ว
+
+### 14.2 Correct and smooth lean
+1. semanticinputเหมือนกันทุกชั้น: W=leanForward+1/S=-1,D=leanRight+1/A=-1. WทำTorso.Upเอียงไปhorizontalfacingที่ล็อก; Sตรงข้าม; A/Dไม่กลับข้าง. แปลงsignedpitch/rollจากPart0/rigจริง อย่าassertแค่มุมที่คืนจากhelperเทียบตัวเอง
+2. มีcurrentaccepted/predictedleanแยกจากtarget. ใส่dt-basedsmooth/slewก่อนComputeLeanCFrame/finalcomposite ไม่คูณrawtarget±1หลังsmoothing. easingไม่ผูกfps/minAlphaคงที่;ใช้หลัก1-exp(-lambda*dt)หรือboundedcontinuousfilterที่พิสูจน์ได้ ไม่ซ้อนfilterจนinputหน่วงหลายชั้น
+3. W→S/A→D/diagonals/keyup/landing/shotreleaseต้องไม่snap. Leanค้างต่อได้เมื่อปุ่มยังค้าง;releaseให้snapshotสำหรับบอล ไม่resetbodyleanเป็น0ทันทีเพียงเพราะยิงแล้วเด้งกลับ1จากpacketถัดไป. ล้าง/returnneutralตามkeyup/landed/death/focus/respawnด้วยlifecycleที่ถูกต้อง
+4. Composeกับshot/volleyในsinglejointwriterเดิม และตรวจclearanceบนfinalposeที่รวมlean. ห้ามclearanceoverrideทำให้rootเด้ง/สไลด์ลอย. คงjumpimpulse/characterroot/headinglockแก้แล้วจากfix006และfreshbootจาก§13
+
+### 14.3 Aim-relative bounded ball deflection
+1. ใช้existingvalidatedaimDirection3D/currentreticleaimเป็นฐานคำนวณnormalactionlaunch; ไม่discardaimyawหรือแทนด้วยjumpMoveDirection/F0/WASD. F0มีหน้าที่characterfacing lockและreferencefallbackเท่านั้น ไม่ใช่basevelocityของลูก
+2. Neutralleanใช้basevelocity/spinของactionจากaim3Dเดิมแบบไม่มีleanoffsetเพิ่ม. รวมbias/chargeตามprofileครั้งเดียว ไม่reconstructมุมจากF0แล้วบวกvelocity/biasซ้ำ
+3. Leanเป็นsmall deterministicperturbationในaim-localframe: Right/Upสร้างจากbaseaimและverticalreferenceพร้อมstablefallbackเมื่อaimใกล้vertical. อย่าใช้worldcardinalX/ZหรือrawA/D/Svectorเป็นทิศlaunchใหม่. Preserveการเล็งซ้าย/ขวา/หลังจริงที่ผู้เล่นเลือก แต่leanต้องไม่ทำลูกไปด้านอื่นโดยไม่มีaimรองรับ
+4. ตั้งต้นจูนด้วยtotalextraangularconeไม่เกิน5degเทียบnormalizedBASELAUNCHVELOCITY (รวมbaseactionbiasแล้ว),diagonalไม่ทำเกินcap. ปรับtuningภายในแนว“เบี่ยงนิดเดียว”หลังวัดและบันทึกก่อน/หลัง;ไม่เพิ่มpowerหรือทำลูกหัน90/180degเพราะlean
+5. สปิน/extraMagnusต้องจำกัดจนtrajectoryช่วงแรกยังสัมพันธ์เป้า ไม่launchใกล้เป้าแล้วforceดึงออกข้างแรง. แยกหน่วยangularvelocity(rad/s)กับforce/acceleration(studs/s²);ห้ามบวกspinVecตรงเข้าค่าforceโดยไม่แปลงที่อธิบายได้. ถ้ายังไม่ใช้spinกับsolverจริงอย่าอ้างว่าphysicalspinverified
+6. ไม่RNGspray/autoaimmagnet/แก้ตำแหน่งบอลให้เข้าเป้า. keeponeBallServicewriter/physicsintegration,finite/rate/metadata/intent/generationvalidation และenergybounds. ไม่แก้Workspacegravity/cagecollisionkernel/ballradius
+7. Testsต้องตั้งcameraaimกับfacing/moveintentต่างกันอย่างน้อย90และ180deg. เปลี่ยนA/D/S/leanแล้วbaseยังตามเป้า ไม่ตามหน้าหรือjumpvector. Neutralและ±leanเทียบsamefixture;dot(baseLaunch,finalLaunch)>0และextraangleไม่เกินcone,ระยะเบี่ยงที่5/10/20studรายงานจริง ไม่ใช้สมมติฐานว่าaim=facingในทุกtest
+8. Updateเอกสาร/testsที่บังคับF0ให้เป็นshotbaseใน§12ตามOwnerdeltaนี้;characterYawlocktestsยังอยู่ ห้ามลบข้อนี้เพื่อทำให้ลูกตามเป้า
+
+### 14.4 Remove fuzz / halo while retaining colors and geometry
+1. ลด/ปิดgameplayBloomทั้งLighting.BloomและGrittyBloomไม่ให้ซ้อนกัน;ลดAtmosphereHaze/Glareและdensityส่วนที่ทำให้ใกล้สนามหม่นฟุ้ง. เริ่มจากnoBloom/noHazeในการเทียบ แล้วจูนความสว่างให้ยังเห็นสนาม/สีทีมชัด ไม่ใช่แก้โดยทำทั้งฉากมืด
+2. ไม่เปิดBlur/DOFเพิ่ม. ตรวจeffectใต้Cameraด้วย อย่าลบposteffectsทั้งหมดสุ่มๆหรือปรับสีผิว/สีทีมเพื่อชดเชยhalo. KeepClockTime/sky/coloridentityถ้าไม่จำเป็นต้องเปลี่ยน
+3. บอลเปลี่ยนNeonเป็นnon-emissive Plastic/SmoothPlasticได้เพื่อขอบคม โดยคงRGB/ขนาด/radius/collision/mass/ballmechanics. เส้นสนาม/ตัวละครที่เป็นConcrete/Plasticอยู่แล้วไม่จำเป็นเปลี่ยนวัสดุ/สี
+4. ตรวจsourceที่สร้างeffectsให้คงผลหลังfreshPlay;ไม่แก้เฉพาะClientcurrentLightingแล้วreportว่าถาวร. Scopepresentation-only: BallService.EnsureBallInstance materialและCagePhysicsService.setupGrittyLighting parameters/effectenable เท่าที่จำเป็น
+5. **ข้อยกเว้นprotectedfileแบบแคบ:** Ownerอนุญาตแก้visualsettingsดังกล่าวแม้อยู่ในdirtyCagePhysicsService. ห้ามเปลี่ยนgeometry/solver/colliders/goal/ramp/positionหรือstageไฟล์dirtyทั้งก้อน. เก็บbefore/aftervisualhunksและparentdirtyhash. ถ้าstagingvisualdeltaต้องลากunreviewedlegacydirtyเข้ามา ให้ส่งworkingtree+แจ้งdependencyก่อนcommit ไม่commitหรือpushscopeที่ยังไม่ได้อนุมัติ
+6. ไม่สร้างgraphics-settingssystem/UIใหม่,ไม่เปิดงานsyncinfrastructureที่Ownerเลื่อนไว้. Visualverificationถ้าดูviewportไม่ได้ให้INCOMPLETE ไม่บังคับscreenshot/video
+
+### 14.5 Work allocation / scope / evidence
+ใช้normalcontinuationของfocusedhotfixรอบปัจจุบันเพราะsharedSolver/Input/pose/BallServiceต้องปรับconventionพร้อมกันตามลำดับ;ไม่บังคับ/boostหรือ/teamwork. แยกpresentationworkerได้เฉพาะมีdisjointownershipจริง โดยLeadยังownBallService/Studio/Gitรวมจุดชน ห้ามหลายworkerแก้Input/solverพร้อมกัน.
+Allowlistเพิ่มเติมจาก§13เพื่อทำ§14: AirLeanSolver,AirLeanConfigs,InputController,R6ActionPoseController,BallService,Typesเฉพาะจำเป็น,Tier1_AirLeanPhysics/Tier1_PlayerActionsและเอกสาร02;CameraShiftLockเฉพาะรักษาheading/ไม่ปลดlock. Visualexceptionตาม14.4เท่านั้น
+ตรวจsyntax/defaultClientbootstrap/HUD/newbindingsก่อน และหลังแก้ต้องretestW/Sworldtilt,rawtargetstep/smoothing30/60/120fpsเท่าที่ทำได้,aim≠facingcaseและboundedrealballtrajectory,UI/input,walking/sprintjump/off-ballไม่regress,source→Edit→freshClientparity.
+ส่งreportรอบที่ยังเปิดตาม14ต้นเรื่องฉบับเดียว ผูกF31/F32/F33/F34และfindingเก่าที่เกี่ยวข้อง,currentSHA/hashes/actualcommands/results/fieldreadingsbeforeafter/visualINCOMPLETEถ้ายังไม่ดูจริง. Plan02ไม่close/approve,03ยังรอ,04พัก. Gitสิทธิ์เดิมมีผลเฉพาะscopedPlan02และไม่ข้ามdirtyvisualstaginggateนี้.
+
+## 15. Owner adaptation — state-based momentum jump / soft apex timing (2026-10-23)
+
+**Owner intent:** ใช้แนวคิดจาก Volleyball Legends/Haikyuu Legends มาปรับระบบกระโดดเกมเรา: ground/actioncheck, momentum/facinglock, tilt, jumpheight/config และairactiontiming. คำตอบยืนยันรอบนี้คือ **กดออกบอลได้ตลอดช่วงลอยแต่ใกล้apexได้ผลดีที่สุด** และ **ยังเล็งmouse3Dได้ ล็อกเฉพาะcharacterfacing+momentum**. ไม่ล็อกกล้องจริงเพิ่มและไม่คืนshotbase=F0ของ§12; aim-relativeball+smallleanของ§14ยังมีผล
+Plan02ยังOPEN;03ยังรอฐานร่วม/สัญญา;04ยังPAUSED. ให้จบstartup/smooth/aim/crispvisual baseline§13–14ที่กำลังรันอย่างปลอดภัยก่อนสลับcorejump ไม่ทับงานที่ยังไม่checkpointหรือเอาผลเก่ามารับรองcoreใหม่.
+
+### 15.1 Evidence and adaptation boundaries
+- ข้อมูลผู้ใช้เป็นgameplayreference ไม่ใช่sourcecodeของVolleyball Legends. ยังไม่มีหลักฐานfirst-partyที่ยืนยันว่าตัวเกมใช้VectorForce/AssemblyLinearVelocityหรือไม่ใช้Humanoid.Jumpภายในจริง ห้ามเขียนimplementationclaimนั้นเป็นCONFIRMED
+- Community pagesแยกRedirection Jumpเป็นabilityที่เปลี่ยนทิศกลางอากาศได้ และKazanaSuperJumpมีmeterเฉพาะstyle; ไม่ใช้เป็นเหตุให้เพิ่มredirection/SnakeJump/class/gacha/meterในcoreเกมเราโดยไม่สั่งเพิ่ม
+- Engine references: [BasePart/ApplyImpulseและAssemblyLinearVelocity](https://create.roblox.com/docs/reference/engine/classes/BasePart), [Humanoid/JumpPower/ownership](https://create.roblox.com/docs/reference/engine/classes/Humanoid), [Network ownership](https://create.roblox.com/docs/physics/network-ownership). Community gameplay only: [Redirection description](https://volleyball-legends-official.fandom.com/wiki/Positions_%26_Playstyles), [Kazana meter](https://volleyball-legends.fandom.com/wiki/Kazana)
+- AGYตรวจprimaryAPIและsourceของเราให้ชัดก่อนเปลี่ยนphysics;บันทึกข้อเท็จจริง/ข้อเสนอ/ไม่ทราบพร้อมlinksใน§15นี้หรือreportรอบเดียว ไม่สร้างresearchsummaryซ้ำ. ออกแบบระบบของCageZeroตามinvariantsต่อไปนี้ ไม่ต้องพิสูจน์ว่าcloneinternalsเกมอื่นได้
+
+### 15.2 Functional contract — adapt existing Input/BallService seam
+- FSM: Grounded → Takeoff → Rising → Apex → Falling → Landed/LandingLag → Grounded; Disabled/Cancelledต่อdeath/characterchange. Grounded/landingต้องcontactจริง มีascending/descent/hasLeftGroundguardไม่ใช่worldYหรือRunningeventอย่างเดียว
+- ก่อนjump: alive,actualgroundหรือboundedserverhistoryของvalidpredictedtakeoff,ไม่อยู่Slide/recovery/stunถ้ามีจริง/landinglag,ไม่มีactiveflight,ผ่านonepress-releaseguard. ห้ามเพิ่มSnakeJump/slidecancel/GKdiveเทคนิคใหม่
+- Captureครั้งเดียวต่อflight: servervalidatedcharacterGeneration/intent/flightId,initialhorizontalvelocity/direction,committedfacingYaw,takeoffY/time,configuredverticalspeed,actualgravity. ยืนนิ่งได้XZ0,Walk/Sprintใช้ความเร็วที่รับจริง ไม่บังคับทุกคนเป็นWalk20และไม่ทำstationaryพุ่งเอง
+- NativeHumanoidยังใช้เป็นrig/floor/movement state แต่ **การออกแรงกระโดดต้องมีเส้นทางเดียวที่กำหนดเอง** ไม่ให้nativeJumpกับclient/servermanualkickซ้อนกัน. InputBegan/JumpRequest/StateChangedต้องผ่านgatewayเดียว/idempotent ไม่แต่ละeventlaunchใหม่
+- แนวทางตั้งต้นคือinstantaneouslaunchครั้งเดียว (เช่นApplyImpulse mass*(targetVelocity-currentVelocity) ตามnetworkowner) แล้วให้gravityทำงานปกติ. เลือกหนึ่งวิธีที่พิสูจน์ได้;ไม่ใช้ทั้งforce+velocity/nativejumpเพื่อแรงเดียวกัน ไม่เติมVYซ้ำกลางair ไม่anchor/teleportเพื่อทำarc
+- Clientpredictionเพื่อความตอบสนองได้ แต่servervalidation/reconciliationต้องผูกflightId/intentและไม่ยิงแรงซ้ำหลังpacketdelay. ถ้าpredictionทำให้serverเห็นairแล้ว ให้ตรวจboundedrecent-ground historyอย่างจำกัด ไม่ปฏิเสธvalidjumpทันทีหรือยกเลิกgroundcheckทั้งหมด
+- Horizontalmomentum/facinglockตามเดิมจนcontactlandingจริง. ระงับairmovementintentของdefaultcontrolsด้วยวิธีที่ไม่ทำให้Humanoid/forcesแข่งกัน;ไม่ให้A/D/Sเปลี่ยนflightXZ. ระบุsingleownerของlaunch/lock/yaw/reconcileและทดสอบnetworkownershipจริง ไม่ให้server/clientเขียนvelocityสวนกันทุกframe
+- Cameraยังorbit/เล็ง3Dได้ ไม่มีCamera.CFramelockใหม่. CharacterHRPyawคงcommittedyaw; TorsoPitch/Rollสำหรับtiltไม่ใช้rootyaw/เปลี่ยนphysicsflight
+- Baseheight/speedใช้approvedconfigของตัวทดสอบปัจจุบันและactualgravity. ไม่มีStyles/JumpMeterระบบใช้งานจริงในPhase1 ให้multipliers=1และบันทึกว่าเป็นค่าฐาน ไม่เพิ่มCardConfigs/gacha/progressionหรือแปลJumpHeightกับJumpPowerเป็นสองแรงซ้อน
+- LandingLagเป็นconfigสั้นสำหรับre-jumpเท่านั้น ไม่ล็อกWalk/groundshoot/Passให้กลายเป็นstun;ค่าตั้งต้นเสนอ.08sจูนได้. heldSpaceต้องปล่อยก่อนflightใหม่ ไม่มีbunnyhop/airjump/queuedjumpที่เพิ่มเอง
+
+### 15.3 Airborne offensive action budget / apex quality
+- หนึ่งmanualoffensive releaseที่validต่อflight: DirectShoot(LMB),Volley(RMB)หรือPassใช้budgetร่วมกัน. StartCharge/cancel/lean/cameraไม่consume;invalidmetadata/stale/rejectedก่อนacceptไม่consume. validattemptที่วืดconsumeหนึ่งครั้งแต่ไม่เพิ่มwhiffstunใหม่
+- BudgetownedServer+flightId+characterGeneration,consumeatomicallyก่อนapplycontact/ballimpulse,duplicate/replay/newintentหลังใช้แล้วไม่ออกซ้ำ. resetเฉพาะnewvalidflight/actualresetตามlifecycle ไม่resetจากclientflightflagสลับ/animationจบ
+- กดได้ตลอดRising/Apex/Fallingเมื่อphysicalcontact/ballactionเงื่อนไขครบ **ไม่hardrejectเพราะอยู่นอกapexwindow**. Landinglagไม่ทำให้ลูกยิงกลางairกลายเป็นgroundattackโดยพลการ
+- Serverคำนวณsoftqualityจากactualheightเหนือtakeoffและverticalphase/expectedapex ไม่ใช้clientส่งpower/heightเอง. ออกแบบcontinuouscurveไม่spike/stepที่vy=0,แรงหรือความสามารถกดลูกลงใกล้apexดีกว่าช่วงอื่นอย่างbounded
+- Initialbalanceใช้configที่ประกาศว่าproposed: เช่นpowerfactor.9..1.0โดยapex=1คงเพดานpowerเดิม;ถ้าปรับมุมกดลงให้ทำเมื่อaimลงอยู่แล้วและอยู่ภายในsmall-extra-deflectionbudgetของ§14. ไม่หันลูกไปหาfloorเองเมื่อผู้เล่นเล็งขึ้น/แนวนอน
+- actualjumpVY/gravityเปลี่ยนจากenvironmentต้องไม่ทำให้qualityหาร0/NaN. วัดapexและcontactจริง,ceiling/raisedfloor/edgefallไม่สร้างflightbudgetใหม่เอง. บอลยังsingleBallServicewriterและhitboxจริง ไม่มีfreeze/I-frame/auto-score
+
+### 15.4 Scope and staged execution
+- แก้เฉพาะjump/input/serverstate/rotation/animationadapterของ02: InputController,BallService,Constants,Types,CameraShiftLockController,R6ActionPoseController/R6AnimationControllerเท่าที่จำเป็น,sharedpureJumpModel.luau/newconfigs.JumpConfigs.luauถ้าจำเป็นจริง และfocusedtests. ไม่สร้างreplacementfootballcontroller/secondballloop
+- คง12Networkdefinitions/getters;existingBallActionRequestเพิ่มtypedjump/flightmetadataและrejectreasonเท่าที่จำเป็นด้วยfinite/range/generation/context/rate/replayvalidation. แยกjump/leanratesไม่ให้ยิงstarve;เอกสารfield/phasecontractให้Leadfreezeก่อนcode
+- ไม่แก้rigschema/RigAndCardService/CardConfigs/CagePhysicsServicekernel/สนาม/Workspacegravity/Sandbox หรือเปิดPlan03skills/GK4/สไตล์/JumpMeter/SnakeJump. presentation-onlyexception§14ยังจำกัดแค่นั้น
+- ใช้/boostได้รอบนี้เพราะต้องพิสูจน์physics/networkownershiphand-offและstate reconciliationจากbugVYdropจริง ไม่ใช่แค่เปลี่ยนตัวเลข. เริ่มคนเดียวทำjumpcore/ownershipและทดสอบก่อน;แยกreadonlyresearchหรือpuremodel/testsได้เมื่อไฟล์ไม่ชนและinterfacesfreezeแล้ว ไม่เปิดหลายagentแก้Input/BallServiceพร้อมกัน. หากruntimeไม่รองรับใช้normalpromptและแจ้ง
+- StageA: ปิดเฉพาะoperationของstartup/aim/smooth/visualที่เปิดอยู่แล้วให้baselineใช้งานได้และเก็บsourcehash/ผล. StageB: customjump FSM+singlelaunch/momentum/softquality/actionbudget. StageC: freshactualinput/latency/regression+sync. ไม่มีstageใดอนุญาตปิดPlan02หรือถือว่าplanอื่นผ่าน
+- Reportรอบstartup/tuningที่ยังเปิดคงฉบับเดียว;หลังมีcheckpointแล้วcustomjumpให้ใช้fixreportเลขถัดไปที่ยังไม่มี (ห้ามทับ008ถ้าส่งแล้ว). บันทึกselectedmode/actualruntime/sourcehash/currentHEADและold→newbehaviorในreport ไม่สร้างsummaryคู่กัน
+- Gitสิทธิ์เดิมใช้เฉพาะscopedPlan02checkpoint/commit/pushพร้อมhonestWIPไม่force/merge/deploy/approve/close;dirtyCagePhysicsServiceและdocsนอกงานต้องไม่ถูกรวมทั้งก้อน
+
+### 15.5 Verification / acceptance gates
+- Nativeparser/defaultboot/HUD/inputต้องยังทำงาน;realSpaceonepressได้หนึ่งflightและหนึ่งlaunch,heldSpaceไม่repeat;Walk/Sprint/stationary/diagonal/edge/raisedfloor/death/respawn/focus/reject/packetdelayครบ
+- TraceactualVY/height/XZ/state/facing/networkowner/flightId;ไม่มีearlyVYcutเช่นreview005,secondimpulse/positioncorrectionspikeหรือfacingfight. XZ lockและyawlockทำงานขณะmouseaimเปลี่ยน
+- Wleanforward/Sback,Aleft/Drightsmooth,diagonalsbounded,groundmovementคืนหลังlandและcameraไม่ถูกล็อก. Aim≠facing90/180degยังยิงตามaim3D+smalllean ไม่คืนF0shotbase
+- Rising/apex/fallingยิงได้จริงทั้งหมดเมื่อvalidcontact;วัดcontinuousqualityโดยapexดีที่สุดแบบbounded. validfirstairreleaseconsumeหนึ่งbudget,secondreleaseคนละintentถูกปฏิเสธ,invalid/cancelไม่consume,landing/newflightresetถูกต้องและไม่มีdoubleballimpulse
+- ต้องรักษาgroundLMBDirect/RMBCurve,A=Finesse/D=TrivelaและairLMBDirect/RMBVolley,off-ballfirst-time,Pass,Slide,cost/CD/metadata/leanvalidation,lookcrisp/HUDตาม§12–14. ไม่มีwhiffstun/classes/meterของเกมอ้างอิงแอบเข้ามา
+- Snapshotbefore/syncEdit/freshPlayclientเทียบsource/hashจริง;NativeLivePlayไม่ใช้mockหรือsettingflagsแทน. Static/Unit/Edit/Live/Visual/NOTRUNแยกตามหลักฐาน. MissingvisualระบุINCOMPLETE;CodexอิสระตรวจcurrentrefและOwnerreviewก่อนปิดfinding
+
+## 16. Owner change — grounded possessor Space pops ball, next press jumps (2026-10-23)
+
+**Owner latest:** บอลตามช้าตอนกระโดดขณะครองบอล แต่physicsบอลโอเคแล้ว ให้เปลี่ยนเฉพาะกรณีผู้ครองอยู่บนพื้น: Spaceครั้งแรกงัดบอลขึ้นตามmovementWASD ตัวอยู่พื้น แล้วค่อยกระโดดตามเล่นบอลอีกจังหวะ. เป็นbasicBallPopของ02 ไม่ใช่Sombrero skillของ03และไม่ใช่การเปิด03/04.
+สิ่งนี้แทน§15เฉพาะSpaceขณะpersonalpossession+grounded; nonpossessorSpaceยังcustomjumpตาม§15. คงballphysics/aim-relativelean/singlebindings/crispvisual/groundFinesseTrivelaเดิม. Plan02ยังOPEN;03ยังรอ;04พัก.
+
+### 16.1 Resolve one Space action BEFORE character launch
+- Grounded+ServerpossessorUserId=ผู้กด → BallPop เท่านั้น: ไม่ApplyImpulseตัวละคร ไม่Humanoid.Jump/ChangeStateJumping ไม่สร้างTakeoff/flightId ไม่setairborne/facinglock/landinglag ไม่consumeairreleasebudget
+- Grounded+ไม่ได้ครองเอง → DirectionalJumpตามcoreใหม่เดิม. ทีมเดียวกันถือบอลไม่ใช่personalpossession;ยังJumpปกติ
+- หลังBallPopปล่อยballpossessionจริงเป็นFree/InFlight รักษาlastPossessingTeam/teamAttacking;ผู้เล่นเดินหรือวิ่งตามได้ทันที. ปล่อยSpaceแล้วกดใหม่เมื่อไม่มีballpossession → Jumpตาม§15. ไม่autojump/queuedlaunchจากSpaceที่กดค้าง
+- Gateนี้ต้องอยู่ก่อนInputController.commitJumpDirection/CalculateLaunchImpulse และก่อนServerExecuteDirectionalJumpสร้างflight. InputBegan/JumpRequest/StateChangedผ่านgatewayเดียว;หนึ่งSpaceintentห้ามเกิดทั้งpopและplayerjump
+- Clientใช้authoritativereplicatedownershipsnapshotสำหรับbranchแต่Serverเป็นผู้ตัดสินactualowner/ground/state/intent. จัดการstaleHasBall/ownershiprace/predictionให้ไม่เกิดpop+jumpพร้อมกันหรือreapplylaunch;rejectต้องคืนpendingstateโดยไม่teleport/ตัดVYเพื่อซ่อนrace. Leadระบุวิธีreconcileที่ใช้ก่อนcode
+- Airborne/dead/Slide/recovery/ballไม่ใช่ของตนไม่ใช่BallPopที่valid ห้ามดึงballคู่แข่ง/งัดทุกระยะหรือforcecharacterลงพื้น. รักษาnativeSpace suppression/press-release/idempotencyของcorejumpที่กำลังทำ
+
+### 16.2 BallPop release / direction / height — launch change only
+- BallServiceเดิมเป็นsingleballwriter. Atomicallyreleasepersonalpossessionและตั้งinitialballvelocityครั้งเดียว พร้อมlastKicker/time/feedbackตามschemaเดิม;ไม่สร้างballcontroller/ballfollowingloopใหม่
+- Directionใช้actualhorizontalmovementintentWASD (Humanoid.MoveDirectionหรือvalidatednormalizedsnapshotในreferenceเดียวกับmovement) รวมdiagonalnormalized. ยืนนิ่งให้popเกือบตรงขึ้นจากตำแหน่งballเดิม ไม่บังคับforwardWalk20หรือaimทิศอื่นเอง
+- Ballhorizontalvelocityใช้acceptedgroundmovement/Walk/Sprintตามmovementที่จับตอนSpaceและcapsของexistingmovement;ไม่ให้diagonalเพิ่มspeedsqrt2. Playerไม่ถูกดันหรือเล่นjumpimpulseตามball
+- “เด้งเหมือนระยะกระโดด” ให้ใช้riseของcustomjumpปัจจุบันเป็นreference relativeheightเหนือballrelease ไม่ใช้rootWorldYเป็นค่าความสูง. ตัวอย่างสูตรlaunch-only: H=JumpV0²/(2*gCharacterActual), ballVy=sqrt(2*gBallEffectiveExisting*H) เมื่อgravityที่ใช้คงที่;กรณีsolverมีdrag/forceอื่นให้solveจากexistingintegratorและวัดapexจริงโดยไม่แก้solver
+- ใช้actualconfig/Workspacegravityของcharacterและballgravityเดิมคนละค่า ห้ามเอาJumpV0ใส่ballตรงๆจนเด้งสูงผิดหรือเปลี่ยนballgravityให้เท่าตัว. H/launchเป็นค่าinitialtuningที่ต้องเทียบjumpปัจจุบันและจังหวะตามได้ ไม่เพิ่มstat/meter/buff
+- ห้ามเปลี่ยนballgravity/drag/restitution/Magnus/collision/ballradius/networkownership/renderinterpolation/groundrestหรือshot/Pass/Volleysolverที่Ownerบอกโอเค. ไม่fakeparent/weld/teleportballตามตัวละครหรือguaranteedcatch
+- Reuseexistingrelease/reacquireguard(lastKicker+lastKickTimeเป็นต้น)เฉพาะจำเป็นเพื่อไม่auto-repossessทันทีที่popเริ่มใกล้เท้า;ห้ามปิดcollisionหรือห้ามคนอื่นแย่งบอล. ไม่เพิ่มI-frame/auto-stun/auto-possession
+- BallPopไม่ใช่DirectShoot/Pass/Volley/Bicycleจึงไม่ใช้shotcharge/softapex/airbudgetหรือส่งท่าเหล่านั้นปลอมเพื่ออาศัยsolver. groundtoe-liftvisualสั้นได้โดยR6rigเดิมและbodygrounded ไม่มีwholebodyjump
+- ถือchargeอยู่ตอนpopให้รักษาintentlifecycleเดิมและระบุinteractionชัด;ไม่ปล่อยshotซ้ำ/ไม่ล้างchargedintentด้วยfeedbackของBallPopคนละidเอง. ไม่มีnewwhiffpenaltyหรือlandinglagจากpop
+
+### 16.3 Narrow protocol and scope
+ใช้existingBallActionRequest: เพิ่มtypedactionBallPop (หรือserverresolvedSpacefamilyที่Leadพิสูจน์ว่าจำเป็น), startphase, validatedmoveintent/meta;รักษา12RemoteDefinitions/getters. Servervalidatepersonalowner/realground/lifecycle/cost-CDเดิมถ้ามี/finite/range/idempotencyก่อนmutate. ไม่ให้clientกำหนดballVY/position/finalpowerหรือclaimownershipเอง
+Allowlist: InputController,BallService,Types,JumpModel/JumpConfigsหรือConstantsเฉพาะderivedpoplaunch/configจริง,existingR6poseadapter/HUDguideเฉพาะfeedbackใหม่ และfocusedtests+docs02. ไม่แก้Camera/yaw/aimphysics/CagePhysicsService/rig/schema/สนาม/Sandbox/ballkernelหรือเปิดSkill03/GK.
+โหมดnormalfocusedcontinuationเพราะเป็นcontextbranchเล็กในjump/ballseamเดียว;ไม่จำเป็นเปิด/boostหรือteamใหม่ให้ชนงานcustomjumpที่กำลังทำ. Finishatomiccurrenteditก่อน และคงแกน§15ส่วนที่ยังเกี่ยวข้อง ไม่ย้อนกลับsourceเก่า
+Baselineที่ตรวจ HEADa7178da844d2aa56cefe4c38d665f2af5f9e7391+in-progresscustomjumpdirty;freezeactualHEAD/hashesล่าสุดก่อนแก้. อย่าเคลมว่าdirtyCagePhysicsServiceเป็นผลงานรอบนี้หรือstageทั้งก้อน
+
+### 16.4 Test / report / return
+1. Ownball+ground+W/A/S/D/diagonal/stationary/Walk/Sprint→Spaceหนึ่งครั้ง: ballมีupwardlaunchตามmovement,ownerเป็นnil,stateFree/InFlight,teamcontextไม่สลับ,characterไม่Takeoff/ไม่launchและยังmovegroundได้
+2. HoldSpaceหลายframeไม่popซ้ำ/ไม่jumpอัตโนมัติ;Spacekeyupแล้วpressใหม่→normalcustomjumpครั้งเดียวตามmomentum/face+mouseaim/tiltเดิม และตามไปเล่นballfirst-timeได้โดยไม่ต้องpossessใหม่ก่อน
+3. Teammate/enemyownsball,ballfree,ownershipchanged/staleclientflag,airborne,invalid/replay/rate/generation/context/NaNต้องไม่stealball/ไม่ทำสองactionจากpressเดียวและไม่ทำclientค้าง
+4. Measureballrise/apextime/horizontaldistanceและplayergroundheightเทียบreferencejump;ตรวจno immediate self-relatch,defenderยังcontactได้,chargeinteractionและreset/deathcleanup. ไม่ใช้setflags/mockอย่างเดียวแทนrealkeyboard→server→ball
+5. Regression: nonownerstanding/walk/sprintjump,oneflight/oneairrelease,softapex,UI/singlebindings,A-Finesse/D-Trivela,airLMBDirect/RMBVolley,aim3D+smalllean,W/Ssmoothและcrispvisualต้องคง. เทียบballintegratorconfig/behaviorก่อนหลังยกเว้นinitialPoplaunch
+6. หากรอบcustomjump§15ยังไม่ส่ง ให้รวมpossessionSpacebranchในfixreportรอบนั้นฉบับเดียว;ถ้าส่งแล้วใช้เลขถัดไปที่ยังไม่มี ไม่แก้historicalรายงานย้อนหลัง. ส่งsource→Edit→freshClientparity/currentSHA/hashes/repro/results/ค่าจูน/ข้อค้าง ไม่closePlan02เอง
+GitauthorizationเดิมเฉพาะscopedPlan02checkpoint/commit/pushไม่force/merge/deploy/approve และไม่รวมdirtyนอกงาน. กลับมารายงานCodexpaneที่ตรวจสดตามOwnerอนุญาต.
+
+## 17. Focused aim transport correction — S/backtilt still fires locked direction (2026-10-23)
+
+Ownerบอกส่วนอื่นพอได้ เหลือairtiltshot directionโดยเฉพาะS/backtiltที่เรียกว่าจักรยานอากาศ ยิงทิศเดียวไม่ตามเป้า. **โฟกัสแก้aimต้นทางก่อน ไม่รื้อjump/BallPop/ballphysicsที่Ownerพอใช้แล้ว**. คำนี้ไม่ใช่อนุญาตrestoreBicycle/Headerfallback;คงLMBDirect/RMBairVolleyตามข้อยืนยันเดิม.
+ActualreviewedHEAD `5c33d5f060a9f613d6841767637bf917f9a69614` + unrelateddirty;AGYส่งfix009แล้ว. [review007](review-007.md)พบF35P1OPEN: InputController.getAimDirection:128–132ใช้jumpCommitDirXZแทนcameraaimyawตอนair ทำให้payloadผิดแม้Server/solverใช้aim-relativeถูกแล้ว.
+
+### 17.1 Narrow scope and invariants
+- ใช้normalfocusedprompt เพราะแก้branchเล็กของclientaimpathกับtestที่ตรงseam ไม่บังคับboost/teamworkหรือเปิดagentsชนInputไฟล์เดียวกัน
+- InputgetAimDirectionต้องคืนcurrentfullvalidatedcamera/reticle3D aimทั้งground/air;คงfallbackเมื่อไม่มีcamera. ห้ามreconstructด้วยF0/jumpCommitDir/HRPLookเพียงเพราะairborne และห้ามเอาสัญญาณWASDleanมาแทนbaseaim
+- auditRequestKick/predicted/release/serverresolvedให้ได้aimเดียวกันจริง. Character yaw/facing/momentumlockยังคงเดิม;ballaimแยกจากorientation. ไม่แก้CameraControllerให้หมุนตัวตามaimเพื่อซ่อนbug
+- คงSbacktilt/Wforward และsmooth/boundedcone/profilebiasของ§14, BallPop§16, oneairaction/softapex§15,UI/onebinding/groundA-Finesse-DTrivelaและcrispvisual. ไม่เพิ่มforce/power/spin/แก้gravityหรือtrajectorysolverที่Ownerบอกโอเค
+- Allowlist: InputControllerและfocusedtest/temporarydiagnosticที่จำเป็น;AirLeanPhysics/PlayerActions testcasesต้องเรียกclientaim acquisition/releasepipelineจริง. R6/Server/Solver/Cameraแตะได้เฉพาะพิสูจน์ว่ามีlockedaimoverrideอีกจุดและรายงานexactchange ไม่ใช้สิทธิ์กว้างจากรอบก่อนรีแฟกเตอร์
+- ปกป้องdirtyCagePhysicsService/.gitignore/notes01/docsนอกงาน;ไม่แก้sourceSandbox/rig/Networkdefinitions
+
+### 17.2 Tests that expose THIS bug
+1. Freshsourcehash/parityและfreshPlay/requirecache;defaultboot/HUD/inputต้องผ่าน. StudioID/Place/modeค้นหาใหม่ไม่ใช้oldsessionโดยเดา
+2. LockbodyYawF0คงที่+leanSคงที่+sameballfixture/charge;เปลี่ยนcameraaimyaw0,+60,-60,180แล้วกดactualLMB/RMBตามinputจริง. บันทึกcamera/reticleaim→payloadaim→serveracceptedaim→actualinitialballvelocityและbodyYawอย่างมีtimestamp/flightId
+3. balllaunchต้องเปลี่ยนตามaimyaw ไม่ค้างjumpCommitDir;เล็งหลังได้เมื่อaimหลังจริงแต่leanไม่บังคับลูกหลังเอง. Extra leanเทียบbaseprofilelaunchไม่เกิน5degและไม่auto-correctกลับreticle
+4. ทดสอบneutral/A/D/W/Sและnearverticalbasis,ทั้งDirect/Volley,ballpop→keyup→jump→shoot,invalid/replay/airbudgetไม่regress. ห้ามตั้งaim=facingทุกcase หรือข้ามgetAimDirectionแล้วเรียกExecuteKickตรงๆอ้างว่าแก้แล้ว
+5. แยกStatic/Unit/Edit/Live/Visual/NOTRUN;ถ้ายังไม่มีactualcamera→payloadtraceอย่าใช้solverunit/116PASSเก่าเป็นsignoff. ไม่บังคับscreenshot/video
+
+### 18. Owner delta — right-foot dominant Plan02 — 2026-10-23
+
+- Owner authorizes a focused correction: this Plan02 character is right-foot dominant. A / left movement selects Finesse with the inside of the RIGHT foot; D / right movement selects Trivela with the outside of the RIGHT foot. Preserve neutral/A+D default Finesse. Movement side is relative to the character, not world X or aim direction; reconcile existing keyboard and movement-intent paths without adding bindings.
+- Baseline observed: `7cdca7fff61b1f6a92c15821c0162e4cec24c5ca` plus existing protected dirty files. `src/shared/configs/PlayerActionPoseConfigs.luau:771` ResolveCurveShot still chooses foot from ballSide at line809. Replace that active Plan02 selection; ball left/center/right must not change dominant foot, style, or mirror the right-foot pose. Keep ballSide only as useful contact metadata. Preserve existing right-foot spin profiles rather than compensating by changing global ball physics.
+- AGY owns implementation and verification. Allowed focused paths: shared curve resolver, InputController preview/intent, BallService resolved foot/style, R6ActionPoseController charge/release composition, relevant existing tests and Plan02 documentation. Do not redesign rig/CardConfigs/classes or remove future Left-foot type support. Protect unrelated dirty files; preserve §17 full camera aim, air yaw/momentum lock, lean smoothing, BallPop, single bindings and good ball physics.
+- Acceptance: A/left→Finesse+Right; D/right→Trivela+Right; neutral→Finesse+Right. Verify ball on all three sides and varied camera/character yaw, including movement-intent paths, charge hold and release. Client preview, server ResolvedCurveStyle/ResolvedKickFoot and actual right-leg animation agree. Ground curve selection must not replace airborne RMB Volley. Run focused checks plus actual input/runtime evidence; separate unverified visual behavior from static/unit results.
+- Normal prompt is sufficient: sequential correction in the same resolver/input seam, no parallel agents required. fix-010 is already delivered; use `assets/fix-011.md` for this delta, record actual SHA/source parity, commands/results and outstanding evidence. Reuse this HANDOFF. Existing scoped AGY Plan02 Git authorization remains; no merge/deploy/force or closure. Plan02 stays OPEN; Plan03 pending handoff and Plan04 paused.
+
+### 19. Owner correction — actual movement and curve result
+
+Owner confirms Finesse/Trivela ANIMATION accepted visually; do not reauthor or swap these poses. Owner reports shot selection/curve A-D reversed and not following actual movement. Inspect InputController.getCurveSideIntent (raw A/D currently overrides actual MoveDirection), curve resolver, BallService rightVec/curveForce and real trajectory. Keep right-foot contract: actual left lateral movement -> Finesse inside right foot, actual right -> Trivela outside right foot. Use the same character-relative movement basis for preview and accepted shot; input-only fallback for no movement must not override contradictory actual movement. Preserve neutral behavior and camera aim, do not use world X. Do not blindly swap pose names or invert both style and spin. Prove initial aim and signed curvature from actual movement/release/server launch for A/D, diagonals and rotated character/camera. Preserve established ball physics kernel and other Plan02/03 controls. Deliver focused fix-012 with source ref and measured evidence; Plan02 stays OPEN. Owner requests monitoring only: no ACK, pane replies, greetings or status messages sent to Codex; Codex reads pane/files itself.
+
+### 22. LATEST Owner delta — LIVE curve selection during charge (2026-10-24)
+
+Owner explicitly removes the initial A/D choice lock. This supersedes §20, fix012's initial-style latch requirement, §21.1 references preserving that latch, and Plan03§D/G historical latch references ONLY for curve side/style selection. Right-foot dominance/accepted poses/charge strength/timing/one-binding/FakeShot and other gameplay scope remain.
+
+- Ground RMB Curve charge continuously follows CURRENT character-relative movement using the shared resolver: left/A Finesse RIGHT inside foot, right/D Trivela RIGHT outside foot; stationary/neutral keeps documented existing default. Apply actual movement with existing valid keyboard fallback, not world X/ball side/camera yaw. No requirement to choose A/D before pressing RMB and no key release/new charge required to change style while holding.
+- Client windup/held-pose style updates smoothly as movement side changes, without replaying full windup, resetting charge power/start time/intent, duplicating event handlers or foot slips. Preserve accepted authored Finesse/Trivela clips, blend their correct charge poses. Only take final style/side snapshot at the actual release/contact for this shot; movement after shot does not retroactively alter flight.
+- Server validates/resolves current accepted movement/release side with the same shared selector and applies matching style/spin/foot. Stale start-charge side must NOT override release side. Client payload does not grant arbitrary style/foot/power. Charge remains Server authoritative and FakeShot/cancel/death/reset/context/generation/replay cleanup still works.
+- Test D→RMB down→A→RMB up => Finesse, inverse =>Trivela, switch several times while holding, press RMB first then choose A/D, neutral/A+D, diagonal/rotated character/camera and unchanged charge/foot. Verify actual hold preview→request→accepted Server style→initial spin/trajectory; no sign-only label swap. Air RMB Volley unchanged; no new bindings or unrelated retune.
+- Implement narrowly in ongoing assignment through codexluna; record in current implementation report, no new duplicate handoff/report or approval/closure. Owner authorized this change while the rest of §21/Plan03§G continues. No ACK/messages back to controller.
+
+### 20. HISTORICAL Owner clarification — initial-press lock SUPERSEDED by §22
+
+Latest Owner instruction supersedes §19 only on sampling time: select curve style from direction at the FIRST accepted RMB charge press, then freeze for that charge intent. D/right at start = Trivela RIGHT foot; switching to A during hold/release must NOT become Finesse. A/left at start = Finesse RIGHT foot; switching D must NOT become Trivela. Neutral uses existing Finesse default. Preserve §19 actual movement/basis correction when choosing initial side; do not resample it on release. Snapshot side/style/foot in client charge state and Server charge intent, use same snapshot for hold preview/release/accepted launch; Server must not trust a changed release style over accepted start. Snapshot only curve selection, not freely adjustable aim/charge strength. Clear snapshot on cancel/reject/reset/context invalidation/death/new intent so no stale selection leaks. Test D→RMB down→A→RMB up, inverse, neutral, repeated charges/cancels; verify pose and actual spin/trajectory agree. Ground curve only; air RMB Volley unchanged. Integrate into current fix-012 rather than duplicate reports; preserve accepted animations and physics. NO ACK or messages back to Codex; monitoring only.
+
+## 21. Owner playtest delta — E Pass / Fake Shot / S loft / attack miss recovery
+
+Owner authorizes these revisions in chat 2026-10-23 and requires animation tools from Obsidian. Baseline HEAD `c7542258b93b613e0260e43035761cbce87928cd` + dirty Plan02/03 delivery; record fresh source hashes. AGY implements, Codex independently reviews. Coordinate sequentially with Plan03 HANDOFF §B because Input/BallService/R6/Studio are shared. Normal prompt; no compulsory boost/teamwork or parallel agents. NO ACK/messages back; controller monitors pane/files. Working-tree delivery only for this mixed round, no commit/push/merge/deploy/closure. Plan02/03 remain OPEN, Plan04 paused.
+
+### 21.1 E Pass and Fake Shot
+
+- Move Pass from MMB to E ONLY, hold/release for existing charge. Audit E consumers before wiring; no aliases. MMB remains defending Cage Press ONLY; remove attacking Pass behavior and update HUD/tests. Defending E has no new tackle mapping.
+- Ground attacking LMB Direct or RMB Curve charge + E PRESS immediately triggers Fake Shot, NOT Pass. Consume E press AND release; original mouse release later must not shoot, pass or restart charge. Server atomically cancels/terminalizes original shot intent, validates FakeShot and rejects stale release/replay. New shot requires fresh press after recovery. Aim remains adjustable; preserve fix012 initial curve selection latch.
+- Fake Shot animation initial duration0.25–0.35s: partial swing/hip feint into sole stop/protective touch and natural directional exit. Inspect/reuse suitable older clip if available or tool-author it as §B requires. Ball stays at ordinary controllable dribble distance only if actually possessed, never teleport/unowned capture/weld/anchor/I-frame. Opponents can tackle throughout. Not a sixth loadout Skill Move or automatic successful dodge.
+- Nonpossessor may cancel/cosmetically feint but cannot lock/gain ball. Clear snapshots/restore movement on rejection/cancel/context change/death/reset. Air E does not trigger the new grounded Fake Shot or convert the existing shot unexpectedly; preserve flight budget.
+
+### 21.2 Backward S lean — latest physiological correction (Plan03 HANDOFF§G.1)
+
+- Owner clarified and authorized full implementation: S backward lean should make the ball naturally a little loftier according to body/strike posture, NOT switch to a fixed high lob. Previous fixed vH32/vY40 / forced F0 azimuth / estimated rise12.31-range39.38 are SUPERSEDED, not targets. No new X air or Bicycle/backward mapping. Existing valid Direct/Volley/Header contacts only, no extra binding/contact fallback.
+- Preserve current free3D aim azimuth, body yaw/momentum lock, neutral launch and global physics. Shared config-driven Server/prediction computation couples accepted smoothed lean/contact orientation to a continuous bounded elevation change, action-profile-specific coupling and existing energy limits. Small tilt should make a small change; no raw S-key velocity switch, forced reversal, discontinuity or independent per-action hardcoded formulas. Read Plan03§G.1 exact acceptance and measure actual launch/lean continuity/apex.
+
+### 21.3 Slower receivable Pass
+
+- Current pass base68 * (0.55+charge), charge0.50–1.00 => unbuffed71.4–105.4studs/s; current Direct base125 =>131.25–193.75 before other modifiers. Do not assume charge directly multiplies base.
+- New neutral unbuffed GROUND Pass launch target24–40studs/s tap→full, keep Direct profile. Use explicit pass-specific mapping/config to reach measured speed; preserve one 3D Pass action, no separate lob binding or aim magnet. Ideal20stud travel0.50–0.83s before rolling drag. Audit actual receivable/interception thresholds, not only Poke's42 threshold. Buffs/high balls still use valid contact/contest rules.
+
+### 21.4 Attacking whiff recovery / anti-spam
+
+- Owner adds recovery on ground and air shot MISS: interpret as no valid ball contact/out-of-reach whiff, not delayed judgement of whether a launched shot scored. Initial ground0.35s, air0.50s authoritative recovery with readable R6 overswing/off-balance and movement slowdown. No new successful-shot penalty.
+- During recovery Server blocks repeated shot/Skill/Dash/tackle/FakeShot bypass chains; client/HUD uses same deadline. Normal movement/aim remains with slowdown; valid grounded Pass can follow existing gates but cannot clear deadline or bypass shot lock. Preserve one valid air release per flight. Duplicate/rejected malformed inputs cannot repeatedly charge stamina or indefinitely extend recovery.
+- Landing/key release/cancel/context swap cannot reset recovery. Use generation-safe cleanup for death/reset; no stale callbacks. Test air whiff→land→shot, ground no-ball/out-of-reach, alternating LMB/RMB/E/Space, repeated intent/replay and FakeShot stale release. Clearly distinguish contact miss from invalid payload rejection.
+
+### 21.5 Scope and return
+
+Allowlist: InputController, TrainingHUD, BallService, SkillMoveService shared recovery gates, PlayerActionPoseConfigs/R6ActionPoseController, Constants, semantic Types/Network if needed, AirLeanSolver/AirLeanConfigs for this S exception, existing focused tests and narrow current Plan02/03 docs. Preserve accepted Finesse/Trivela clips/fix012, rig/default cards, good ball integrator and protected dirty CagePhysicsService/.gitignore/notes01/unrelated docs. No global physics/geometry changes.
+
+Use mandatory Obsidian animation authoring workflow in Plan03§B for FakeShot/recovery/rejected Skill poses. Verify actual input→Server intent→ball, fresh source-to-Studio parity/boot/HUD and two-player contest; distinguish unit/Edit/Live/visual/NOT RUN. Editable clips/exports/tool provenance required; numeric audits alone cannot prove visuals. No mandatory screenshots/video. Return one `assets/fix-013.md` with current ref/hashes, commands/results, measured pass/loft/recovery, linking Plan03fix002 rather than duplicate evidence. No ACK or pane reply.
+
+### 17.3 Return and monitoring
+ส่งassets/fix-010.mdฉบับเดียว ผูกF35พร้อมrootcause/sourcebeforeafter/currentSHA/hashes/realpipelineevidence/commands-resultsและข้อค้าง. เก็บfix009/review007historical ไม่ปิดfinding/Plan02เอง;03ยังรอ/04พัก.
+Ownerอนุญาตmonitorผ่านpaneagycagezero ให้ตอบรับสั้นและรายงานกลับCodexpaneที่ตรวจสดเมื่อcomplete/blocked. Monitoringcompletion≠reviewpass. Gitสิทธิ์scopedPlan02เดิมไม่force/merge/deploy/approve/closeและไม่รวมdirtyนอกงาน.
 
 
 

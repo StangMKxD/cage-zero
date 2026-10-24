@@ -26,6 +26,7 @@ local PlayerActions = require(script.Parent:WaitForChild("Tier1_PlayerActions"))
 local AirLeanPhysics = require(script.Parent:WaitForChild("Tier1_AirLeanPhysics"))
 local StateJumpPhysics = require(script.Parent:WaitForChild("Tier1_StateJumpPhysics"))
 local BallPopPhysics = require(script.Parent:WaitForChild("Tier1_BallPopPhysics"))
+local SkillMovesAndDefense = require(script.Parent:WaitForChild("Tier1_SkillMovesAndDefense"))
 
 local TestRunner = {}
 
@@ -34,18 +35,50 @@ function TestRunner.RunPlayerActions(): any
 	local startTime = os.clock()
 
 	print("================================================================================")
-	print("                 CAGE ZERO E2E: MODULE 02 PLAYER ACTIONS                        ")
+	print("             CAGE ZERO E2E: MODULE 02 & 03 ACTIONS & SKILL MOVES                ")
 	print("================================================================================")
 	PlayerActions(TestHarness)
 	AirLeanPhysics(TestHarness)
 	StateJumpPhysics(TestHarness)
 	BallPopPhysics(TestHarness)
+	SkillMovesAndDefense(TestHarness)
 
 	local durationMs = (os.clock() - startTime) * 1000.0
 	local summary = TestHarness.GetSummary(durationMs)
 
 	print("\n================================================================================")
 	print(string.format("PLAYER ACTIONS STATUS: %s", summary.status))
+	print(string.format("Total Tests:      %d", summary.totalTests))
+	print(string.format("Passed Tests:     %d", summary.passedTests))
+	print(string.format("Failed Tests:     %d", summary.failedTests))
+	print(string.format("Total Assertions: %d", summary.totalAssertions))
+	print(string.format("Execution Time:   %.2f ms", summary.durationMs))
+	print("================================================================================")
+
+	if summary.failedTests > 0 then
+		print("\nFAILED TEST DETAILS:")
+		for i, failure in ipairs(summary.failures) do
+			print(string.format("[%d] %s > %s: %s", i, failure.suiteName, failure.testName, failure.message))
+		end
+	end
+
+	return summary
+end
+
+function TestRunner.RunSkillMovesAndDefense(): any
+	TestHarness.Reset()
+	local startTime = os.clock()
+
+	print("================================================================================")
+	print("             CAGE ZERO E2E: MODULE 03 SKILL MOVES & DEFENSE                     ")
+	print("================================================================================")
+	SkillMovesAndDefense(TestHarness)
+
+	local durationMs = (os.clock() - startTime) * 1000.0
+	local summary = TestHarness.GetSummary(durationMs)
+
+	print("\n================================================================================")
+	print(string.format("SKILL MOVES & DEFENSE STATUS: %s", summary.status))
 	print(string.format("Total Tests:      %d", summary.totalTests))
 	print(string.format("Passed Tests:     %d", summary.passedTests))
 	print(string.format("Failed Tests:     %d", summary.failedTests))

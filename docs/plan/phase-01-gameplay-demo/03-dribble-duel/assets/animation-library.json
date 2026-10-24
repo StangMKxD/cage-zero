@@ -1,0 +1,2626 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-24T07:18:30.000Z",
+  "scope": "Owner-authorized Cage-Zero live Motion Tools connection (PlaceId 137721422246269) under sole agycage w2:p48 ownership per HANDOFF §M; Edit mode verified; visual acceptance remains Owner",
+  "repository": {
+    "head": "c7542258b93b613e0260e43035761cbce87928cd",
+    "workingTree": "dirty; baseline preserved; live Motion Tools connection in Cage-Zero PlaceId 137721422246269 per §M; working-tree delivery"
+  },
+  "tool": {
+    "name": "Motion Tools",
+    "bridge": "127.0.0.1:17331 active",
+    "pluginVersion": "1.0.0",
+    "pluginFingerprint": "583491946a6a5a34355147b1465fdf76acf271fdc37ae98b0de409611085c50c",
+    "targetPlace": "Cage-Zero",
+    "placeId": "137721422246269",
+    "studioId": "c153a8c6-8715-4ddc-b5cd-6150ba8555cf",
+    "sessionId": "50708f4a-b13e-45e1-a0d4-acbf63fda586",
+    "managedRigTarget": {
+      "name": "R6_Rig",
+      "location": "ServerStorage.MotionToolsRigs.R6_Rig",
+      "rigSignature": "[\"R6\",[\"HumanoidRootPart>Torso:Motor6D\",\"Torso>Head:Motor6D\",\"Torso>Left Arm:Motor6D\",\"Torso>Left Leg:Motor6D\",\"Torso>Right Arm:Motor6D\",\"Torso>Right Leg:Motor6D\"]]",
+      "selectionState": "ready_in_storage; needs_owner_1click_in_toolbar_to_open_dockwidget_and_select"
+    },
+    "editorDraftWasCleanWhenChecked": true
+  },
+  "sourceFingerprints": {
+    "src/server/services/BallService.luau": "4EC4788DC593991D4705BD7F995B281C3D7C45CDEB427F95398E0C49FF76892B",
+    "src/server/services/SkillMoveService.luau": "26FD2D97FEFA7BCA3CE7DD9BDEE3F2BECCE3EA4C86E86161D52EB15274EF01C4",
+    "src/shared/Constants.luau": "DA340AE6B09BFC42CE6681B8C1871DA5315621B38A17C77162BC25C0471292B6",
+    "src/shared/Types.luau": "64B9E53831833C3D90F5563BEEFFA2171EE9ABB3EA9662878C8D6216F17A0C59",
+    "src/shared/configs/PlayerActionPoseConfigs.luau": "BA0ECBB542EC1134D8B742CD2CB9AFDD06892D238E89ADBC4B9A2FB3D190794F",
+    "src/shared/configs/SkillMoveConfigs.luau": "F079AB6D49817D017B60A08637EFB405C197A107ED25442997277549B064CFEF",
+    "src/client/character/R6ActionPoseController.luau": "325A39051FEFCF08F2B4ABEE39B5D9DDF502E0B8C02933B9FC083992CDA3F103",
+    "src/client/controllers/InputController.luau": "9D27BA78A3FA6150F3041F76DA9A1BBD31632772F6E8BD347E831120A53BDDD0",
+    "tests/e2e/Tier1_PlayerActions.luau": "D12568FD363CA1B81456C8E193273C5815A092172FC8D8AE413B29E76D546E0C",
+    "tests/e2e/Tier1_SkillMovesAndDefense.luau": "5185125AAD90C4BAA0049FB2E9EB6E51E30157AB16607739E2FA3BF5CC1A5981"
+  },
+  "authoredSkillReviewSetDelta": {
+    "deltaFile": "docs/plan/phase-01-gameplay-demo/03-dribble-duel/assets/animation-library.delta-agycage.json",
+    "recipeDirectory": "AI-Tools/motion-tools/artifacts/plan03-new-skills-20261024",
+    "status": "OWNER_REVIEW_PENDING",
+    "recipes": [
+      { "name": "P03_HeavyKnockOn_v02", "skill": "HeavyKnockOn", "stars": 1, "duration": 0.36, "status": "OWNER_REVIEW_PENDING", "sha256": "2CD053487F4FBBE263277D1256D7A84E900769038E903122768BB2F55B93F4C8" },
+      { "name": "P03_OpenUpFakeShot_v02", "skill": "OpenUpFakeShot", "stars": 1, "duration": 0.38, "status": "OWNER_REVIEW_PENDING", "sha256": "809D8DF89F2C060C573E16472FA3DABC995F70BFDE00B1FF47A00B03E5FC623A" },
+      { "name": "P03_BodyFeint_v02", "skill": "BodyFeint", "stars": 2, "duration": 0.36, "status": "OWNER_REVIEW_PENDING", "sha256": "EB091EE7A60E2C8DC82165A9E53F03B6E35B920CC7B9DFC47DDA7CA379F82A31" },
+      { "name": "P03_HeelChop_v02", "skill": "HeelChop", "stars": 3, "duration": 0.36, "status": "OWNER_REVIEW_PENDING", "sha256": "EE3B04249850ED33AEDBA69FD1F7D3A1F4566D507E00747A0046F981A370B2CC" },
+      { "name": "P03_Elastico_Rework_v03", "skill": "Elastico", "stars": 5, "duration": 0.44, "status": "OWNER_REVIEW_PENDING", "sha256": "CF0EE88CE08BB8FFB337C7081B21E703F67BEE5BD35222B9B97A90EFBA97B3D5" }
+    ],
+    "preservedRejected": [
+      "P03_HeavyKnockOn_Base_v01",
+      "P03_OpenUpFakeShot_Base_v01",
+      "P03_BodyFeint_Base_v01",
+      "P03_HeelChop_Base_v01",
+      "P03_Elastico_Rework_v02"
+    ]
+  },
+  "verification": {
+    "persistentLibraryCount": 52,
+    "activeClipsCount": 32,
+    "referenceOrParentRevisionsCount": 12,
+    "retiredMovesCount": 6,
+    "preservedReferenceBicycleCount": 2,
+    "studioSessionOnline": true,
+    "studioMode": "Edit",
+    "targetPlace": "Cage-Zero (137721422246269)",
+    "studioInstanceId": "c153a8c6-8715-4ddc-b5cd-6150ba8555cf",
+    "sessionId": "50708f4a-b13e-45e1-a0d4-acbf63fda586",
+    "pluginDockWidgetOpened": false,
+    "pluginDockWidgetGuidance": "Click 'Animation Studio' button in Motion Tools toolbar to toggle DockWidget and select R6_Rig from Rig Library",
+    "currentEditor": {
+      "viewportOpen": false,
+      "rigLoaded": false,
+      "clipLoaded": false,
+      "isDirty": false,
+      "isPlaying": false,
+      "selectionPending": "Owner 1-click on Animation Studio button in toolbar to open DockWidget, then select R6_Rig in Rig Library"
+    },
+    "visualPoseReviewComplete": false,
+    "visualQualityDecision": "Owner visual acceptance required in Studio"
+  },
+  "deferredOrUnavailable": [
+    {
+      "name": "DockWidget UI rig selection automation in Edit mode",
+      "reason": "Studio user_mouse_input is Client/playtest only. Edit-mode DockWidget input requires Owner 1-click on R6_Rig in the Rig Library tab."
+    },
+    {
+      "name": "Motion Tools timeline scrub and visual quality review",
+      "reason": "Playback job execution verified via bridge and Studio heartbeat; visual assessment and actual timeline scrub remain with Owner."
+    },
+    {
+      "name": "P02_Sprint_loop_boundary",
+      "reason": "Existing A03 loop clip failed loop boundary validation; retained as non-looping baseline."
+    }
+  ],
+  "excluded": [
+    {
+      "name": "A11 Bicycle Kick",
+      "reason": "paused mapping excluded."
+    },
+    {
+      "name": "A09 Aerial Block",
+      "reason": "GK/Plan04-related scope excluded."
+    },
+    {
+      "name": "Existing Bicycle reference entries",
+      "assetIds": [
+        "e3ee4387-ffa4-4a62-8b48-e27f33ddefc4",
+        "3e864c26-527f-4191-8eea-28f58acece90"
+      ],
+      "reason": "preserved without editing"
+    }
+  ],
+  "entries": [
+    {
+      "assetId": "8a553aaf-f1eb-4347-a469-d769ee8781c4",
+      "name": "P02_Idle_Ready_v01",
+      "revision": 1,
+      "fingerprint": "786b5dfe30754748ee6ddd5a2c68f7753edf1e111f4be873e7a7c833c6f80ad8",
+      "sequenceId": "P02_Idle",
+      "sequenceOrder": 1,
+      "phase": "ready",
+      "durationSeconds": 1.6,
+      "loop": true,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.8,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A01",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:58:47.468Z",
+      "displayOrder": 1,
+      "librarySortTimestamp": "2026-10-23T16:20:00.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "9de95b9c-5847-4ae5-a707-eae7ee10c8db",
+      "name": "P02_Walk_Cycle_v01",
+      "revision": 1,
+      "fingerprint": "20f8954ad44c6dd7bf04c91ff95fedd10b1cbf60b72910a6c2cc0f791eaaf18f",
+      "sequenceId": "P02_Walk",
+      "sequenceOrder": 1,
+      "phase": "cycle",
+      "durationSeconds": 0.48,
+      "loop": true,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.24,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A02",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:58:51.808Z",
+      "displayOrder": 2,
+      "librarySortTimestamp": "2026-10-23T16:19:40.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "53e1065b-d5c2-42c7-a148-35da8bae0805",
+      "name": "P02_Sprint_Cycle_v01",
+      "revision": 1,
+      "fingerprint": "6b10e52567acc094e71fc38c9ca6a76a148bba18267e1a20b29f60ab0dfa2a04",
+      "sequenceId": "P02_Sprint",
+      "sequenceOrder": 1,
+      "phase": "cycle",
+      "durationSeconds": 0.38,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "StridePeak",
+          "timeSeconds": 0.19,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A03",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:02:36.033Z",
+      "displayOrder": 3,
+      "librarySortTimestamp": "2026-10-23T16:19:20.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "f62266c3-b153-465c-83e8-deae2f3b667f",
+      "name": "P02_Dash_Burst_v01",
+      "revision": 1,
+      "fingerprint": "7f7509e1a081a676e524172201fafc660f68e252fa32259b761bc44eff4206d3",
+      "sequenceId": "P02_Dash",
+      "sequenceOrder": 1,
+      "phase": "burst",
+      "durationSeconds": 0.22,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.11,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A04",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:01.151Z",
+      "displayOrder": 4,
+      "librarySortTimestamp": "2026-10-23T16:19:00.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "2c85bd60-32f0-461b-9356-70a777496c99",
+      "name": "P02_ShiftLock_Strafe_Baseline_v01",
+      "revision": 1,
+      "fingerprint": "e97d690ca411a0c0a19f29f9ac1991edf71d320a113fa33787a58729d00164c1",
+      "sequenceId": "P02_ShiftLock",
+      "sequenceOrder": 1,
+      "phase": "strafe_baseline",
+      "durationSeconds": 0.44,
+      "loop": true,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.22,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A05",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:09.511Z",
+      "displayOrder": 5,
+      "librarySortTimestamp": "2026-10-23T16:18:40.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "e7f36d50-e01e-42ab-9012-6c1c77d76878",
+      "name": "P02_Jump_Fall_Directional_v01",
+      "revision": 1,
+      "fingerprint": "2e1f5bf75444820ebf08abcc859a5dc4628a3e5317cb60f873910c6259bc5ed5",
+      "sequenceId": "P02_Jump",
+      "sequenceOrder": 1,
+      "phase": "fall_directional",
+      "durationSeconds": 0.72,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.36,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A06",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:14.060Z",
+      "displayOrder": 6,
+      "librarySortTimestamp": "2026-10-23T16:18:20.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "0fc9f455-fdd6-4a22-a03d-6e9169de1d6c",
+      "name": "P02_Landing_Cushion_v01",
+      "revision": 1,
+      "fingerprint": "f0c4b4522d546d6730038cc4a5bb2ee0a201a91143a1c978549fc14d053b9939",
+      "sequenceId": "P02_Landing",
+      "sequenceOrder": 1,
+      "phase": "cushion",
+      "durationSeconds": 0.24,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.12,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A07",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:18.670Z",
+      "displayOrder": 7,
+      "librarySortTimestamp": "2026-10-23T16:18:00.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "522f877e-4f2f-4af6-8940-0a098207901a",
+      "name": "P02_Header_v01",
+      "revision": 1,
+      "fingerprint": "bd27821785099229a9cccf0adb3144225298801078a156cfe87d25d9a75bc483",
+      "sequenceId": "P02_Header",
+      "sequenceOrder": 1,
+      "phase": "v01",
+      "durationSeconds": 0.48,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.216,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A08",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:23.167Z",
+      "displayOrder": 8,
+      "librarySortTimestamp": "2026-10-23T16:17:40.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "c181c380-e350-43ca-a51c-9b381a269f29",
+      "name": "P02_MidAir_Volley_v01",
+      "revision": 1,
+      "fingerprint": "dfb7d655d847102ddf252dc8e2bdccff2bd1d48079315800d18dd0f5d3247611",
+      "sequenceId": "P02_MidAir",
+      "sequenceOrder": 1,
+      "phase": "volley",
+      "durationSeconds": 0.56,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.25760000000000005,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A10",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:31.222Z",
+      "displayOrder": 9,
+      "librarySortTimestamp": "2026-10-23T16:17:20.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "67f16765-f68f-4d65-b40a-30ee1eae6a1f",
+      "name": "P02_Direct_Charge_WindupHold_v01",
+      "revision": 1,
+      "fingerprint": "73076c65ee3c1b1bf8809b00d272ffd2307b51364d9ef5dd58525ee73f8293b8",
+      "sequenceId": "P02_Direct",
+      "sequenceOrder": 1,
+      "phase": "charge_windup_hold",
+      "durationSeconds": 0.34,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "HoldPose",
+          "timeSeconds": 0.17,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A12",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:35.644Z",
+      "displayOrder": 10,
+      "librarySortTimestamp": "2026-10-23T16:17:00.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "cf34add0-599a-4296-a242-eda6e9695cbc",
+      "name": "P02_Direct_Release_v01",
+      "revision": 1,
+      "fingerprint": "ac72ac17de27e6d57fbb85310abd1787a6aa9df9c4cc1f37089e16a7596782fc",
+      "sequenceId": "P02_Direct",
+      "sequenceOrder": 2,
+      "phase": "release",
+      "durationSeconds": 0.42,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.11760000000000001,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A13",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:40.236Z",
+      "displayOrder": 11,
+      "librarySortTimestamp": "2026-10-23T16:16:40.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "62db74dc-735a-4450-8606-d8adba86f82c",
+      "name": "P02_Curve_Charge_WindupHold_v01",
+      "revision": 1,
+      "fingerprint": "5ca06ae2685c81a5063ec261a53e2d3112d7fe3d72b622409efedde93da64eec",
+      "sequenceId": "P02_Curve",
+      "sequenceOrder": 1,
+      "phase": "charge_windup_hold",
+      "durationSeconds": 0.36,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "HoldPose",
+          "timeSeconds": 0.18,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A14",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:44.708Z",
+      "displayOrder": 12,
+      "librarySortTimestamp": "2026-10-23T16:16:20.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "da355833-c725-45dd-9658-4f62b71c0695",
+      "name": "P02_Finesse_Release_RightFoot_v01",
+      "revision": 1,
+      "fingerprint": "160d288a83421fbb9a9084b92e45b2a38f005804b36a8b7a5a353c8d0c34937e",
+      "sequenceId": "P02_Finesse",
+      "sequenceOrder": 1,
+      "phase": "release_rightfoot",
+      "durationSeconds": 0.44,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.132,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A15.variants.finesse",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:53.236Z",
+      "displayOrder": 13,
+      "librarySortTimestamp": "2026-10-23T16:16:00.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "c71ea4ff-2a59-4a3f-b0d1-361ac44c3b2f",
+      "name": "P02_Trivela_Release_RightFoot_v01",
+      "revision": 1,
+      "fingerprint": "f5eb7fbc4b9ec99b69308a9fa199965a8f0f36be600cbf86dca9eadf2ce6d9f0",
+      "sequenceId": "P02_Trivela",
+      "sequenceOrder": 1,
+      "phase": "release_rightfoot",
+      "durationSeconds": 0.44,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.132,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A15.variants.trivela",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T15:59:57.811Z",
+      "displayOrder": 14,
+      "librarySortTimestamp": "2026-10-23T16:15:40.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "a252e841-5e2b-498e-a12b-6fa3edc4cddd",
+      "name": "P02_Pass_Ground_v01",
+      "revision": 1,
+      "fingerprint": "74b3c3c6f20dc1b2049178dc24ad87a8f745db9d616c434a876d69d273d37623",
+      "sequenceId": "P02_Pass",
+      "sequenceOrder": 1,
+      "phase": "ground",
+      "durationSeconds": 0.36,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.1152,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A16.variants.ground",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:00:02.488Z",
+      "displayOrder": 15,
+      "librarySortTimestamp": "2026-10-23T16:15:20.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "767b119d-3709-472b-b1ef-0693ec305c85",
+      "name": "P02_Pass_Loft_v01",
+      "revision": 1,
+      "fingerprint": "26072bf3da1937b25ff13de7e4ee2b77d2bc7a043e48e938894d94fd89c74990",
+      "sequenceId": "P02_Pass",
+      "sequenceOrder": 1,
+      "phase": "loft",
+      "durationSeconds": 0.36,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.1152,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A16.variants.lob",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:00:07.088Z",
+      "displayOrder": 16,
+      "librarySortTimestamp": "2026-10-23T16:15:00.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "ffca8724-c85f-46cc-8485-c6789e7c61c3",
+      "name": "P02_Slide_Tackle_v01",
+      "revision": 1,
+      "fingerprint": "128fe96421e7243286fa892c4bf7a040bd4a1889d796c04c272efc7ff0871e32",
+      "sequenceId": "P02_Slide",
+      "sequenceOrder": 1,
+      "phase": "tackle",
+      "durationSeconds": 0.55,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.20900000000000002,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A17",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:00:17.180Z",
+      "displayOrder": 17,
+      "librarySortTimestamp": "2026-10-23T16:14:40.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "a82fe84c-5395-41ae-9a4e-81120b769cfc",
+      "name": "P02_Slide_Recovery_Hit_v01",
+      "revision": 1,
+      "fingerprint": "aeb34b24c2eaad15432e2730e164078089df51fd5800d3bdc9c15f53f39dc1d8",
+      "sequenceId": "P02_Slide",
+      "sequenceOrder": 2,
+      "phase": "recovery_hit",
+      "durationSeconds": 0.44,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.22,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A18.variants.hit",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:00:21.887Z",
+      "displayOrder": 18,
+      "librarySortTimestamp": "2026-10-23T16:14:20.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "916c52e7-c2c8-4ab4-bcdb-37c27e39ed8f",
+      "name": "P02_Slide_Recovery_Miss_v01",
+      "revision": 1,
+      "fingerprint": "3eef015521f3702f198ab341c189b65ddbbeb6cc92d273ad27fb6006140c50e0",
+      "sequenceId": "P02_Slide",
+      "sequenceOrder": 2,
+      "phase": "recovery_miss",
+      "durationSeconds": 0.44,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.22,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "ANIMATIONS.A18.variants.miss",
+        "conversion": "sampled AuthoredTransforms and converted into Motion Tools R6 child-part tracks"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:00:26.574Z",
+      "displayOrder": 19,
+      "librarySortTimestamp": "2026-10-23T16:14:00.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "ddf4d0a2-ee58-4d36-99b7-8e97f73f61e3",
+      "name": "P02_Ground_Whiff_Recovery_Current_v01",
+      "revision": 1,
+      "fingerprint": "31e78558a6aeb5986d60dc21df9549d89eaf2660cab5dd8951cb71287beaab29",
+      "sequenceId": "P02_Ground",
+      "sequenceOrder": 1,
+      "phase": "whiff_recovery_current",
+      "durationSeconds": 0.35,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Recovery",
+          "timeSeconds": 0.175,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetWhiffPose",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:02:07.304Z",
+      "displayOrder": 20,
+      "librarySortTimestamp": "2026-10-23T16:13:40.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "d9282b43-bbca-4f47-84da-07b2e5ae92bc",
+      "name": "P02_Curve_Whiff_Recovery_Current_v01",
+      "revision": 1,
+      "fingerprint": "ef03c0387e9156399186c1499a19fe38c3386a854d9f2765969ffc20444f41e6",
+      "sequenceId": "P02_Curve",
+      "sequenceOrder": 2,
+      "phase": "release_whiff_recovery_current",
+      "durationSeconds": 0.35,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Recovery",
+          "timeSeconds": 0.175,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetCurveWhiffPose",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:02:12.126Z",
+      "displayOrder": 21,
+      "librarySortTimestamp": "2026-10-23T16:13:20.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "f7a37812-d586-4086-aa36-f0c9de58380a",
+      "name": "P02_Airborne_Recovery_Current_v01",
+      "revision": 1,
+      "fingerprint": "b23c584602ed7bfc651c02d8493bfad0f4d72f1dd7f72fc700592a8514489994",
+      "sequenceId": "P02_Airborne",
+      "sequenceOrder": 1,
+      "phase": "recovery_current",
+      "durationSeconds": 0.28,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Recovery",
+          "timeSeconds": 0.14,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetAirborneRecoveryPose",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:02:17.259Z",
+      "displayOrder": 22,
+      "librarySortTimestamp": "2026-10-23T16:13:00.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "436111ba-6a23-4b4c-819a-5db0e6c31a6c",
+      "name": "P02_Strafe_Forward_Cycle_v01",
+      "revision": 1,
+      "fingerprint": "364811b054a9123afb05166d98dff746509d67d9dedcb627c7c0b466e1f2a728",
+      "sequenceId": "P02_Strafe",
+      "sequenceOrder": 1,
+      "phase": "forward_cycle",
+      "durationSeconds": 0.44,
+      "loop": true,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Stride",
+          "timeSeconds": 0.22,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "Get8WayStrafePose(localMove,stridePhase)",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:04:24.620Z",
+      "displayOrder": 23,
+      "librarySortTimestamp": "2026-10-23T16:12:40.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "d9745ca9-f79e-4acb-a35e-107898b4f3d1",
+      "name": "P02_Strafe_Backward_Cycle_v01",
+      "revision": 1,
+      "fingerprint": "0180fa95e25805521505d3d99de080d98c4ed0d1387e22e3d2897c21fa5e5698",
+      "sequenceId": "P02_Strafe",
+      "sequenceOrder": 1,
+      "phase": "backward_cycle",
+      "durationSeconds": 0.44,
+      "loop": true,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Stride",
+          "timeSeconds": 0.22,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "Get8WayStrafePose(localMove,stridePhase)",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:04:30.583Z",
+      "displayOrder": 24,
+      "librarySortTimestamp": "2026-10-23T16:12:20.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "2fe741a3-aa11-4c1b-b575-3b9b833db355",
+      "name": "P02_Strafe_Left_Cycle_v01",
+      "revision": 1,
+      "fingerprint": "ba5632d4714821a13db1bad72ce3b2acf333675b905e099f1efb806d72f6ef9f",
+      "sequenceId": "P02_Strafe",
+      "sequenceOrder": 1,
+      "phase": "left_cycle",
+      "durationSeconds": 0.44,
+      "loop": true,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Stride",
+          "timeSeconds": 0.22,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "Get8WayStrafePose(localMove,stridePhase)",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:04:35.888Z",
+      "displayOrder": 25,
+      "librarySortTimestamp": "2026-10-23T16:12:00.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "0d171a78-3e51-4a1c-bc4f-8cbf7fac8c05",
+      "name": "P02_Strafe_Right_Cycle_v01",
+      "revision": 1,
+      "fingerprint": "e9f6dccaa5d7dfb0c080493c37728cba183c278902efb8c49ab0290f70897cf2",
+      "sequenceId": "P02_Strafe",
+      "sequenceOrder": 1,
+      "phase": "right_cycle",
+      "durationSeconds": 0.44,
+      "loop": true,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Stride",
+          "timeSeconds": 0.22,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "Get8WayStrafePose(localMove,stridePhase)",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:04:41.181Z",
+      "displayOrder": 26,
+      "librarySortTimestamp": "2026-10-23T16:11:40.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "2a150702-6750-4068-b643-2634ec5780e5",
+      "name": "P03_HeavyKnockOn_v01",
+      "revision": 1,
+      "fingerprint": "b0bd336ea976121f79ebfb425ec1f2f72cd4eef80e65a32136d4c9e1d56a744d",
+      "sequenceId": "P03_HeavyKnockOn",
+      "sequenceOrder": 1,
+      "phase": "action",
+      "durationSeconds": 0.4,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.12,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose(\"HeavyKnockOn\")",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets into child-part transforms"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:01:04.737Z",
+      "displayOrder": 27,
+      "librarySortTimestamp": "2026-10-23T16:11:20.000Z",
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "382e9cd4-b70d-41af-9be2-95aa14e56934",
+      "name": "P03_DragBackTurn_v01",
+      "revision": 1,
+      "fingerprint": "abe03fe0692a7679d1d77f5b9ad4735f0656299d59322dc7ae1a9ff89e393f9c",
+      "sequenceId": "P03_DragBackTurn",
+      "sequenceOrder": 1,
+      "phase": "action",
+      "durationSeconds": 0.5,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.15,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose(\"DragBackTurn\")",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets into child-part transforms"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:01:09.444Z",
+      "displayOrder": 28,
+      "librarySortTimestamp": "2026-10-23T16:11:00.000Z",
+      "group": "retired_move",
+      "lifecycleStatus": "retired_per_HANDOFF_J",
+      "notes": "Retired from active catalog/loadout per Owner decision §J; preserved in library history for inspection; do not reactivate to gameplay",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "b772d4bd-ea0b-4b6e-87d5-ab6e081cafa8",
+      "name": "P03_LaCroqueta_v01",
+      "revision": 1,
+      "fingerprint": "bd234b1ae4c2305c347e8fff7c606eba0a1e430ddf5b7a8eb26020514e56ba3b",
+      "sequenceId": "P03_LaCroqueta",
+      "sequenceOrder": 1,
+      "phase": "action",
+      "durationSeconds": 0.45,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.14,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose(\"LaCroqueta\")",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets into child-part transforms"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:01:14.322Z",
+      "displayOrder": 29,
+      "librarySortTimestamp": "2026-10-23T16:10:40.000Z",
+      "group": "retired_move",
+      "lifecycleStatus": "retired_per_HANDOFF_J",
+      "notes": "Retired from active catalog/loadout per Owner decision §J; preserved in library history for inspection; do not reactivate to gameplay",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "a26c3281-36df-4014-aa77-73e395639b5c",
+      "name": "P03_SombreroFlick_v01",
+      "revision": 1,
+      "fingerprint": "ba76bf7efe1e006c3288d5481abd3972befc2fe3b9db9166bf7a7b9bc71aca8e",
+      "sequenceId": "P03_SombreroFlick",
+      "sequenceOrder": 1,
+      "phase": "action",
+      "durationSeconds": 0.55,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.15,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose(\"SombreroFlick\")",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets into child-part transforms"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:01:19.291Z",
+      "displayOrder": 30,
+      "librarySortTimestamp": "2026-10-23T16:10:20.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "6e3e1363-8b16-4dee-9ff1-b5397dd8fd1b",
+      "name": "P03_Elastico_v01",
+      "revision": 1,
+      "fingerprint": "3398b83d4b41b7f917a2da50c645acae469b940c44fca09020e6b750356ac61b",
+      "sequenceId": "P03_Elastico",
+      "sequenceOrder": 1,
+      "phase": "action",
+      "durationSeconds": 0.5,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.18,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose(\"Elastico\")",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets into child-part transforms"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:01:24.181Z",
+      "displayOrder": 31,
+      "librarySortTimestamp": "2026-10-23T16:10:00.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "reference_pending_remake",
+      "notes": "Original Elastico preserved as visual reference for pending remake under same catalog ID",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "fb937b5e-9201-4569-b79a-eaf6e28b1184",
+      "name": "P03_QuickPoke_Baseline_v01",
+      "revision": 1,
+      "fingerprint": "fc20a705c5a89ffe0013c9043994e0b769866978a82fc1cfe1bc10d6f59fcdfc",
+      "sequenceId": "P03_QuickPoke_Baseline",
+      "sequenceOrder": 1,
+      "phase": "action",
+      "durationSeconds": 0.28,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.13,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetTacklePose(\"Poke\")",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets into child-part transforms"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:01:29.099Z",
+      "displayOrder": 32,
+      "librarySortTimestamp": "2026-10-23T16:09:40.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "67f21b64-2c3a-478c-ad46-9db2d0185e5f",
+      "name": "P03_CagePress_OpenField_Baseline_v01",
+      "revision": 1,
+      "fingerprint": "587bf125fdfff3bda96a3ef7d452dc5adef80bd1e23097dda7980b178e9aa6fe",
+      "sequenceId": "P03_CagePress_OpenField_Baseline",
+      "sequenceOrder": 1,
+      "phase": "action",
+      "durationSeconds": 0.35,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Contact",
+          "timeSeconds": 0.17,
+          "phase": "event"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetTacklePose(\"Shoulder\")",
+        "conversion": "sampled current procedural R6 pose and converted C0 pivot offsets into child-part transforms"
+      },
+      "status": "preview_only",
+      "createdAt": "2026-10-23T16:01:34.068Z",
+      "displayOrder": 33,
+      "librarySortTimestamp": "2026-10-23T16:09:20.000Z",
+      "group": "reference_or_parent_revision",
+      "lifecycleStatus": "superseded_by_v02_revision",
+      "notes": "Historical v01 revision preserved for comparison against revised v02",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "4999c52c-8b5d-45d7-8a2a-83dbce66156a",
+      "parentAssetId": "f62266c3-b153-465c-83e8-deae2f3b667f",
+      "name": "P02_Dash_Burst_v02",
+      "revision": 2,
+      "fingerprint": "b0f0816167568841b98c7441a5e1a216e6aa44ca13c7823694c94081cf78c250",
+      "sequenceId": "P02_Dash",
+      "sequenceOrder": 2,
+      "phase": "burst",
+      "durationSeconds": 0.36,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PosePeak",
+          "timeSeconds": 0.18,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetDashPose",
+        "conversion": "Motion Tools recipe revision of P02_Dash_Burst_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.662Z",
+      "displayOrder": 34,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "b58d3e75-7c44-4ee0-aa12-6f98eeab172a",
+      "parentAssetId": "0fc9f455-fdd6-4a22-a03d-6e9169de1d6c",
+      "name": "P02_Landing_Cushion_v02",
+      "revision": 2,
+      "fingerprint": "3f10cbd298d7e3f8454bf4345b2b1651734446d8ea34e2c085a0775a0c607a85",
+      "sequenceId": "P02_Landing",
+      "sequenceOrder": 2,
+      "phase": "absorb_recover",
+      "durationSeconds": 0.72,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Impact",
+          "timeSeconds": 0.16,
+          "phase": "event"
+        },
+        {
+          "name": "Absorb",
+          "timeSeconds": 0.28,
+          "phase": "main_action"
+        },
+        {
+          "name": "Recover",
+          "timeSeconds": 0.58,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetJumpLandingPose",
+        "conversion": "Motion Tools recipe revision of P02_Landing_Cushion_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.669Z",
+      "displayOrder": 35,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "5ffd9d79-f5ee-41c9-bf90-498096c0c25c",
+      "parentAssetId": "cf34add0-599a-4296-a242-eda6e9695cbc",
+      "name": "P02_Direct_Release_v02",
+      "revision": 2,
+      "fingerprint": "25c1d01a9976a461769464a143c426d8e09ac660dcbe2ace868a378168861612",
+      "sequenceId": "P02_Direct",
+      "sequenceOrder": 2,
+      "phase": "release_follow_through",
+      "durationSeconds": 0.58,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Plant",
+          "timeSeconds": 0.13,
+          "phase": "anticipation"
+        },
+        {
+          "name": "Contact",
+          "timeSeconds": 0.27,
+          "phase": "event"
+        },
+        {
+          "name": "FollowThrough",
+          "timeSeconds": 0.38,
+          "phase": "follow_through"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetDirectReleasePose",
+        "conversion": "Motion Tools recipe revision of P02_Direct_Release_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.677Z",
+      "displayOrder": 36,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "324cd80b-654a-465f-9bd7-98c49806a341",
+      "parentAssetId": "ddf4d0a2-ee58-4d36-99b7-8e97f73f61e3",
+      "name": "P02_Ground_Whiff_Recovery_v02",
+      "revision": 2,
+      "fingerprint": "76f742f4ec357a85f48ad75df49d445105e6e4212fb4d414085fb53249eced8e",
+      "sequenceId": "P02_Ground",
+      "sequenceOrder": 2,
+      "phase": "overswing_miss_recovery",
+      "durationSeconds": 0.9,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Overswing",
+          "timeSeconds": 0.234,
+          "phase": "main_action"
+        },
+        {
+          "name": "MissedContact",
+          "timeSeconds": 0.378,
+          "phase": "event"
+        },
+        {
+          "name": "Stumble",
+          "timeSeconds": 0.522,
+          "phase": "follow_through"
+        },
+        {
+          "name": "RecoveryComplete",
+          "timeSeconds": 0.8280000000000001,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetWhiffPose",
+        "conversion": "Motion Tools recipe revision of P02_Ground_Whiff_Recovery_Current_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.682Z",
+      "displayOrder": 37,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "b94519b4-fd31-4a18-8235-9ba5f2a19ae5",
+      "parentAssetId": "d9282b43-bbca-4f47-84da-07b2e5ae92bc",
+      "name": "P02_Curve_Whiff_Recovery_v02",
+      "revision": 2,
+      "fingerprint": "d31d11d42207c17b92ee58f20ebd76a2142ddea2f7556d57db475cc4cb3d6072",
+      "sequenceId": "P02_Curve",
+      "sequenceOrder": 2,
+      "phase": "curve_miss_stumble_recovery",
+      "durationSeconds": 0.98,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Overswing",
+          "timeSeconds": 0.2548,
+          "phase": "main_action"
+        },
+        {
+          "name": "MissedContact",
+          "timeSeconds": 0.41159999999999997,
+          "phase": "event"
+        },
+        {
+          "name": "Stumble",
+          "timeSeconds": 0.5683999999999999,
+          "phase": "follow_through"
+        },
+        {
+          "name": "RecoveryComplete",
+          "timeSeconds": 0.9016000000000001,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetCurveWhiffPose",
+        "conversion": "Motion Tools recipe revision of P02_Curve_Whiff_Recovery_Current_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.688Z",
+      "displayOrder": 38,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "244b0b07-83cb-403e-85dc-7b7303f9ee03",
+      "parentAssetId": "436111ba-6a23-4b4c-819a-5db0e6c31a6c",
+      "name": "P02_Strafe_Forward_Cycle_v02",
+      "revision": 2,
+      "fingerprint": "3e03f26b2803f8b793fdf95a6bdbb08405386b141188bb0784f7402e39724e11",
+      "sequenceId": "P02_Strafe",
+      "sequenceOrder": 2,
+      "phase": "forward_cycle",
+      "durationSeconds": 0.62,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Stride",
+          "timeSeconds": 0.31,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "Get8WayStrafePose",
+        "conversion": "Motion Tools recipe revision of P02_Strafe_Forward_Cycle_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.693Z",
+      "displayOrder": 39,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "7d6eafb4-b838-4042-aedb-75bddb3bd84d",
+      "parentAssetId": "d9745ca9-f79e-4acb-a35e-107898b4f3d1",
+      "name": "P02_Strafe_Backward_Cycle_v02",
+      "revision": 2,
+      "fingerprint": "8ba854f0d45757e61088e1ab94176c35275dc740aef7f470120cbcd91335d1f9",
+      "sequenceId": "P02_Strafe",
+      "sequenceOrder": 2,
+      "phase": "backward_cycle",
+      "durationSeconds": 0.62,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Stride",
+          "timeSeconds": 0.31,
+          "phase": "main_action"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "Get8WayStrafePose",
+        "conversion": "Motion Tools recipe revision of P02_Strafe_Backward_Cycle_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.698Z",
+      "displayOrder": 40,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "a254f6bf-18ac-4b07-8b0a-de9956667bb0",
+      "parentAssetId": "382e9cd4-b70d-41af-9be2-95aa14e56934",
+      "name": "P03_DragBackTurn_Left_v02",
+      "revision": 2,
+      "fingerprint": "e51d0d2b8f0b1ab8272c475cad9b5498c156effb2791f9738a77cd4ceb1c11a4",
+      "sequenceId": "P03_DragBackTurn",
+      "sequenceOrder": 2,
+      "phase": "backward_drag_left_cut",
+      "durationSeconds": 0.5,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Windup",
+          "timeSeconds": 0.09,
+          "phase": "anticipation"
+        },
+        {
+          "name": "BackwardDrag",
+          "timeSeconds": 0.18,
+          "phase": "event"
+        },
+        {
+          "name": "LateralContact",
+          "timeSeconds": 0.3,
+          "phase": "main_action"
+        },
+        {
+          "name": "Exit",
+          "timeSeconds": 0.41,
+          "phase": "follow_through"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose",
+        "conversion": "Motion Tools recipe revision of P03_DragBackTurn_v01; preserved source rig profile and R6 child-part tracks",
+        "direction": "left"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.703Z",
+      "displayOrder": 41,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "retired_move",
+      "lifecycleStatus": "retired_per_HANDOFF_J",
+      "notes": "Retired from active catalog/loadout per Owner decision §J; preserved in library history for inspection; do not reactivate to gameplay",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "38e6080e-9497-4cdf-bfa1-c699d0cb36d3",
+      "parentAssetId": "382e9cd4-b70d-41af-9be2-95aa14e56934",
+      "name": "P03_DragBackTurn_Right_v02",
+      "revision": 2,
+      "fingerprint": "0ca960d4ea5dabb8f9bd17f5b4796224402cacbf83eb4b3660b8396d6da732cc",
+      "sequenceId": "P03_DragBackTurn",
+      "sequenceOrder": 2,
+      "phase": "backward_drag_right_cut",
+      "durationSeconds": 0.5,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Windup",
+          "timeSeconds": 0.09,
+          "phase": "anticipation"
+        },
+        {
+          "name": "BackwardDrag",
+          "timeSeconds": 0.18,
+          "phase": "event"
+        },
+        {
+          "name": "LateralContact",
+          "timeSeconds": 0.3,
+          "phase": "main_action"
+        },
+        {
+          "name": "Exit",
+          "timeSeconds": 0.41,
+          "phase": "follow_through"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose",
+        "conversion": "Motion Tools recipe revision of P03_DragBackTurn_v01; preserved source rig profile and R6 child-part tracks",
+        "direction": "right"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.710Z",
+      "displayOrder": 42,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "retired_move",
+      "lifecycleStatus": "retired_per_HANDOFF_J",
+      "notes": "Retired from active catalog/loadout per Owner decision §J; preserved in library history for inspection; do not reactivate to gameplay",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "e2b20c8a-2078-483e-a88c-982e9aade88a",
+      "parentAssetId": "b772d4bd-ea0b-4b6e-87d5-ab6e081cafa8",
+      "name": "P03_LaCroqueta_Left_v02",
+      "revision": 2,
+      "fingerprint": "039c1052df5a8e53672fc2b47c7da6921b551468d5b28cdda422db408a3cfa69",
+      "sequenceId": "P03_LaCroqueta",
+      "sequenceOrder": 2,
+      "phase": "left_lateral_transfer",
+      "durationSeconds": 0.45,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Windup",
+          "timeSeconds": 0.081,
+          "phase": "anticipation"
+        },
+        {
+          "name": "BackwardDrag",
+          "timeSeconds": 0.162,
+          "phase": "event"
+        },
+        {
+          "name": "LateralContact",
+          "timeSeconds": 0.27,
+          "phase": "main_action"
+        },
+        {
+          "name": "Exit",
+          "timeSeconds": 0.369,
+          "phase": "follow_through"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose",
+        "conversion": "Motion Tools recipe revision of P03_LaCroqueta_v01; preserved source rig profile and R6 child-part tracks",
+        "direction": "left"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.719Z",
+      "displayOrder": 43,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "retired_move",
+      "lifecycleStatus": "retired_per_HANDOFF_J",
+      "notes": "Retired from active catalog/loadout per Owner decision §J; preserved in library history for inspection; do not reactivate to gameplay",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "e9e0f8ec-5270-4eee-9b7b-eeba2f80bc5e",
+      "parentAssetId": "b772d4bd-ea0b-4b6e-87d5-ab6e081cafa8",
+      "name": "P03_LaCroqueta_Right_v02",
+      "revision": 2,
+      "fingerprint": "646c86f755dd77fb35c6fd39635971266b9eac93a1378f3a425bfd443f9030e2",
+      "sequenceId": "P03_LaCroqueta",
+      "sequenceOrder": 2,
+      "phase": "right_lateral_transfer",
+      "durationSeconds": 0.45,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Windup",
+          "timeSeconds": 0.081,
+          "phase": "anticipation"
+        },
+        {
+          "name": "BackwardDrag",
+          "timeSeconds": 0.162,
+          "phase": "event"
+        },
+        {
+          "name": "LateralContact",
+          "timeSeconds": 0.27,
+          "phase": "main_action"
+        },
+        {
+          "name": "Exit",
+          "timeSeconds": 0.369,
+          "phase": "follow_through"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose",
+        "conversion": "Motion Tools recipe revision of P03_LaCroqueta_v01; preserved source rig profile and R6 child-part tracks",
+        "direction": "right"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.724Z",
+      "displayOrder": 44,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "retired_move",
+      "lifecycleStatus": "retired_per_HANDOFF_J",
+      "notes": "Retired from active catalog/loadout per Owner decision §J; preserved in library history for inspection; do not reactivate to gameplay",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "d269385e-9de7-400f-9460-62a1f3a5e12c",
+      "parentAssetId": "a26c3281-36df-4014-aa77-73e395639b5c",
+      "name": "P03_SombreroFlick_v02",
+      "revision": 2,
+      "fingerprint": "acca4f864e5b41599876c1c9e0ca762f9ca731984b842cd4f30d887b0f43c35d",
+      "sequenceId": "P03_SombreroFlick",
+      "sequenceOrder": 2,
+      "phase": "scoop_lift_air_recovery",
+      "durationSeconds": 0.7,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Scoop",
+          "timeSeconds": 0.18,
+          "phase": "anticipation"
+        },
+        {
+          "name": "LiftContact",
+          "timeSeconds": 0.28,
+          "phase": "event"
+        },
+        {
+          "name": "BallAirborne",
+          "timeSeconds": 0.42,
+          "phase": "main_action"
+        },
+        {
+          "name": "Recover",
+          "timeSeconds": 0.62,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetSkillMovePose",
+        "conversion": "Motion Tools recipe revision of P03_SombreroFlick_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.729Z",
+      "displayOrder": 45,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "ce1fd9c3-a451-4994-8ec5-df775334258b",
+      "parentAssetId": "67f21b64-2c3a-478c-ad46-9db2d0185e5f",
+      "name": "P03_CagePress_OpenField_v02",
+      "revision": 2,
+      "fingerprint": "8265df483ce1a00918ddc274c61cb9dc1c2957507ab5d00b44af84a95ada6827",
+      "sequenceId": "P03_CagePress_OpenField",
+      "sequenceOrder": 2,
+      "phase": "forward_shoulder_collision",
+      "durationSeconds": 0.42,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Brace",
+          "timeSeconds": 0.08,
+          "phase": "anticipation"
+        },
+        {
+          "name": "ShoulderImpact",
+          "timeSeconds": 0.18,
+          "phase": "event"
+        },
+        {
+          "name": "Push",
+          "timeSeconds": 0.27,
+          "phase": "main_action"
+        },
+        {
+          "name": "Recover",
+          "timeSeconds": 0.36119999999999997,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetTacklePose",
+        "conversion": "Motion Tools recipe revision of P03_CagePress_OpenField_Baseline_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.736Z",
+      "displayOrder": 46,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "0b08e3ec-f76e-4890-820d-2f0b4ef47b0d",
+      "parentAssetId": "fb937b5e-9201-4569-b79a-eaf6e28b1184",
+      "name": "P03_QuickPoke_KnockAway_v02",
+      "revision": 2,
+      "fingerprint": "770316a5ca28d404b44cfda8b2f614a71764710f527ecbd8686f4f13be29c495",
+      "sequenceId": "P03_QuickPoke",
+      "sequenceOrder": 2,
+      "phase": "extend_contact_knockaway_recovery",
+      "durationSeconds": 0.38,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Extend",
+          "timeSeconds": 0.1,
+          "phase": "anticipation"
+        },
+        {
+          "name": "BallContact",
+          "timeSeconds": 0.19,
+          "phase": "event"
+        },
+        {
+          "name": "KnockAway",
+          "timeSeconds": 0.25,
+          "phase": "main_action"
+        },
+        {
+          "name": "Recover",
+          "timeSeconds": 0.34,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetTacklePose",
+        "conversion": "Motion Tools recipe revision of P03_QuickPoke_Baseline_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.742Z",
+      "displayOrder": 47,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "83523742-71ef-4262-ad9d-d0a0e828f392",
+      "parentAssetId": "cf34add0-599a-4296-a242-eda6e9695cbc",
+      "name": "P02_FakeShot_Ground_v01",
+      "revision": 1,
+      "fingerprint": "94aaf815ac440ab0517e1b394cd6a012a5afcb61c6de851f3cf0af5633ae970e",
+      "sequenceId": "P02_FakeShot",
+      "sequenceOrder": 1,
+      "phase": "partial_swing_sole_stop_exit",
+      "durationSeconds": 0.34,
+      "loop": false,
+      "priority": "Movement",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "PartialSwing",
+          "timeSeconds": 0.1,
+          "phase": "anticipation"
+        },
+        {
+          "name": "SoleStop",
+          "timeSeconds": 0.21,
+          "phase": "event"
+        },
+        {
+          "name": "DirectionalExit",
+          "timeSeconds": 0.3,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetFakeShotPose",
+        "conversion": "Motion Tools recipe revision of P02_Direct_Release_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.748Z",
+      "displayOrder": 48,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "c3e31f9a-57b7-4dbc-9ca4-b30bf145760f",
+      "parentAssetId": "ddf4d0a2-ee58-4d36-99b7-8e97f73f61e3",
+      "name": "P02_AirWhiff_Recovery_v01",
+      "revision": 1,
+      "fingerprint": "0a45cbbac7b18d92f5bbc3eaccb12a52651349d7c150529b4d1a7dba616a5158",
+      "sequenceId": "P02_AirWhiff",
+      "sequenceOrder": 1,
+      "phase": "air_overswing_fall_settle",
+      "durationSeconds": 0.92,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Overswing",
+          "timeSeconds": 0.23920000000000002,
+          "phase": "main_action"
+        },
+        {
+          "name": "MissedContact",
+          "timeSeconds": 0.3864,
+          "phase": "event"
+        },
+        {
+          "name": "Stumble",
+          "timeSeconds": 0.5336,
+          "phase": "follow_through"
+        },
+        {
+          "name": "RecoveryComplete",
+          "timeSeconds": 0.8464,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetAirWhiffPose",
+        "conversion": "Motion Tools recipe revision of P02_Ground_Whiff_Recovery_Current_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.754Z",
+      "displayOrder": 49,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "d4ccef7d-bc2c-4c5d-85a9-e7d827ee0680",
+      "parentAssetId": "67f21b64-2c3a-478c-ad46-9db2d0185e5f",
+      "name": "P03_CagePress_WallSplat_v01",
+      "revision": 1,
+      "fingerprint": "a155149338944b1b521bac0609b2b1e938b69522194bbbc75019bf7e1f18bac0",
+      "sequenceId": "P03_CagePress_WallSplat",
+      "sequenceOrder": 1,
+      "phase": "wall_impact_stun_recovery",
+      "durationSeconds": 0.66,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ],
+      "markers": [
+        {
+          "name": "Brace",
+          "timeSeconds": 0.08,
+          "phase": "anticipation"
+        },
+        {
+          "name": "ShoulderImpact",
+          "timeSeconds": 0.18,
+          "phase": "event"
+        },
+        {
+          "name": "Push",
+          "timeSeconds": 0.27,
+          "phase": "main_action"
+        },
+        {
+          "name": "Recover",
+          "timeSeconds": 0.5676,
+          "phase": "recovery"
+        }
+      ],
+      "source": {
+        "path": "src/shared/configs/PlayerActionPoseConfigs.luau",
+        "symbol": "GetTacklePose",
+        "conversion": "Motion Tools recipe revision of P03_CagePress_OpenField_Baseline_v01; preserved source rig profile and R6 child-part tracks"
+      },
+      "status": "preview_job_succeeded_visual_review_incomplete",
+      "createdAt": "2026-10-23T18:12:50.758Z",
+      "displayOrder": 50,
+      "previewVerified": {
+        "operation": "preview",
+        "studioSessionId": "9e5e49e7-4956-44c5-8eb1-5ca0fe7da3aa",
+        "rigId": "e244915a-e73a-4d7f-a507-568fa58746ec",
+        "jobStatus": "succeeded",
+        "previewStarted": true,
+        "visualPoseReviewComplete": false
+      },
+      "group": "active",
+      "lifecycleStatus": "active_approved_scope",
+      "notes": "Current active approved scope for Plan02/Plan03; staged for Owner visual inspection",
+      "availability": "available_in_sandbox"
+    },
+    {
+      "assetId": "3e864c26-527f-4191-8eea-28f58acece90",
+      "name": "R6 Bicycle Kick - Air Scissor",
+      "revision": 1,
+      "group": "reference_bicycle",
+      "lifecycleStatus": "paused_reference",
+      "availability": "available_in_sandbox",
+      "notes": "Preserved Motion Tools reference clip; gameplay mapping remains paused per project policy",
+      "durationSeconds": 3.2,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ]
+    },
+    {
+      "assetId": "e3ee4387-ffa4-4a62-8b48-e27f33ddefc4",
+      "name": "R6 Bicycle Kick - Air Scissor (Alt)",
+      "revision": 1,
+      "group": "reference_bicycle",
+      "lifecycleStatus": "paused_reference",
+      "availability": "available_in_sandbox",
+      "notes": "Preserved Motion Tools reference clip copy; gameplay mapping remains paused per project policy",
+      "durationSeconds": 3.2,
+      "loop": false,
+      "priority": "Action",
+      "tracks": [
+        "Torso",
+        "Head",
+        "Right Arm",
+        "Left Arm",
+        "Right Leg",
+        "Left Leg"
+      ]
+    }
+  ],
+  "ordering": {
+    "method": "Motion Tools library newest-first createdAt order; changed only the 33 T10-owned library entries sort timestamps; original creation timestamp for each entry remains in createdAt fields of the manifest entries.",
+    "displaySequence": [
+      "P02_Idle_Ready_v01",
+      "P02_Walk_Cycle_v01",
+      "P02_Sprint_Cycle_v01",
+      "P02_Dash_Burst_v01",
+      "P02_ShiftLock_Strafe_Baseline_v01",
+      "P02_Jump_Fall_Directional_v01",
+      "P02_Landing_Cushion_v01",
+      "P02_Header_v01",
+      "P02_MidAir_Volley_v01",
+      "P02_Direct_Charge_WindupHold_v01",
+      "P02_Direct_Release_v01",
+      "P02_Curve_Charge_WindupHold_v01",
+      "P02_Finesse_Release_RightFoot_v01",
+      "P02_Trivela_Release_RightFoot_v01",
+      "P02_Pass_Ground_v01",
+      "P02_Pass_Loft_v01",
+      "P02_Slide_Tackle_v01",
+      "P02_Slide_Recovery_Hit_v01",
+      "P02_Slide_Recovery_Miss_v01",
+      "P02_Ground_Whiff_Recovery_Current_v01",
+      "P02_Curve_Whiff_Recovery_Current_v01",
+      "P02_Airborne_Recovery_Current_v01",
+      "P02_Strafe_Forward_Cycle_v01",
+      "P02_Strafe_Backward_Cycle_v01",
+      "P02_Strafe_Left_Cycle_v01",
+      "P02_Strafe_Right_Cycle_v01",
+      "P03_HeavyKnockOn_v01",
+      "P03_DragBackTurn_v01",
+      "P03_LaCroqueta_v01",
+      "P03_SombreroFlick_v01",
+      "P03_Elastico_v01",
+      "P03_QuickPoke_Baseline_v01",
+      "P03_CagePress_OpenField_Baseline_v01"
+    ],
+    "pluginBehavior": "Motion Tools lists newest createdAt first. The library API now returns the 33 staged clips in displayOrder 1\u001333; the two pre-existing Bicycle entries follow. Original creation timestamps are preserved in each manifest entry."
+  },
+  "queuedUnavailableMoves": [
+    {
+      "catalogName": "Open Up Fake Shot",
+      "stars": "1★",
+      "status": "unavailable_pending_authoring",
+      "note": "Queued new move from HANDOFF §J/§I. No clip authored yet; not fabricated or counted in preview library."
+    },
+    {
+      "catalogName": "Body Feint",
+      "stars": "2★",
+      "status": "unavailable_pending_authoring",
+      "note": "Queued new move from HANDOFF §J/§I. No clip authored yet; not fabricated or counted in preview library."
+    },
+    {
+      "catalogName": "Heel Chop",
+      "stars": "3★",
+      "status": "unavailable_pending_authoring",
+      "note": "Queued new move from HANDOFF §J/§I. No clip authored yet; not fabricated or counted in preview library."
+    },
+    {
+      "catalogName": "Lane Change",
+      "stars": "4★",
+      "status": "unavailable_pending_authoring",
+      "note": "Queued new move from HANDOFF §J/§I. No clip authored yet; not fabricated or counted in preview library."
+    },
+    {
+      "catalogName": "Elastico (Remake)",
+      "stars": "5★",
+      "status": "unavailable_pending_remake",
+      "note": "Awaits new revision under existing catalog ID. Old clip P03_Elastico_v01 preserved as reference only."
+    }
+  ],
+  "ownerViewingInstructions": {
+    "step1_select_rig": "In the open AnimationSandbox Studio window, locate the Motion Tools Animation Studio DockWidget panel.",
+    "step2_rig_library": "On the left icon rail of Motion Tools, click the \"R\" tab (Rig Library).",
+    "step3_choose_r6": "Click \"R6_Rig\" (the top row). The status will display \"Rig ready: R6_Rig\".",
+    "step4_animation_library": "Click the \"A\" tab (Animation Library) on the icon rail.",
+    "step5_refresh_and_browse": "Click \"Refresh library (52)\". All 52 persistent clips are loaded and individually selectable.",
+    "step6_inspect_active_first": "Click any clip (recommended first active clip: P03_HeavyKnockOn_v01 or P02_Dash_Burst_v02) to load it onto R6_Rig, play, stop, or scrub the timeline.",
+    "step7_evaluate": "Inspect active clips, compare against v01 references, inspect retired moves if desired, and provide visual review feedback."
+  },
+  "t14Progress": {
+    "status": "CAGE_ZERO_CONNECTED_NEEDS_OWNER_UI_CLICK",
+    "task": "T-14 Motion Tools Connection to Cage-Zero",
+    "pane": "agycage w2:p48 (sole writer per HANDOFF §M)",
+    "completedAt": "2026-10-24T07:21:00.000Z",
+    "targetStudio": {
+      "name": "Cage-Zero",
+      "placeId": "137721422246269",
+      "studioId": "c153a8c6-8715-4ddc-b5cd-6150ba8555cf",
+      "mode": "Edit"
+    },
+    "bridgeAndSession": {
+      "port": 17331,
+      "status": "online_and_healthy",
+      "sessionId": "50708f4a-b13e-45e1-a0d4-acbf63fda586",
+      "heartbeatAgeMs": 557,
+      "connectionVerified": true,
+      "dockWidget": "RobloxMotionTools (Installed, waiting for Owner toolbar toggle)"
+    },
+    "readinessDistinction": {
+      "bridgeHttpStatus": "200_OK",
+      "sessionHeartbeat": "ONLINE (age ~500ms)",
+      "viewportOpen": false,
+      "rigLoaded": false,
+      "clipLoaded": false,
+      "rigInStorage": "ServerStorage.MotionToolsRigs.R6_Rig (ready for selection)"
+    },
+    "boundedBlockerAndOwnerStep": {
+      "issue": "Roblox Studio DockWidget UI for session plugin cannot be clicked programmatically; requires Owner 1-click in Studio UI toolbar to open",
+      "requiredOwnerAction": "In Cage-Zero Studio (PlaceId 137721422246269, Edit mode), click 'Animation Studio' button in 'Motion Tools' toolbar to open DockWidget, then select R6_Rig from Rig Library",
+      "exactSteps": [
+        "1. Focus on Roblox Studio window: Cage-Zero (PlaceId 137721422246269, Edit mode).",
+        "2. Look at the top Studio ribbon toolbar for 'Motion Tools'.",
+        "3. Click the 'Animation Studio' button to toggle the DockWidget ('RobloxMotionTools') open.",
+        "4. On the DockWidget left icon rail, click the 'R' icon (Rig Library tab).",
+        "5. Select 'R6_Rig' (already present in ServerStorage.MotionToolsRigs). Status updates to 'Rig ready: R6_Rig'.",
+        "6. On the left icon rail, click the 'A' icon (Animation Library tab) to view and refresh persistent clips."
+      ]
+    }
+  },
+  "historicalSandboxProgress": {
+    "status": "HISTORICAL_PREVIEW_STAGED",
+    "task": "T-14 Preview Staging in AnimationSandbox (historical pane agycagezero w2:p3X)",
+    "completedAt": "2026-10-24T06:34:13.672Z",
+    "targetStudio": {
+      "name": "AnimationSandbox",
+      "placeId": "133472167342841",
+      "studioId": "d5d6ab8d-34f3-475f-a94e-79138dedfe41",
+      "mode": "Edit"
+    },
+    "bridgeAndSession": {
+      "port": 17331,
+      "sessionId": "c4ae28b7-14aa-4433-b3e1-563875c6e16f",
+      "dockWidget": "Motion Tools Animation Studio (Enabled)"
+    }
+  }
+}

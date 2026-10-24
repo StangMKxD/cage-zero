@@ -2,6 +2,8 @@
 
 **Phase 1 | PLANNING / IMPLEMENTATION_PENDING**
 
+- [ ] P-CAGE-PRESS OWNER RULE / RECORDED ONLY: Cage Pressใหม่ของPlan03ให้เก็บcontact classification/direction/point/timeเพื่อแผน05: shoulder-sideชนถูกต้องไม่ฟาวล์ แต่พุ่งชนโซนหลังเป็นฟาวล์ตามคำสั่งOwner. รอบนี้บันทึกกติกา/รอยต่อเท่านั้น ไม่เปิดระบบตัดสินฟาวล์/ลูกนิ่ง/ใบ/รีสตาร์ทหรือimplementationPlan05; ต้องออกแบบเกณฑ์จริงตามgateของแผนนี้ก่อนลงมือ.
+
 รายการนี้คือคิวงานปัจจุบัน ไม่ใช่ checkbox ส่งมอบจาก module baseline เดิม ดู [plan](plan.md) และ [phase gate](../plan.md)
 
 - [x] P-01: จัดที่อยู่แผนและขอบเขตให้ตรง phase ตามคำสั่งผู้ใช้

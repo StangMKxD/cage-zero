@@ -5,12 +5,12 @@
 ## กฎเหล็กทั่วไปที่ต้องตรวจทุก Module (Global Invariants)
 - `[INV-01]` ลงมือตาม phase/dependency และ HANDOFF ที่ Owner อนุมัติ implementation; Codex ตรวจหลักฐานอิสระ ไม่ใช้ APPROVED เก่าข้าม gate
 - `[INV-02]` ไม่ใช้ avatar/animation pack ส่วนตัว; Phase 1 ใช้ Single Custom R6 ตลอด phase ส่วน Phase 2 ยังไม่กำหนดการเปลี่ยน rig
-- `[INV-03]` ห้ามมีระบบรองเท้าสตั๊ด (No Boots/Cleats System) มีเฉพาะชุด `Battle Threads`
+- `[INV-03]` ห้ามมีระบบรองเท้าสตั๊ด (No Boots/Cleats System) มีเฉพาะชุด `Battle Threads` (คอสเมติกเท่านั้น ไม่มี Trait slots และไม่มีหิน Trait ใน Target)
 - `[INV-04]` ห้ามให้ `Mutated Gear` เพิ่มสเตตัสในสนาม (เพิ่มเฉพาะราคาขาย, VFX, และตัวคูณ Cash/EXP หลังจบแมตช์)
-- `[INV-05]` Skill Moves/ท่าเข้าสกัดตรวจcost/CD/recoveryบนServer; TraitPhase2ที่ยังเลือกต้องมีCooldown ไม่คืนผลชนะChoiceจากbaseline
+- `[INV-05]` Skill Moves/ท่าเข้าสกัดตรวจcost/CD/recoveryบนServer; 16 Innate Traits เป็นคุณสมบัติติดตัวละครเท่านั้น (ผันแปร 0, 1, 2, ... รายการ); Trait ตรวจสอบเงื่อนไขบน Server ไม่คืนผลชนะ Choice จาก baseline
 - `[INV-06]` บอลสัมผัสได้ตลอดทุกDash/Skill ไม่มีI-frame/Choice trigger/สโลว์เปิดดวล/คัตซีนล็อกคู่/timedParry
 - `[INV-07]` ปุ่มตามทีมที่ครองสำเร็จล่าสุดแยกจากactualholder; block/wall/ceilingไม่เปลี่ยนteamcontext ยิง/ส่งต้องมีballreachจริง
-- `[INV-08]` Phase1มี5ท่าดาวละ1/3slots/ตัวเริ่มต้นSkill5ดาว ไม่เท่ากับTier/Stats; ไม่มีคัตซีนแพ้ชนะหรือสตั้นผลดวล
+- `[INV-08]` เป้าหมายสกิล 7 ท่าไม่ซ้ำ (1★..5★) ติดตั้ง 3 ช่อง (โดยมี 5 แอนิเมชันเดิมอยู่ระหว่างการปรับแก้ตาม HANDOFF §Q รอการตรวจรับ) ตัวเริ่มต้นเพดานสกิล 5 ดาว ไม่เท่ากับ Tier/Stats; ไม่มีคัตซีนแพ้ชนะหรือสตั้นผลดวล
 - `[INV-09]` หน้าจอ UI ทั้งหมดต้องควบคุมผ่าน `UIManager.luau` ตัวเดียว ห้ามเปิดหน้าต่างซ้อนทับกัน
 - `[INV-10]` การคำนวณสำคัญทั้งหมดต้องเป็น `Server-Authoritative 100%`
 
@@ -39,18 +39,24 @@
 ### 02 บอล การเคลื่อนที่ และcontext
 
 1. **[TC-P1-02-01]** ทีมAครอง→ปล่อย/ส่ง/ยิง→wall/ceiling→Bบล็อกบอลแรงแล้วเด้ง: Aทั้งทีมยังยิง/ส่ง/ยิงโค้ง; เมื่อBครองได้จริงจึงสลับทั้งทีม ตรวจactualholderแยกcontext/reset
-2. **[TC-P1-02-02]** ยิงตรง/ปุ่มยิงโค้งโดยตรง/ส่งเรียดโด่ง/ชาร์จ/เล็ง3Dและfirst-timeจากบอลชิ่งที่อยู่ในระยะได้ ไม่มีบอลในระยะยิงไม่ได้และinputเก่าไม่กลายเป็นสไลด์กลางคัน
+2. **[TC-P1-02-02]** ยิงตรง/ปุ่มยิงโค้งโดยตรง/Passแบบเดียวหลายมุมและแรง/ชาร์จ/เล็ง3Dและfirst-timeจากบอลชิ่งที่อยู่ในระยะได้ ไม่มีบอลในระยะยิงไม่ได้และinputเก่าไม่กลายเป็นสไลด์กลางคัน
 3. **[TC-P1-02-03]** DirectionalJumpล็อกทิศกลางอากาศ เดิน/Sprint/Dash/ShiftLock/Header/Volley/Blockใช้จริง Serverตรวจmove/cost/contacts; ไม่อ้างว่าปุ่มมีชื่อแล้วผ่าน
 4. **[TC-P1-02-04]** จิ้ม/ยืนตัดบอลพื้นความเร็วรับไหวได้ครอง ลูกแรง/สูงโดนตัวเด้งอิสระ เกณฑ์สูง/เร็ว/ระยะและconfigที่ทดสอบระบุชัด ไม่รับทุกลูกอัตโนมัติ
 5. **[TC-P1-02-05]** Staminaไม่พอไม่ออกท่าที่จ่ายไม่ไหว ยังเดิน/ยิง/ส่ง/ยืนตัดบอลได้ ล้าแตะบอลห่างขึ้นตามconfigไม่สุ่มเสียบอล การregen/resetไม่มีเกินเพดานหรือค่าติดลบ
 6. **[TC-P1-02-06]** ทดสอบปล่อย/รับ/ตาย/ออกเกม/เปลี่ยนroundไม่ค้างผู้ครอง/teamcontext/contacts; callbacksเก่าไม่ทับgenerationใหม่ fixtureไม่เปิดMatch/economy
 
+Ownerdelta2026-10-21เพิ่มacceptance02 (ทุกข้อNOT RUNหลังport; ผล34/34และ141/141ในAGYfix-001เป็นhistorical ไม่รับรองsourceใหม่):
+7. **[TC-P1-02-07]** ดึงselectedSprint/Dash/kick/Pass/curve/gaugeจากprototype3ที่ระบุhash ปรับR6และรักษาfix-001groundrest/cameraDash/Knock-onครั้งเดียว/StateChangedjump/servercharge/finite/lifecycle ไม่เปิดSkillMoves/Feint/secondballloop
+8. **[TC-P1-02-08]** keyboard/mouse→server→ball→segmentedgaugeจริง Passหนึ่งชุดเล็งต่ำ/สูง/ชิ่งตามมุมและแรง ไม่มีT/LobPass; ส่งlegacyLobPassต้องrejectไม่mutation รวมfirst-timePassไม่กลายเป็นShootเอง
+9. **[TC-P1-02-09]** ฝ่ายรับใช้Slideเท่านั้นในรอบนี้ ทดสอบhit/miss/near-miss/ground-air/cost/CD/recovery/contact/cleanup ไม่มีauto-stunหรือauto-possession; contextเปลี่ยนขณะholdยกเลิกintentเก่า ไม่เปลี่ยนShootเป็นSlideกลางคัน
+10. **[TC-P1-02-10]** เกจhold/tap/เต็ม/ปล่อย/cancelตรงservercharge เมื่อdeath/respawn/reset/focuslost/exhausted/contextstaleไม่ค้างและไม่ยิงซ้ำ start→releaseใช้intentเดียวกันได้ครั้งเดียว start→cancelแล้วreleaseต้องreject duplicateในphaseเดิมไม่mutation และfailurefeedbackไม่ล้างintentใหม่ ไม่อ้างclipid/12tracknameเป็นR6poseผ่าน
+
 ### 03 Skill Moves และเกมรับ
 
-1. **[TC-P1-03-01]** ฟรี5ท่าครบลำดับดาว1Knock-On/2DragBack/3Croqueta/4Sombrero/5Elastico ตัวทดสอบ5ดาว/3slotsเลือกได้ข้ามระดับ ไม่มี15ท่าหรือgacha/persistenceเข้าDemo
-2. **[TC-P1-03-02]** กดช่อง+ทิศเริ่มได้ทุกท่า มีR6ท่าร่างที่อ่านจังหวะ/ทิศได้ครบ5 loadedasset/provenanceและruntimeposeตรวจจริง ไม่ใช้แค่ID/track nameเป็นPASS
+1. **[TC-P1-03-01]** เป้าหมาย 7 ท่าไม่ซ้ำ (1★ Knock-On, 1★ Open Up Fake Shot, 2★ Body Feint, 3★ Heel Chop, 4★ Sombrero Flick, 4★ Lane Change, 5★ Elastico) ติดตั้ง 3 ช่องเลือกได้ข้ามระดับภายในเพดานตัวละคร (Drag Back & Turn และ La Croqueta เป็นท่า Retired ทางประวัติศาสตร์); ตัวทดสอบเพดาน 5 ดาว ไม่มี 15 ท่าหรือ gacha/persistence ใน Demo
+2. **[TC-P1-03-02]** กดช่อง+ทิศเริ่มได้ทุกท่า มี R6 ท่าร่างที่อ่านจังหวะ/ทิศได้ (5 ท่าเดิมที่ถูกปฏิเสธอยู่ในกระบวนการปรับแก้ตาม HANDOFF §Q รอตรวจรับ visual); loaded asset/provenance และ runtime pose ตรวจจริง ไม่ใช้แค่ ID/track name เป็น PASS
 3. **[TC-P1-03-03]** ทุกท่ารวมDashยังสัมผัสบอลเพื่อสกัดได้ระหว่างanimation ไม่มีI-frame/ล็อกคู่/ชนะmatrix/ผู้ชมถูกตัดกล้อง/ปุ่มFeintเดิม
-4. **[TC-P1-03-04]** Pokeสั้นไว/Slideไกลพลาดรอลุก/Shoulderด้านข้างสำเร็จทำให้เสียเหลี่ยมและบอลหลุดอิสระ ครองต่อได้เมื่อเข้าถึงจริง ผลฟาวล์อ่านต่อจาก05
+4. **[TC-P1-03-04]** Slideพื้นฐานportใน02แล้วตรวจreuse/regressionใน03 (ขยายตาม Sliding, คลุมบอล +0.8 studs ด้วย Clean Sweeper D3); Quick Pokeสั้นไว (ระยะตาม Poke Reach, ไวขึ้น 20% ด้วย Lightning Poke #18); Body Check พุ่งชนด้านหน้าเปรียบเทียบ Strength ต่าง (สูตรคำนวณละเอียด PENDING รอการจูน) บอลหลุดเป็น Loose Ball (ไม่มี auto-possession, ไม่มี I-frame, วืดติด recovery โดยลด 25% ด้วย Elastic Recovery #19) ครองต่อได้เมื่อเข้าถึงจริง ผลฟาวล์อ่านต่อจาก05
 5. **[TC-P1-03-05]** ชนคู่แข่งธรรมดาช้าลงแต่ไม่สั่งเสียบอลจากชนตัวอย่างเดียว เพื่อนผ่านตัวกันได้แต่บอลยังรับ/บล็อกตามcontact; ยืนบล็อกไม่ดูดลูกแรง/สูง
 6. **[TC-P1-03-06]** skillCDแยก จ่ายต้นทุนได้ก่อนออก ต้องจบช่วงท่าร่วมก่อนต่อ; กด3ช่อง/Dash/สกัดลัดช่วงล็อกไม่ได้
 7. **[TC-P1-03-07]** recoveryพลาดช้าลง/ล็อกSkillDashเข้าสกัดซ้ำ ยิงส่งเมื่อท่าเอื้อ สไลด์รอลุก ตรวจsuccess/fail/interrupt/reset ไม่ใช้stunแพ้ดวลเก่าหรือfirst-time miss penaltyของPhase2
@@ -58,7 +64,7 @@
 
 ### 06 Debug/Training และ08 UI
 
-1. **[TC-P1-06-01]** ปรับความเร็วพื้นฐานและกลุ่มค่าที่รองรับจากแผง อ่านServereffectiveค่าแล้ววัดruntimeตรงconfig คืนdefault/จบsessionไม่มีoverrideค้าง ไม่เขียนprofile/defaultsourceถาวร
+1. **[TC-P1-06-01]** ปรับ 13 Outfield Base Stats (ช่วง 0.90–1.15, ค่ากลาง 1.00), สลับ 16 Trait Toggles, และสลับ 5 Character Archetype Presets (Speedster Striker, Cage Playmaker, Power Target, Iron Stopper, Sweeper Destroyer) เฉพาะ test session; อ่าน Server effective ค่าแล้ววัด runtime ตรง config คืน default/จบ session ไม่มี override ค้าง ไม่เขียน profile/default source ถาวร
 2. **[TC-P1-06-02]** เสก/เลือก/ย้าย/ทีม/จำนวน/preset/ลบ/resetDummyหลายรอบ มีlimitและcleanup ไม่สะสมconnections/timers/ผู้ครองบอลหรือทำลายinstanceนอกscope
 3. **[TC-P1-06-03]** invalidvalues/เกินrange/ไม่มีสิทธิ์ไม่เปลี่ยนค่าทดลอง; scenario/config/seedและinitialcontextระบุให้ทำซ้ำได้ ไม่เปิดsettingsจริงหรือAIจากแผนที่ยังไม่พร้อม
 4. **[TC-P1-08-01]** label3คู่ตรงServercontext/CD/cost/recovery,3slotsเลือกก่อนรอบ,เปลี่ยนcontextขณะกดไม่เปลี่ยนintent,reset/respawnคืนinput/กล้อง
@@ -78,7 +84,7 @@
 
 ### Phase2 deferred gates
 
-- **[TC-P2-DEFER-01]** ต้องมีสุ่มตัวละคร03/สุ่มสกิลพร้อมinventory04/สุ่มเอฟเฟค05ผ่านtransactions02ก่อนmetaUI07; สูตร/เรต/ราคา/ของซ้ำ/ดาว/Statsเปิดgrillก่อนimplementation ไม่เพิ่มค่า/พลังถาวรจากDebug
+- **[TC-P2-DEFER-01]** ต้องมีสุ่มตัวละคร03 (รองรับ 13 Outfield Stats ขอบเขต 0.90–1.15, 4 Deferred GK Stats หลัง 04, 16 Innate Traits ติดตัวละครผันแปร 0..N รายการ, 5 Archetypes เพดาน 2★–5★, ถอด Trait slots/หิน Trait ออกจาก Target)/สุ่มสกิลพร้อมinventory04/สุ่มเอฟเฟค05ผ่านtransactions02ก่อนmetaUI07; สูตร/เรต/ราคา/pity/reroll/ของซ้ำ/ดาวเปิดgrillก่อนimplementation ไม่เพิ่มค่า/พลังถาวรจากDebug
 - **[TC-P2-DEFER-02]** แอนิเมชันและเสียจังหวะเมื่อfirst-timeยิงส่งวืดต้องส่งมอบจากimplementationcontractงานขยายก่อนFullUAT08 ไม่ใช้เป็นgatePhase1และไม่เขียนแทนในงานUAT
 
 ## Historical module acceptance — Superseded reference
@@ -115,3 +121,13 @@
 
 ### Module 08: `08-integration-and-uat`
 1. **`[TC-08-01]` End-to-End Match Loop:** เชื่อมต่อวงจรแมตช์ตั้งแต่เลือกตำแหน่ง เข้าแข่ง สลับอีเวนต์ จบแมตช์คำนวณรางวัลคูณตาม `Mutated Gear` และแสดงผลที่ `PostMatchSummaryScreen` ครบถ้วน
+
+### 02 — Owner visual rework / fix-003 (NOT RUN)
+
+- **[TC-P1-02-11]** RealR6selectedSprint/Dash/chargeShoot/Pass/Curve/Slideอ่านท่าต่างกันตามprototype3 ไม่มีjumpclipแทนSlide; worldpose/stancefoot/clearanceและsourceprofilemappingตรวจจริง ไม่ใช้assetID/13tracks/TC40schemaแทนvisualผ่าน
+- **[TC-P1-02-12]** ShiftLockเริ่มON L/LeftAlt/RightAlttoggle, ShiftยังSprint, cursor/shoulderตามSandbox; normalyawตามcameraแต่Slide/Jumpคงทิศที่commit ไม่มีcamerafight/drift Menu/TextBox/focuslost/death/reset/respawnคืนstateครบ ทดสอบ30/60/120fpsตามที่ทำได้ ไม่บังคับscreenshot/video
+- **[TC-P1-02-13]** ส่งmissing/wrongmetadata/legacy/invalidphase/cross-intent-release/chargeActionไม่ตรง/terminalreplayแล้วไม่มีball/resource mutation; releaseไม่มีstartไม่เลือกpowerจากclient ส่วนstart→release/cancelที่ถูกต้องทำครั้งเดียว
+- **[TC-P1-02-14]** TeamAครอง→BSlidehitบอลInFlightไม่ครอง: AยังบุกจนBรับจริง; hitไม่ติดmisspenalty missจึงrecover/Dashถูกบล็อก predictionreject/earlyreleaseกลางair/focuslostไม่ค้างforces/charge/WalkSpeed
+- **[TC-P1-02-15]** บอลแรงชนพื้นแล้วsolverคืนvelocityขึ้นต้องยังเด้ง ไม่ถูกgroundsettleตัด ส่วนบอลนิ่ง/lowenergyหยุดได้; jumpผู้เล่นจริงห้ามหักvelocityแนวราบ ไม่ตรวจแค่mockoverride; callbacksของcharacterเก่าไม่แก้ตัวใหม่
+
+OwnervisualREJECTEDหลังfix-002ไม่หายไปเพราะ40/40Edit เมื่อทำfix-003ต้องfreshEdit/Live/visual/affected01regressionผูกhashปัจจุบัน เอฟเฟกต์เต็มแผนอื่นไม่เป็นblocker02

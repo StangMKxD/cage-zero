@@ -172,4 +172,73 @@ function AirLeanSolver.ComputeAirShotTrajectory(
     return finalVelocity, extraCurveForce
 end
 
+-- Applies accepted lean through the actual strike-frame orientation. The neutral
+-- contact frame is subtracted so legacy aim/launch values remain unchanged at 0 lean.
+function AirLeanSolver.ComputeContactShotTrajectory(
+	baseAimDirection: Vector3,
+	kickSpeed: number,
+	upwardBias: number,
+	leanForward: number,
+	leanRight: number,
+	actionType: string,
+	contactFrame: CFrame,
+	neutralContactFrame: CFrame
+): (Vector3, Vector3)
+	local leanFwd, leanRgt = AirLeanSolver.ClampLeanInput(leanForward, leanRight)
+	local baseVelocity, curveForce = AirLeanSolver.ComputeAirShotTrajectory(
+		baseAimDirection,
+		kickSpeed,
+		upwardBias,
+		0.0,
+		leanRgt,
+		actionType
+	)
+	local profile = AirLeanConfigs.CONTACT_LEAN_PROFILES[actionType]
+	if not profile or math.abs(leanFwd) < 1e-4 then
+		return baseVelocity, curveForce
+	end
+
+	local flatAim = Vector3.new(baseAimDirection.X, 0, baseAimDirection.Z)
+	if flatAim.Magnitude < 1e-3 then
+		local look = neutralContactFrame.LookVector
+		flatAim = Vector3.new(look.X, 0, look.Z)
+	end
+	if flatAim.Magnitude < 1e-3 then
+		flatAim = Vector3.new(0, 0, -1)
+	end
+	flatAim = flatAim.Unit
+
+	-- A torso leaning backward has its up axis displaced opposite the strike aim.
+	-- Comparing against the same action's neutral contact frame removes its fixed pose bias.
+	local contactUpDelta = contactFrame.UpVector - neutralContactFrame.UpVector
+	local maxInputPitch = math.sin(math.rad(AirLeanConfigs.MAX_PITCH_DEG))
+	local postureWeight = if maxInputPitch > 1e-4
+		then math.clamp(contactUpDelta:Dot(-flatAim) / maxInputPitch, -1.0, 1.0)
+		else 0.0
+	local elevationDeltaDeg = if postureWeight >= 0
+		then postureWeight * profile.maxBackwardLoftDeg
+		else postureWeight * profile.maxForwardLoweringDeg
+	if math.abs(elevationDeltaDeg) < 1e-4 then
+		return baseVelocity, curveForce
+	end
+
+	local speed = baseVelocity.Magnitude
+	local horizontal = Vector3.new(baseVelocity.X, 0, baseVelocity.Z)
+	if horizontal.Magnitude < 1e-3 then
+		horizontal = flatAim
+	else
+		horizontal = horizontal.Unit
+	end
+	local baseElevation = math.atan2(baseVelocity.Y, math.max(1e-4, Vector3.new(baseVelocity.X, 0, baseVelocity.Z).Magnitude))
+	local requestedDelta = math.rad(elevationDeltaDeg)
+	if requestedDelta > 0 then
+		requestedDelta = math.min(requestedDelta, math.rad(profile.maxLaunchElevationDeg) - baseElevation)
+	else
+		requestedDelta = math.max(requestedDelta, -math.pi * 0.5 - baseElevation)
+	end
+	local finalElevation = baseElevation + requestedDelta
+	local finalDirection = (horizontal * math.cos(finalElevation) + UP_VECTOR * math.sin(finalElevation)).Unit
+	return finalDirection * speed, curveForce
+end
+
 return table.freeze(AirLeanSolver)

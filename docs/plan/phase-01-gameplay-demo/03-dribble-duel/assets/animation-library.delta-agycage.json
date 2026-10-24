@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-24T13:36:00.000Z",
+  "author": "agycage (w2:p48)",
+  "scope": "Five skillmove animation revisions authored per Owner-confirmed grilling design (Plan03 HANDOFF §Q, design skill-animation-rework-20261024.md, tasks T18)",
+  "targetPlace": "Cage-Zero (PlaceId 137721422246269)",
+  "status": "OWNER_REVIEW_PENDING",
+  "stagedRevisions": [
+    {
+      "skillId": "HeavyKnockOn",
+      "starRating": 1,
+      "clipName": "P03_HeavyKnockOn_v02",
+      "revision": 2,
+      "recipeFile": "AI-Tools/motion-tools/artifacts/plan03-new-skills-20261024/P03_HeavyKnockOn_v02.json",
+      "sha256": "2CD053487F4FBBE263277D1256D7A84E900769038E903122768BB2F55B93F4C8",
+      "duration": 0.36,
+      "contactTimes": [0.12],
+      "directionPolicy": "Forward",
+      "schemaValid": true,
+      "status": "OWNER_REVIEW_PENDING",
+      "tuning": {
+        "ballImpulseMagnitude": 45.0,
+        "playerVelocityBurst": 22.0,
+        "burstDurationSec": 0.18
+      },
+      "choreography": "Knocks the ball far into open space ahead (45 studs/s) while player takes a brief short step forward (22 studs/s for 0.18s) without chasing all the way to the ball."
+    },
+    {
+      "skillId": "OpenUpFakeShot",
+      "starRating": 1,
+      "clipName": "P03_OpenUpFakeShot_v02",
+      "revision": 2,
+      "recipeFile": "AI-Tools/motion-tools/artifacts/plan03-new-skills-20261024/P03_OpenUpFakeShot_v02.json",
+      "sha256": "809D8DF89F2C060C573E16472FA3DABC995F70BFDE00B1FF47A00B03E5FC623A",
+      "duration": 0.38,
+      "contactTimes": [0.16],
+      "directionPolicy": "LateralCut",
+      "schemaValid": true,
+      "status": "OWNER_REVIEW_PENDING",
+      "tuning": {
+        "ballImpulseMagnitude": 22.0,
+        "playerVelocityBurst": 20.0,
+        "burstDurationSec": 0.22,
+        "contactDiagonal": [0.70, 0.70]
+      },
+      "choreography": "Readable strike windup feint checking into open hips, cushioning the ball diagonally forward (45 deg) with a short automatic following step (20 studs/s, 0.22s)."
+    },
+    {
+      "skillId": "BodyFeint",
+      "starRating": 2,
+      "clipName": "P03_BodyFeint_v02",
+      "revision": 2,
+      "recipeFile": "AI-Tools/motion-tools/artifacts/plan03-new-skills-20261024/P03_BodyFeint_v02.json",
+      "sha256": "EB091EE7A60E2C8DC82165A9E53F03B6E35B920CC7B9DFC47DDA7CA379F82A31",
+      "duration": 0.36,
+      "contactTimes": [0.18],
+      "directionPolicy": "LateralCut",
+      "schemaValid": true,
+      "status": "OWNER_REVIEW_PENDING",
+      "tuning": {
+        "ballImpulseMagnitude": 22.0,
+        "playerVelocityBurst": 20.0,
+        "burstDurationSec": 0.22,
+        "contactDiagonal": [0.85, 0.35]
+      },
+      "choreography": "Shoulder/hip drop sharply in false direction while ball stays near feet (0..0.18s), then rapid weight transfer across body and short exit step (20 studs/s, 0.22s) in actual opposite direction."
+    },
+    {
+      "skillId": "HeelChop",
+      "starRating": 3,
+      "clipName": "P03_HeelChop_v02",
+      "revision": 2,
+      "recipeFile": "AI-Tools/motion-tools/artifacts/plan03-new-skills-20261024/P03_HeelChop_v02.json",
+      "sha256": "EE3B04249850ED33AEDBA69FD1F7D3A1F4566D507E00747A0046F981A370B2CC",
+      "duration": 0.36,
+      "contactTimes": [0.14],
+      "directionPolicy": "LateralCut",
+      "schemaValid": true,
+      "status": "OWNER_REVIEW_PENDING",
+      "tuning": {
+        "ballImpulseMagnitude": 26.0,
+        "playerVelocityBurst": 0.0,
+        "burstDurationSec": 0.0,
+        "contactDiagonal": [1.0, 0.10]
+      },
+      "choreography": "NO JUMP. Grounded leg spread/weight shift near starting position; body DOES NOT pursue ball (0 burst). A-left uses RIGHT foot hooked around left/support leg sending ball left; D-right uses LEFT foot around right leg sending ball right."
+    },
+    {
+      "skillId": "Elastico",
+      "starRating": 5,
+      "clipName": "P03_Elastico_Rework_v03",
+      "revision": 3,
+      "recipeFile": "AI-Tools/motion-tools/artifacts/plan03-new-skills-20261024/P03_Elastico_Rework_v03.json",
+      "sha256": "CF0EE88CE08BB8FFB337C7081B21E703F67BEE5BD35222B9B97A90EFBA97B3D5",
+      "duration": 0.44,
+      "contactTimes": [0.12, 0.24],
+      "directionPolicy": "LateralCut",
+      "schemaValid": true,
+      "status": "OWNER_REVIEW_PENDING",
+      "tuning": {
+        "ballImpulseMagnitude": 26.0,
+        "playerVelocityBurst": 22.0,
+        "burstDurationSec": 0.22,
+        "contactStages": [
+          { "time": 0.12, "lateral": 0.50, "forward": 0.10 },
+          { "time": 0.24, "lateral": -0.90, "forward": 0.40 }
+        ]
+      },
+      "choreography": "Continuous two contacts on the SAME foot without artificial pause: outside of foot nudges ball outward (0.12s), same foot instantly snaps inward (0.24s) cutting ball across body; body weight follows exit with short step (22 studs/s, 0.22s)."
+    }
+  ],
+  "rejectedRevisionsPreserved": [
+    {
+      "clipName": "P03_HeavyKnockOn_Base_v01",
+      "status": "OWNER_VISUAL_REJECTED",
+      "reason": "Running then pressing skill looked like nothing happened; ball stayed glued with player"
+    },
+    {
+      "clipName": "P03_OpenUpFakeShot_Base_v01",
+      "status": "OWNER_VISUAL_REJECTED",
+      "reason": "Lacked readable shot windup feint and open hips"
+    },
+    {
+      "clipName": "P03_BodyFeint_Base_v01",
+      "status": "OWNER_VISUAL_REJECTED",
+      "reason": "Lacked false direction deception first while ball remains near feet"
+    },
+    {
+      "clipName": "P03_HeelChop_Base_v01",
+      "status": "OWNER_VISUAL_REJECTED",
+      "reason": "Contained jump/straddle; superseded by confirmed grounded cross-foot cut without jump or chase"
+    },
+    {
+      "clipName": "P03_Elastico_Rework_v02",
+      "status": "OWNER_VISUAL_REJECTED",
+      "reason": "Lacked continuous same-foot two-contact flow without pause"
+    }
+  ],
+  "retainedBaselines": [
+    {
+      "skillId": "LaneChange",
+      "starRating": 4,
+      "clipName": "P03_LaneChange_Base_v01",
+      "status": "RETAINED_PENDING_OWNER_EVALUATION"
+    },
+    {
+      "skillId": "SombreroFlick",
+      "starRating": 4,
+      "clipName": "P03_SombreroFlick_v02",
+      "status": "RETAINED_PENDING_OWNER_EVALUATION"
+    }
+  ],
+  "retiredMoves": [
+    {
+      "skillId": "DragBackTurn",
+      "formerStars": 2,
+      "action": "RETIRED_FROM_ACTIVE_CATALOG",
+      "notes": "Preserved in historical references; removed from active catalog/loadout selectors"
+    },
+    {
+      "skillId": "LaCroqueta",
+      "formerStars": 3,
+      "action": "RETIRED_FROM_ACTIVE_CATALOG",
+      "notes": "Preserved in historical references; removed from active catalog/loadout selectors; starter loadout slot2 migrated to BodyFeint"
+    }
+  ]
+}

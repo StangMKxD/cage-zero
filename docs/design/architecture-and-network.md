@@ -1,9 +1,9 @@
 # Architecture & Network Contract — Cage Zero
 
-> Current scope: [Phase 1](../plan/phase-01-gameplay-demo/plan.md) ใช้ R6; Stang สั่ง “เริ่มเลย” เมื่อ 2026-10-20 อนุมัติ AGY implementation เฉพาะ [แผน00](../plan/phase-01-gameplay-demo/00-bootstrap-and-rig/plan.md) sourceอยู่ระหว่างcorrectionตามtasksของ00 ส่วน01–09และ [Phase 2](../plan/phase-02-full-match-and-progression/plan.md) ยังไม่เปิด implementation; localcommitเอกสารตามคำสั่งล่าสุดในagent.md ไม่มีsource/push/merge/deployapprovalใหม่
+> Current scope: [Phase 1](../plan/phase-01-gameplay-demo/plan.md) ใช้ R6; 00 OPEN / PAUSED_BY_OWNER, 01 OPEN / PENDING_TECHNICAL_REVIEW; Owner2026-10-21ให้AGYต่อยอด02จากfix-001ด้วยselectiveSandboxportตามHANDOFF02 ส่วน03ที่เหลือ–09และPhase2ยังรอgate ไม่อนุญาตcommit/push/merge/deployหรือปิดแผนจากscopeนี้
 
 ## 0. Source baseline และ Studio MCP
-- Source baseline ใน Git คือ `6d0f273dc174f0c1460e9ed8ce98e5aa4261b182` มีไฟล์หลายโมดูลอยู่แล้ว การมีโค้ดหรือสถานะ APPROVED เดิมยังไม่ใช่หลักฐานว่าแผนรอบปัจจุบันผ่านการอนุมัติ
+- Historical source baseline `6d0f273dc174f0c1460e9ed8ce98e5aa4261b182` มีหลายโมดูลอยู่แล้ว; รอบปัจจุบันใช้main617f523+workingtree/source lockในHANDOFF02 การมีโค้ดหรือสถานะAPPROVEDเดิมไม่ใช่หลักฐานรับรองงานปัจจุบัน
 - Prototype ที่ผู้ใช้ทดลองใน Studio คือ `FootballSandbox` ใน `sandboxcage-zero` (place `112091950831355`) ใช้ซอร์สคนละชุดกับ `src/`; ต้องเทียบ behavior ก่อนนำมาใช้ ไม่เพิ่มทุกพฤติกรรมของ prototype ลง PRD โดยอัตโนมัติ
 - เก็บ sandbox เป็น local reference ใน root `.sandbox/` และ ignore ด้วย `/.sandbox/`; snapshot แรกมี 7 สคริปต์พร้อม manifest ที่ `.sandbox/reference/football-sandbox/` ส่วน `.sandbox/football-sandbox/` เป็น ref ที่มีการแก้ต่อจากภายนอกรอบนี้
 - เมื่ออนุมัติลงมือแล้ว ใช้ Studio MCP โดยตรงและเก็บ source หลักใน repo ตรวจ source/path/hash ก่อนเขียน Studio ทุกครั้ง; ไม่ใช้ Rojo เป็นขั้นตอนหลัก
@@ -127,24 +127,30 @@ R6 ground height ใช้ `Left Leg.Size.Y + HumanoidRootPart.Size.Y/2 + HipHei
 
 **Decision Accepted / Delivery Planned, 2026-10-20** ผู้ใช้ยืนยันQ1–Q22ให้ปรับเอกสารตาม [Spec02](../specs/spec-02-duel-and-parry.md) ไม่มีimplementationใหม่และไม่เปลี่ยนสัญญา00 §5
 
+**Owner delta2026-10-21 & DOCS-20261024:** 02รับselectiveportจากprototype3ต่อจากfix-001: sprint/dash/kick/Passแบบเดียว3D/curve+segmentedgaugeและSlide เว้นท่าโยก; Poke/Body Checkยังทำใน03ภายหลัง ไม่มีLobPassแยก Contract/allowlist/verificationอยู่HANDOFF02/03 ไม่เปลี่ยนrig00/physics01
+
 ### Ownership / dependencies
 
 | เจ้าของ | รับผิดชอบ | ใช้ร่วม/ไม่ทำซ้ำ |
 | --- | --- | --- |
 | 01 CagePhysics | geometry/finite surfaces/ball collision kernel | 02ใช้catalog/solverเดียว; ไม่มีpossessionใน01 |
-| 02 Ball/player actions | ball state/ผู้ครองจริง/ทีมโหมดบุก, move/Sprint/Dash/jump, aim/ยิงส่ง/first-time, Stamina | เป็นsingle writerของบอล/ทรัพยากร; 03ร้องขอcontactและจ่ายcostผ่านseamนี้ |
-| 03 Skill Moves/defence | catalog5ท่า/3ช่อง/ดาว, Poke/Slide/Shoulder, action/CD/recovery, R6ท่าร่าง | ไม่ทำBallServiceหรือStaminaอีกชุด ไม่เปิดDuelEngine/Choicehandlerเก่า |
-| 04/05 | โกลและฟาวล์/ลูกนิ่ง | โกลมีสิทธิ์รับด้วยมือในเขตของตน; รับcontactต่อจาก02/03 |
-| 06 Debug/Training | sessionoverrides/defaultrestore/Dummy/scenarios | ใช้ค่าจูนที่ระบบเจ้าของประกาศ ไม่เขียนค่าถาวรหรือการแข่งขันโดยพลการ |
+| 02 Ball/player actions | ball state/ผู้ครองจริง/ทีมโหมดบุก, move/Sprint/Dash/jump, aim/ยิงส่ง/first-time, Stamina, Slideขั้นแรก+เกจขั้นต่ำจากSandbox | เป็นsingle writerของบอล/ทรัพยากร; 03ร้องขอcontactและจ่ายcostผ่านseamนี้ |
+| 03 Skill Moves/defence | เป้าหมาย 7 ท่าไม่ซ้ำ/3ช่อง/ดาว (5 แอนิเมชันอยู่ระหว่างปรับแก้รอตรวจรับ), Quick Poke/Body Checkภายหลัง, action/CD/recovery, R6ท่าร่าง; ใช้Slideseamที่02portแล้ว | ไม่ทำBallServiceหรือStaminaอีกชุด ไม่เปิดDuelEngine/Choicehandlerเก่า |
+| 04/05 | โกล (รอเปิด 4 GK Stats หลัง 04) และฟาวล์/ลูกนิ่ง | โกลมีสิทธิ์รับด้วยมือในเขตของตน; รับcontactต่อจาก02/03 |
+| 06 Debug/Training | sessionoverrides/defaultrestore/Dummy/scenarios (13 Stats, 16 Traits, 5 Archetypes) | ใช้ค่าจูนที่ระบบเจ้าของประกาศ ไม่เขียนค่าถาวรหรือการแข่งขันโดยพลการ |
 | 08 UI | ปุ่มcontext/3slots/Stamina/CD/recovery/feedbackและloadoutก่อนรอบ | ใช้serverstate ไม่แปลงlabelบนclientเป็นผลครองบอล |
-| Phase2 | gacha3กลุ่ม/ownership/Stats/ท่าเพิ่ม/settingsจริง/first-timepolish | ธุรกรรม/ข้อมูลถาวรเปิดหลังPhase1gate ไม่เพิ่มใน00หรือfixture03 |
+| Phase2 | gacha3กลุ่ม/ownership/13 Outfield Stats/16 Innate Traits/5 Archetypes/settingsจริง/first-timepolish | ธุรกรรม/ข้อมูลถาวรเปิดหลังPhase1gate ไม่เพิ่มใน00หรือfixture03 |
 
 02/03มีinput/diagnosticsขั้นต่ำในfixtureเพื่อทดสอบได้ก่อนUI08 จึงไม่มีdependencyวนกลับไป08; 03พึ่ง02 ไม่ให้02requireบริการ03เพื่อเริ่มบอลพื้นฐาน รายชื่อAPI/ชื่อserviceที่จะรับแทนDuelEngineต้องfreezeในHANDOFFของเจ้าของก่อนแก้source
 
 ### State และ input
 
 - แยกactualballholderกับAttack Context Team (ทีมที่ครองสำเร็จล่าสุด) ผู้ครองอาจเป็นnilตอนลูกชิ่งแต่contextยังอยู่ทีมเดิม
-- ทุกคนในทีมcontextใช้ยิง/ส่ง/ยิงโค้งโดยตรง ส่วนอีกทีมใช้Slide/Poke/Shoulder; เพิ่มcontextversionเพื่อให้คำขอที่staleตรวจได้โดยไม่เปลี่ยนท่าเดิมกลางคัน
+- ผังปุ่ม TARGET ตาม context ล่าสุด:
+  - ฝ่ายบุก (ทีมเราครองบอล / บอลอิสระหลังบุก): `LMB` = ยิง (Shoot), `E` = ส่ง (Pass), `RMB` = ยิงโค้งโดยตรง (Direct Curve Shot)
+  - ฝ่ายรับ (ทีมคู่แข่งครองล่าสุด): `LMB` = Slide Tackle (portใน02), `E` = Quick Poke (รอ03), `RMB` = Body Check / พุ่งชน (รอ03)
+  - ปลดระวาง `MMB` ในผังปุ่มเป้าหมาย TARGET; ข้อยกเว้นชาร์จยิง + กด `E` ทำงานเป็น FakeShot Cancel เล็งทิศเดิมยังคงอยู่
+  - AS-IS ในโค้ดปัจจุบัน: runtime มี `RMB` Poke และ `MMB` CagePress (เอกสารนี้บันทึก TARGET เท่านั้น ไม่แก้โค้ด)
 - teamcontextเปลี่ยนเฉพาะการครองสำเร็จ/resetที่ระบุไว้ ไม่เปลี่ยนจากwall/ceiling/blockedhighball; fixtureระบุinitialteam/ballชัดเจน ไม่ต้องเปิดfullmatch
 - inputมีsemanticintentตั้งแต่เริ่มกด Serverตรวจcontext/ballreach/contact/สถานะและcancelเมื่อเงื่อนไขหาย ไม่ตีความShootที่เริ่มค้างให้กลายเป็นSlide
 - nativeavatar movement/replicationจาก00คงเดิม การDirectionalJumpล็อกทิศกลางอากาศ/ตรวจDashและmodifiersเป็นงาน02/03 ไม่เปิดเพิ่มในbootstrap00
@@ -153,7 +159,7 @@ R6 ground height ใช้ `Left Leg.Size.Y + HumanoidRootPart.Size.Y/2 + HipHei
 
 - บอลมีhitboxตลอด ไม่ทำI-frame/ล็อกคู่/หยุดฟิสิกส์ให้animationเล่น; ดาวสูงไม่ใช่คำตอบชนะสกัด
 - บอลพื้นรับไหวเข้าครองได้หลังcontactสำเร็จ ลูกแรง/สูงเด้งอิสระ; friendlyplayerผ่านตัวกันได้ แต่บอลยังต้องเล่นตามcontactของมัน
-- ชนคู่แข่งธรรมดาช้าลงไม่ยึดบอลอัตโนมัติ Shoulderสำเร็จเสียเหลี่ยม+บอลหลุด Poke/Slideครองได้เมื่อรับไหว; ฟาวล์ให้05ตัดสินต่อ
+- ชนคู่แข่งธรรมดาช้าลงไม่ยึดบอลอัตโนมัติ; Body Check พุ่งชนด้านหน้าคำนวณแรงปะทะจากค่า Strength ต่าง (`attackerStrength - defenderStrength`) ทำให้คู่แข่งชะงักและบอลกระเด็นหลุดเป็น Loose Ball (ไม่มี auto-possession, ไม่มี I-frame, วืดติด recovery); Quick Poke จิ้มฉกสั้น / Slide ไกลพลาดรอลุก; ฟาวล์ให้05ตัดสินต่อ
 - ออกท่าผ่านready/windup/contact/end/recoveryตามข้อมูลท่า Serverเป็นเจ้าของvalidtiming แอนิเมชันclientแสดงตามและไม่ส่งผลชนที่เชื่อได้เอง
 - ใช้Stamina/cooldown/recoveryส่วนกลาง จ่ายไม่พอไม่ออกท่า คูลดาวน์แยกต่อskillพร้อมช่วงจบท่าร่วม พลาดล็อกSkill/Dash/เข้าสกัดซ้ำแต่ยิงส่งเมื่อท่าเอื้อ สไลด์ต้องลุก
 - generation/round/tokenยกเลิกคำขอ/tracks/effectsเก่าเมื่อrespawn/reset/leave ไม่มีtimerมาแก้ตัวใหม่
@@ -170,7 +176,7 @@ R6 ground height ใช้ `Left Leg.Size.Y + HumanoidRootPart.Size.Y/2 + HipHei
 
 - ตรวจ12baseline definitions/gettersของ00ตามเดิม การมีDuel*/Parry*remoteไม่ใช่สิทธิ์ให้เปิดhandler; 02/03ต้องออกแบบintent/state/snapshotcontractและscope migrationก่อนลงมือ ไม่reuseชื่อDuelChoiceSubmitเพื่อส่งสกิลคนละความหมาย
 - Validate action/slot/ดาว/round/character/context/finiteaim/cost/rate/CD/ballreachบนServer; clientส่งintent ไม่ส่งwinner/guaranteedballclaim
-- ไม่มีการเพิ่มremote/schema/sourceในรอบเอกสารนี้ ปัญหาAPIที่พบตอนเปิดแผนแก้เฉพาะallowlistของHANDOFFนั้น
+- รอบQ22เดิมไม่มีการเพิ่มremote/schema/source; Ownerdelta2026-10-21อนุญาตmigrationเฉพาะallowlist/intent contractในHANDOFF02§6 โดยคง12Networkdefinitions/gettersเดิม
 - Gateตาม [TDD](../tdd/master-test-cases.md): actualruntime teamcontext/first-time/ทุกskillและdefence/ต้นทุน/recovery/contacts/cleanup พร้อมvisualอ่านท่าได้ แยกจากstaticchecks/JSsimulation; spectatorผลตามsessionที่ตรวจจริง
 
 ## 7. Rebound Rush — Event 4 / Accepted design
@@ -187,3 +193,27 @@ R6 ground height ใช้ `Left Leg.Size.Y + HumanoidRootPart.Size.Y/2 + HipHei
 - Low-Roof07เป็นtemporarygeometryoverride: flatroofundersideสูงจากplayingfloor12studsทุกprofile ปิดresponseของroof/bevelเดิมเฉพาะช่วงevent ภาพและsolverอ่านsurfaceheight/timeเดียวกันระหว่างลด/คง/คืน
 - โกล/ผู้เล่น/บอลต้องไม่ติดหรือทะลุmovingroof surfacevelocity/contacttimeรองรับตามcollisionowner ไม่ใช้visualTweenอย่างเดียวหรือคัดกติกาReboundRushมาเพิ่มspeed
 - latejoin/respawn/reset/cancel/switchใช้event/round/generationguards ล้างoverrides/effects/temporarycollidersแล้วคืนค่าที่ownerกำหนด ไม่เขียนpersistence/source00
+
+### Selective Sandbox port — ขอบเขตการปรับใช้02
+
+ใช้BallService/ballloop/resourcewriterเดิม คง12Networkdefinitions/gettersและR6schema; ไม่คัดR15knee/ankle,สนาม,score,Dummytools,Feint/SkillslotsหรือremotefolderSandboxเข้ามา การดึงเกจ/controlsที่เลือกก่อน08เป็นOwnerexceptionเฉพาะ02 การดึงVFXจำกัดhelperจำเป็นของselectedactions ไม่มีeffectpack/ownership
+
+Passcanonicalมีแบบเดียวเล็ง3D/charge รับGroundPassเป็นmigrationaliasทางเดียว RejectLobPassไม่mutation ใช้servergeneration/contextversion/intentidและchargeactionที่ล็อกตอนเริ่ม ไม่แปลงinputบุกเป็นSlideเพียงเพราะไม่มีบอลส่วนตัว รายละเอียดschema/replicationชื่อfields/targetpathsในHANDOFF02§6มีอำนาจสำหรับรอบนี้
+
+### R6 pose / Shift Lock ownership — Owner2026-10-21
+
+02adaptselectedprototype3proceduralposesผ่านR6jointmappingลง6Motor6Dเดิม มีposewriterเดียวใต้R6controller lifecycleและcamera/rotationresolverเดียว; Slide/jumpdirectionlockมีpriorityเหนือcamera-yaw ขณะmenu/focuslost/deathคืนmouse/camera/poseตามgeneration คงnativecamera/rig00ไม่anchorroot ไม่เปิดCutsceneController/ballcontrollerอีกชุด
+
+selectedSandboxparamsเป็นseedแทนค่าที่fix-002ปั้นต่างออกไปโดยไม่มีmapping คงtargetballradius/geometry01 Stamina100→1แปลงอัตราส่วนเท่าเดิม รายละเอียดprofile/state/curvefoot/ShiftLock/allowlistในHANDOFF02§7 เอฟเฟกต์เต็ม07/08/Phase2ยังรอ ไม่มีผลรับรองLivePlay/visualจากsourceparity
+
+
+## 9. Foundation Architecture Extension — Plan 00 (DOCS-ARCH-20261024 - A-01..A-06 Harmonized)
+
+Owner Stang กำหนดให้สร้างสเปกสถาปัตยกรรมรากฐาน 2 ฉบับภายใต้ Plan 00 (STILL-OPEN) เพื่อรองรับระบบอัปเกรด/Limit Break และ Monetization/Identity/Celebration โดยจัดทำเป็นเอกสารสเปกเพื่อรอการ commit แยกในอนาคต:
+- **[Upgrade & Limit Break Architecture](../plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/designs/upgrade-limit-break.md):**
+  - **Progression Authority & Durable Aggregates (A-02):** Server เป็น Authoritative บริหารจัดการการ Uncap การ์ด (`+0` ถึง `+5`), ตรวจสอบการกินการ์ดซ้ำ/เศษการ์ด (อัตรา 1, 1, 2, 2, 3 รวม 9 ใบ), การจัดสรรแต้มสเตตัส (2 แต้มที่ `+2`, 3 แต้มที่ `+3` รวม 5 แต้ม แคป 1.15), การเลือกเบิกเนตร 1 Trait ที่ `+3` (สิทธิ์คงค้างถ้าเริ่มที่ 0 Trait), และสล็อต Trait พิเศษ 1 ช่องที่ `+5` (เลือกได้จาก Trait ในเกม ห้ามซ้ำเดิม) โดยยึดหลัก Durable Single-Owner Aggregate Invariants (ตรวจสอบความถูกต้องกับ state ที่กำลังจะคอมมิต, บันทึก Dedupe Key และตัดวัตถุดิบร่วมกันแบบอะตอมิกภายใน `DataStore:UpdateAsync` เดียวบนคีย์โปรไฟล์ผู้เล่น, เผยแพร่สถานะเฉพาะหลังบันทึกสำเร็จ, และกู้คืนความคลาดเคลื่อนจากผลลัพธ์ที่ไม่แน่นอน [Uncertain Result] ผ่าน Reconcile โดยไม่ตัดของซ้ำ)
+  - **Stamina, Dynamic Stats & Action Modifiers (A-01, A-04):** คำนวณฝั่ง Server โดยแยก Static Derived Profile (แคชได้ตอน spawn) ออกจาก Dynamic Action Evaluation (ประเมินสดห้ามแคชค้าง); ที่ `+4` คิดค่า Stamina สกิล/Dash ที่ 0.88x; ที่ `+5` คิดค่า Stamina เฉพาะ 5 กลุ่มแอ็กชันตาม U3 (Skill Moves, Dash, Slide Tackle, Quick Poke, Body Check) ที่ 0.80x (ไม่คูณทบซ้ำ และแอ็กชัน 0 cost คงเดิม); ตาราง Tier II คงเงื่อนไข Tier I, คง Restitution Cap 1.15 สำหรับ Wall-Breaker, คืนเอฟเฟกต์ลด Stamina ของเหยื่อใน Bulldozer Impact โดยปริมาณตัวเลขเป็น PENDING TUNING และคงระยะชะงัก +0.15s ของ Tier I เดิม, กำหนด Hitbox Clean Sweeper เป็นการแทนที่ (+1.1 Studs), คงขนาดตัวเลขคืน Stamina ตาม Source (10/12/15/20%) โดยรูปแบบฐานคิดเป็น PROPOSED TUNING และ Velvet Touch trapStaminaCost = 0 ตาม Source
+- **[Monetization, Visual Identity & Celebration Architecture](../plan/phase-01-gameplay-demo/00-bootstrap-and-rig/assets/designs/monetization-identity-celebration.md):**
+  - **PolicyService Independent Gates (A-03):** ตรวจสอบผ่าน `PolicyService:GetPolicyInfoForPlayerAsync` ครอบคลุม 2 เกตอิสระ: เกตการซื้อสุ่ม (`ArePaidRandomItemsRestricted`) และเกตการแลกเปลี่ยน (`IsPaidItemTradingAllowed`) บังคับใช้สดกับผู้เล่นทั้งสองฝ่าย (Sender/Receiver) ในการเทรด P2P และทั้งผู้ตั้งขาย/ผู้ซื้อในตลาด สำหรับไอเทมที่มีประวัติเงินจริง (PaidGacha, StarterPack, DirectRobux); บังคับหลักการ Fail-Closed เมื่อมีข้อผิดพลาดเครือข่าย; แสดงเรทสุ่มอย่างโปร่งใส; บันทึกประวัติ `ItemProvenance`; ส่วนข้อเสนอแบนการเทรดไอเทมสุ่มเงินจริงแบบเหมารวม (Blanket Ban) ระบุสถานะเป็น PROPOSED PRODUCT CHOICE
+  - **Visual Identity System (A-05):** เรนเดอร์ 3 ชั้นบน Single Custom R6 (Bib Cyan/Crimson แสดงสังกัดทีม + Signature Identity Kit + Face Anime Decal) โดยไม่ทำลายสัดส่วน R6 มาตรฐาน พร้อมระบุว่า 6 อัตลักษณ์ตัวละครเป็นเพียงตัวอย่างเชิงภาพลักษณ์ (Illustrative Candidates) ที่ไม่มีการรับรองความปลอดภัยทางกฎหมาย และสิทธิ์ยังไม่ได้รับการตรวจสอบ
+  - **Match Flow Authority & Coherent Timeline (A-06):** โมดูล `00-match-flow` มีอำนาจเด็ดขาดในการหยุดเวลานาฬิกาการแข่งขัน ณ จุดเริ่ม `T_goal`, คัตซีนเล่น 3.0–4.0s พร้อม Anime Impact Frame 0.15s, เสนอทางเลือกเชิงเวลาเพื่อสอดคล้องกับคณิตศาสตร์เวลา (เช่น Dynamic Deadline เพดาน 5.0s, Request Window 0.5s ใต้ Deadline 4.5s, หรือ Server Pre-selection) โดยคงสถานะตัวเลือกเป็น PROPOSED PENDING OWNER SELECTION

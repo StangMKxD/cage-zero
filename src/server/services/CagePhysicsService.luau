@@ -66,6 +66,7 @@ local ROOF_BEVEL_STUDS = Constants.ROOF_BEVEL_STUDS
 local ROOF_EAVE_HEIGHT_Y = Constants.ROOF_EAVE_HEIGHT_Y
 local BALL_RADIUS = Constants.BALL_RADIUS
 local FLOOR_RESTITUTION = Constants.FLOOR_RESTITUTION
+local FLOOR_SMASH_RESTITUTION = Constants.FLOOR_SMASH_RESTITUTION or 0.84
 local STANDARD_WALL_RESTITUTION = Constants.STANDARD_WALL_RESTITUTION
 local TRANSOM_RESTITUTION = Constants.TRANSOM_RESTITUTION
 local BUMPER_RESTITUTION = Constants.BUMPER_RESTITUTION
@@ -1342,7 +1343,8 @@ local function enforceOuterPolytopeContainment(
 	if p.Y < radius then
 		p = Vector3.new(p.X, radius, p.Z)
 		if v.Y < 0 then
-			v, speedPreCap = CagePhysicsService.ComputeReboundVelocity(v, Vector3.new(0, 1, 0), FLOOR_RESTITUTION)
+			local bounceRestitution = if v.Y < -32 then FLOOR_SMASH_RESTITUTION else FLOOR_RESTITUTION
+			v, speedPreCap = CagePhysicsService.ComputeReboundVelocity(v, Vector3.new(0, 1, 0), bounceRestitution)
 			hitTag = "CageFloor"
 		end
 	end
@@ -3214,12 +3216,12 @@ local function setupGrittyLighting()
 		atmosphere = Instance.new("Atmosphere")
 		atmosphere.Parent = Lighting
 	end
-	atmosphere.Density = 0.38
+	atmosphere.Density = 0.20
 	atmosphere.Offset = 0.22
 	atmosphere.Color = Color3.fromRGB(155, 165, 178)
 	atmosphere.Decay = Color3.fromRGB(110, 118, 128)
-	atmosphere.Glare = 0.10
-	atmosphere.Haze = 2.5
+	atmosphere.Glare = 0.0
+	atmosphere.Haze = 0.0
 
 	local colorCorrection = Lighting:FindFirstChild("GrittyColorCorrection")
 	if not colorCorrection then
@@ -3238,9 +3240,17 @@ local function setupGrittyLighting()
 		bloom.Name = "GrittyBloom"
 		bloom.Parent = Lighting
 	end
-	bloom.Intensity = 0.55
-	bloom.Size = 28
-	bloom.Threshold = 0.80
+	bloom.Enabled = false
+	bloom.Intensity = 0.0
+	bloom.Size = 24
+	bloom.Threshold = 2.0
+
+	-- Disable any duplicate/stacked bloom in Lighting to eliminate glowing halos (Owner §14.4)
+	for _, child in ipairs(Lighting:GetChildren()) do
+		if child:IsA("BloomEffect") and child ~= bloom then
+			child.Enabled = false
+		end
+	end
 end
 
 -- Builds tangible, realistic everyday urban street assets for in-field gameplay mechanics

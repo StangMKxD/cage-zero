@@ -10,12 +10,15 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Constants = require(Shared:WaitForChild("Constants"))
 local Network = require(Shared:WaitForChild("Network"))
 local Types = require(Shared:WaitForChild("Types"))
-local CardConfigs = require(Shared:WaitForChild("configs"):WaitForChild("CardConfigs"))
-local ChoiceConfigs = require(Shared:WaitForChild("configs"):WaitForChild("ChoiceConfigs"))
+local ConfigsFolder = Shared:WaitForChild("configs")
+local CardConfigs = require(ConfigsFolder:WaitForChild("CardConfigs"))
+local ChoiceConfigsInst = ConfigsFolder:FindFirstChild("ChoiceConfigs")
+local ChoiceConfigs: any = if ChoiceConfigsInst then require(ChoiceConfigsInst) else {}
 
 local Services = script.Parent
 local BallService = require(Services:WaitForChild("BallService"))
-local ParryService = require(Services:WaitForChild("ParryService"))
+local ParryServiceInst = Services:FindFirstChild("ParryService")
+local ParryService: any = if ParryServiceInst then require(ParryServiceInst) else {}
 local RigAndCardService = require(Services:WaitForChild("RigAndCardService"))
 
 export type ActiveDuelSession = {
@@ -217,6 +220,10 @@ function DuelEngineService.StartDuel(
 	defender: Player,
 	gameMode: string?
 ): ActiveDuelSession?
+	-- Retired per Q22 / Spec 02 (Choice Duel replaced by Continuous Football & SkillMoveService)
+	if true then
+		return nil
+	end
 	if activeDuelIdByUserId[attacker.UserId] ~= nil or activeDuelIdByUserId[defender.UserId] ~= nil then
 		return nil
 	end
@@ -392,61 +399,16 @@ function DuelEngineService.ResolveDuelSession(duelId: string): (number?, string?
 	return winnerUserId, cutsceneAnimId, appliedBuff
 end
 
-function DuelEngineService.ScanProximityForDuel(gameMode: string?)
-	local possessorUserId = BallService.GetPossessorUserId()
-	if possessorUserId == nil then
-		return
-	end
-	if activeDuelIdByUserId[possessorUserId] ~= nil then
-		return
-	end
-
-	local attacker = Players:GetPlayerByUserId(possessorUserId)
-	if not attacker or not attacker.Character or not attacker.Character.PrimaryPart then
-		return
-	end
-
-	local atkPos = attacker.Character.PrimaryPart.Position
-	local atkTeam = BallService.GetPlayerTeamSide(possessorUserId)
-
-	for _, candidate in ipairs(Players:GetPlayers()) do
-		if candidate.UserId ~= possessorUserId and activeDuelIdByUserId[candidate.UserId] == nil then
-			local candTeam = BallService.GetPlayerTeamSide(candidate.UserId)
-			if candTeam ~= atkTeam or gameMode == "1v1v1" then
-				local candChar = candidate.Character
-				if candChar and candChar.PrimaryPart then
-					local dist = (candChar.PrimaryPart.Position - atkPos).Magnitude
-					if dist <= Constants.CHOICE_DUEL_TRIGGER_DISTANCE_STUDS then
-						DuelEngineService.StartDuel(attacker, candidate, gameMode)
-						break
-					end
-				end
-			end
-		end
-	end
+function DuelEngineService.ScanProximityForDuel(_gameMode: string?)
+	-- Retired per Q22 / Spec 02 (no Choice Duel proximity triggers)
+	return
 end
 
 function DuelEngineService.Init()
-	if isInitialized then
-		return
-	end
+	-- Retired per Q22 / Spec 02: DuelChoiceSubmit remote listener is disabled; SkillMoveService is authoritative.
 	isInitialized = true
-
-	local submitEvent = Network.GetRemoteEvent(Network.Names.DuelChoiceSubmit)
-	submitEvent.OnServerEvent:Connect(function(player: Player, duelId: any, selectedChoiceId: any)
-		if Network.IsNonEmptyString(duelId, 64) and Network.IsNonEmptyString(selectedChoiceId, 64) then
-			DuelEngineService.SubmitDuelChoice(player, duelId :: string, selectedChoiceId :: string)
-		end
-	end)
-
-	Players.PlayerRemoving:Connect(function(player: Player)
-		playerPositionByUserId[player.UserId] = nil
-		signatureCooldownUntilByUserId[player.UserId] = nil
-		local activeId = activeDuelIdByUserId[player.UserId]
-		if activeId then
-			DuelEngineService.ResolveDuelSession(activeId)
-		end
-	end)
 end
+
+DuelEngineService.IsRetired = true
 
 return table.freeze(DuelEngineService)

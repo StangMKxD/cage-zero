@@ -9,11 +9,12 @@
 โฟลเดอร์แผนย้ายอยู่ใต้ phase จริงแล้ว ใช้ชื่อ phase + ชื่อแผนเป็นที่อยู่เดียว ไม่มีรหัส feature อีกชุดเพื่อ map ไปยังโฟลเดอร์แผนแบน ๆ เดิม และไม่มีการทำหลายแผนพร้อมกันจากการจัดโครงนี้
 
 ## Scope และ gate
-- Phase 1 คง feature ที่ผู้ใช้เลือกครบ: สนาม/Rig/physics, movement/เลี้ยง, ยิงส่ง/ชาร์จ, กลางอากาศ/บล็อก, Skill5ท่า/3ช่อง/เกมรับ/recovery, โกลคน/AI, ฟาวล์/ลูกนิ่ง, ซ้อม/หุ่น, อีเวนต์6แบบและUI ที่เกี่ยวข้อง
-- ระบบแมตช์เต็ม 5 นาที/ตัดสินเสมอ/สุ่มนักเตะและstats/สุ่มสกิล/collection/สุ่มเอฟเฟค/ตลาด/settingsจริง/first-timepolishรอ Phase 2 หลัง Phase 1 เสร็จครบและผ่าน review gate
-- ตัวควบคุมฉากฝึกใน Phase 1 ใช้ทดสอบโกล/ลูกนิ่ง/อีเวนต์ได้ แต่ไม่ถือว่าเปิดวงจรแมตช์เต็ม
-- สกิลยิง/ส่งจากการ์ดและ Trait ที่ตัดไม่กลับมาเพียงเพราะเพิ่ม base stats นักเตะ
-- กติกาที่ตกลงแล้วเก็บที่ [notes](phase-01-gameplay-demo/01-cage-physics/notes.md) ระบบที่เลื่อนจะ grill เมื่อใกล้ทำ; source หลักคงใน repo และใช้ Studio MCP โดยตรง
+- Phase 1 คง feature ที่ผู้ใช้เลือกครบ: สนาม/Rig/physics, movement/เลี้ยง, ยิงส่ง/ชาร์จ, กลางอากาศ/บล็อก, Skill Moves (เป้าหมาย 7 ท่าไม่ซ้ำ / 3 ช่อง, 5 ท่าแอนิเมชันอยู่ระหว่างปรับแก้รอตรวจรับ)/เกมรับ/recovery, โกลคน/AI, ฟาวล์/ลูกนิ่ง, ซ้อม/หุ่น, อีเวนต์6แบบและUI ที่เกี่ยวข้อง
+- ระบบแมตช์เต็ม 5 นาที/ตัดสินเสมอ/สุ่มนักเตะและ 13 Outfield Stats/16 Innate Traits/5 Archetypes/สุ่มสกิล/collection/สุ่มเอฟเฟค/ตลาด/settingsจริง/first-timepolishรอ Phase 2 หลัง Phase 1 เสร็จครบและผ่าน review gate
+- ตัวควบคุมฉากฝึกใน Phase 1 ใช้ทดสอบโกล/ลูกนิ่ง/อีเวนต์ และมีแผง Debug จูน 13 Stats / 16 Traits / 5 Presets เฉพาะ session ได้ แต่ไม่ถือว่าเปิดวงจรแมตช์เต็ม
+- สกิลยิง/ส่งจากการ์ดและ Trait ที่ตัดไม่กลับมา; Traits เป็นคุณสมบัติติดตัวละครเท่านั้น (Innate Traits 0, 1, 2, ... รายการ) และถอดระบบ Trait Slots บนชุด Battle Threads ออกจาก Target
+- **Foundation Architecture Extension (DOCS-ARCH-20261024):** ออกแบบสเปกสถาปัตยกรรมรากฐานใน Plan 00 สำหรับระบบอัปเกรด/Limit Break (+0 ถึง +5) และระบบ Monetization/Visual Identity/Celebration ตามคำตัดสิน Owner U1–U13 รายละเอียดใน [Upgrade Design](phase-01-gameplay-demo/00-bootstrap-and-rig/assets/designs/upgrade-limit-break.md) และ [Monetization Design](phase-01-gameplay-demo/00-bootstrap-and-rig/assets/designs/monetization-identity-celebration.md); การลงโค้ดจริงยัง DEFERRED
+- กติกาที่ตกลงแล้วเก็บที่ [notes](phase-01-gameplay-demo/01-cage-physics/notes.md) (รวม [N-61](phase-01-gameplay-demo/01-cage-physics/notes.md#n-61--accepted-decision-13-outfield-base-stats-4-deferred-gk-stats-16-innate-traits-5-character-archetypes-and-body-check-target-mechanics-2026-10-24)) ระบบที่เลื่อนจะ grill เมื่อใกล้ทำ; source หลักคงใน repo และใช้ Studio MCP โดยตรง
 
 ## ประวัติและอำนาจ
 รายงานเก่า/assets/runs ย้ายตามโฟลเดอร์โดยไม่ลบ ชื่อ/เลขเก่าในรายงานเป็นประวัติ ไม่ใช่ APPROVED ของแผนใหม่ งานที่แยกจากแผนเดิมถูกแบ่งขอบเขตเป็นแผนเฉพาะใน phase ที่ถูกต้องแล้ว
@@ -33,6 +34,6 @@ Stang สั่ง “เริ่มเลย” อนุมัติ AGY ล�
 
 ## Accepted Q22 — 2026-10-20
 
-ฟุตบอลต่อเนื่องแทนChoice; เก็บDash ท่า3ช่องแทนFeint ตัวเริ่มต้นSkill5ดาว1ตัว+5ท่าฟรี ไม่ขยาย00 รายละเอียด [Spec02](../specs/spec-02-duel-and-parry.md) และN37–N44 ส่วนDebug/DummyPhase1/06และPhase2deferralsระบุในphaseplansแล้ว งานอนุมัติรอบนี้เป็นเอกสารเท่านั้น
+ฟุตบอลต่อเนื่องแทนChoice; เก็บDash ท่า3ช่องแทนFeint ตัวเริ่มต้นSkill5ดาว1ตัว (ประวัติเดิม5ท่าฟรี ปัจจุบันเป้าหมาย 7 ท่าไม่ซ้ำ/3ช่องตาม HANDOFF §Q) ไม่ขยาย00 รายละเอียด [Spec02](../specs/spec-02-duel-and-parry.md) และN37–N44 ส่วนDebug/DummyPhase1/06และPhase2deferralsระบุในphaseplansแล้ว งานอนุมัติรอบนี้เป็นเอกสารเท่านั้น
 
 Stangสั่ง “ถ้าเสร็จ ไม่มีอะไรค้างแล้ว commit เลย” อนุญาตlocalcommitเอกสารรอบนี้หลังตรวจ consistency/links/diff ไม่รวมsource/ผลรีวิวและไฟล์แผน00/push/merge/deploy; สถานะรายงานเก่าด้านบนเป็นประวัติอำนาจแต่ละรอบไม่ใช่สิทธิ์เพิ่ม

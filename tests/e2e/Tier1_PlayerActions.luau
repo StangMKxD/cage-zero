@@ -204,6 +204,57 @@ local function runPlayerActionsTests(TestHarness: any)
 			Expect(st.position.Y).toBeCloseTo(Constants.BALL_RADIUS, 0.05)
 		end)
 
+		SafeTest("TC-P02-04B_ProgressiveTouchDribbleRollsAhead", function()
+			local p1, char1, root1 = createMockPlayer(1040, "SprintDribbler", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, 1))
+			BallService.SetPlayerTeamSide(1040, "South")
+			BallService.SetPossessor(1040)
+			root1.AssemblyLinearVelocity = Vector3.new(0, 0, 26.0)
+
+			-- Step physics for 0.10s (player moves forward, touches ball ahead)
+			BallService.StepPhysics(0.05)
+			BallService.StepPhysics(0.05)
+			local st = BallService.GetBallState()
+
+			-- Ball must have positive rolling forward velocity (unlocked, physics touch)
+			Expect(st.velocity.Z).toBeGreaterThan(15.0)
+			-- Ball position must lead ahead of player root (at least > 2.0 studs)
+			Expect(st.position.Z).toBeGreaterThan(root1.Position.Z + 2.0)
+			Expect(st.position.Y).toBeCloseTo(Constants.BALL_RADIUS, 0.05)
+		end)
+
+		SafeTest("TC-P02-04C_CloseControlTightLead", function()
+			local p1, char1, root1 = createMockPlayer(1041, "CloseDribbler", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, 1))
+			char1:SetAttribute("IsCloseControl", true)
+			BallService.SetPlayerTeamSide(1041, "South")
+			BallService.SetPossessor(1041)
+			root1.AssemblyLinearVelocity = Vector3.new(0, 0, 10.0)
+
+			-- Step physics for 0.05s
+			BallService.StepPhysics(0.05)
+			local st = BallService.GetBallState()
+
+			-- Close control maintains tight lead (< 2.5 studs)
+			Expect(st.position.Z).toBeLessThan(root1.Position.Z + 2.5)
+			Expect(st.position.Y).toBeCloseTo(Constants.BALL_RADIUS, 0.05)
+		end)
+
+		SafeTest("TC-P02-04D_DragBackPullsBallRearward", function()
+			local p1, char1, root1 = createMockPlayer(1042, "DragBackRunner", Vector3.new(0, 1.5, 10), Vector3.new(0, 0, 1))
+			char1:SetAttribute("RequestDragBack", true)
+			BallService.SetPlayerTeamSide(1042, "South")
+			BallService.SetPossessor(1042)
+			root1.AssemblyLinearVelocity = Vector3.new(0, 0, -8.0) -- moving backwards
+
+			-- Step physics for 0.05s
+			BallService.StepPhysics(0.05)
+			local st = BallService.GetBallState()
+
+			-- Ball velocity must be zeroed for controlled backward roll
+			Expect(st.velocity.Magnitude).toBeCloseTo(0.0, 0.1)
+			-- Ball is drawn toward rear of player (Z <= 10.5)
+			Expect(st.position.Z).toBeLessThan(10.5)
+		end)
+
 		SafeTest("TC-P02-05_StaminaExhaustionWidensDribbleTouch", function()
 			local p1, char1, root1 = createMockPlayer(1003, "ExhaustedRunner", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, 1))
 			BallService.SetPossessor(1003)
@@ -261,7 +312,8 @@ local function runPlayerActionsTests(TestHarness: any)
 			Expect(ok1).toBeTrue()
 			local st1 = BallService.GetBallState()
 			Expect(st1.inFlightAction).toBe("Pass")
-			Expect(st1.velocity.X).toBeGreaterThan(40.0)
+			Expect(st1.velocity.Magnitude).toBeGreaterThanOrEqual(24.0)
+			Expect(st1.velocity.Magnitude).toBeLessThanOrEqual(26.0)
 			Expect(st1.velocity.Y).toBeGreaterThan(1.0)
 
 			-- 2. Legacy GroundPass alias: functions as Pass
@@ -270,7 +322,8 @@ local function runPlayerActionsTests(TestHarness: any)
 			Expect(ok2).toBeTrue()
 			local st2 = BallService.GetBallState()
 			Expect(st2.inFlightAction).toBe("Pass")
-			Expect(st2.velocity.X).toBeGreaterThan(40.0)
+			Expect(st2.velocity.Magnitude).toBeGreaterThanOrEqual(24.0)
+			Expect(st2.velocity.Magnitude).toBeLessThanOrEqual(26.0)
 
 			-- 3. LobPass rejection: removed action must return false, retain possessor, not mutate ball flight
 			BallService.SetPossessor(1006)
@@ -1654,6 +1707,477 @@ local function runPlayerActionsTests(TestHarness: any)
 
 			Expect(charM:GetAttribute("LastActionStatus")).toBe("Accepted")
 			Expect(charM:GetAttribute("LastResolvedAction")).toBe("DirectShoot")
+		end)
+
+		-- TC-P02-55: Character-Relative Movement Basis & Signed Ball Curvature (§19)
+		SafeTest("TC-P02-55_CharacterRelativeMovementAndSignedBallCurvature", function()
+			-- 1. Verify ResolveCurveSideFromMovement prioritizes actual character-relative movement over raw keys
+			local cfNorth = CFrame.lookAt(Vector3.new(0, 1.5, 0), Vector3.new(0, 1.5, -1)) -- facing -Z, RightVector = +X
+			-- Actual left movement (-X) even if keyDDown is true -> must return "Left" (Finesse)
+			local sideActualLeft = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfNorth, Vector3.new(-1, 0, 0), false, true)
+			Expect(sideActualLeft).toBe("Left", "Actual left character-relative movement must override contradictory raw D key")
+			-- Actual right movement (+X) even if keyADown is true -> must return "Right" (Trivela)
+			local sideActualRight = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfNorth, Vector3.new(1, 0, 0), true, false)
+			Expect(sideActualRight).toBe("Right", "Actual right character-relative movement must override contradictory raw A key")
+			-- Pure forward movement (-Z) -> must return "Neutral"
+			local sideForward = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfNorth, Vector3.new(0, 0, -1), false, false)
+			Expect(sideForward).toBe("Neutral")
+			-- Diagonal W+A ((-0.707, 0, -0.707)) -> localMove.X = -0.707 < -0.12 -> "Left"
+			local sideDiagWA = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfNorth, Vector3.new(-1, 0, -1).Unit, false, false)
+			Expect(sideDiagWA).toBe("Left")
+			-- Diagonal W+D ((+0.707, 0, -0.707)) -> localMove.X = +0.707 > +0.12 -> "Right"
+			local sideDiagWD = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfNorth, Vector3.new(1, 0, -1).Unit, false, false)
+			Expect(sideDiagWD).toBe("Right")
+			-- Stationary fallback: zero MoveDirection uses raw key state
+			local sideStatA = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfNorth, Vector3.zero, true, false)
+			local sideStatD = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfNorth, Vector3.zero, false, true)
+			Expect(sideStatA).toBe("Left")
+			Expect(sideStatD).toBe("Right")
+
+			-- 2. Verify Rotated Character (facing +Z, RightVector = -X): world +X is now character LEFT!
+			local cfSouth = CFrame.lookAt(Vector3.new(0, 1.5, 0), Vector3.new(0, 1.5, 1)) -- facing +Z, RightVector = -X
+			local sideRotLeft = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfSouth, Vector3.new(1, 0, 0), false, false)
+			local sideRotRight = PlayerActionPoseConfigs.ResolveCurveSideFromMovement(cfSouth, Vector3.new(-1, 0, 0), false, false)
+			Expect(sideRotLeft).toBe("Left", "World +X is character-relative Left when facing +Z")
+			Expect(sideRotRight).toBe("Right", "World -X is character-relative Right when facing +Z")
+
+			-- 3. Prove Signed Ball Curvature in World & Aim-Relative Frame (facing -Z, aiming -Z, rightVec = +X):
+			--    A / Left (Finesse, inside RIGHT foot) must curl RIGHT-TO-LEFT (-rightVec = -X)
+			--    D / Right (Trivela, outside RIGHT foot) must curl LEFT-TO-RIGHT (+rightVec = +X)
+			local pCurve, charCurve, _ = createMockPlayer(1062, "SignedCurveTester", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1062, "North")
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1062)
+
+			local aimNorth = Vector3.new(0, 0, -1)
+			local rightOfAim = Vector3.new(-aimNorth.Z, 0, aimNorth.X).Unit -- (+1, 0, 0)
+
+			local okFin = BallService.ExecuteKick(pCurve :: any, "CurveShoot", aimNorth, 0.85, "intent_signed_fin", "Left")
+			Expect(okFin).toBeTrue()
+			Expect(charCurve:GetAttribute("ResolvedCurveStyle")).toBe("Finesse")
+			Expect(charCurve:GetAttribute("ResolvedKickFoot")).toBe("Right")
+			local stFin = BallService.GetBallState()
+			Expect(stFin.curveImpulse).toNotBeNil()
+			-- Dot with rightOfAim must be NEGATIVE (curling right-to-left, i.e. toward -X)
+			local finDotRight = (stFin.curveImpulse :: Vector3):Dot(rightOfAim)
+			Expect(finDotRight).toBeLessThan(-20.0, "Right-foot Finesse must curl right-to-left (negative dot with rightVec)")
+
+			-- Step 0.25s and verify lateral X displacement is negative (< -1.0 studs)
+			for _ = 1, 5 do
+				BallService.StepPhysics(0.05)
+			end
+			local posFinAfter = BallService.GetBallState().position
+			Expect(posFinAfter.X).toBeLessThan(-1.0, "Finesse trajectory must curve toward negative X when aiming -Z")
+
+			-- Now test D / Right (Trivela, outside RIGHT foot)
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1062)
+			local okTriv = BallService.ExecuteKick(pCurve :: any, "CurveShoot", aimNorth, 0.85, "intent_signed_triv", "Right")
+			Expect(okTriv).toBeTrue()
+			Expect(charCurve:GetAttribute("ResolvedCurveStyle")).toBe("Trivela")
+			Expect(charCurve:GetAttribute("ResolvedKickFoot")).toBe("Right")
+			local stTriv = BallService.GetBallState()
+			Expect(stTriv.curveImpulse).toNotBeNil()
+			-- Dot with rightOfAim must be POSITIVE (curling left-to-right, i.e. toward +X)
+			local trivDotRight = (stTriv.curveImpulse :: Vector3):Dot(rightOfAim)
+			Expect(trivDotRight).toBeGreaterThan(20.0, "Right-foot Trivela must curl left-to-right (positive dot with rightVec)")
+
+			for _ = 1, 5 do
+				BallService.StepPhysics(0.05)
+			end
+			local posTrivAfter = BallService.GetBallState().position
+			Expect(posTrivAfter.X).toBeGreaterThan(1.0, "Trivela trajectory must curve toward positive X when aiming -Z")
+		end)
+
+		-- TC-P02-56: Live Curve Selection During Charge & Release Resolution (Owner Delta §22 / T15)
+		SafeTest("TC-P02-56_FreezeCurveSelectionOnInitialPressAndLifecycle", function()
+			local pFreeze, charF, rootF, humF = createMockPlayer(1063, "CurveFreezeTester", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1063, "North")
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1063)
+
+			local aimNorth = Vector3.new(0, 0, -1)
+
+			-- Case 1 (§22): Start charge moving Right (+X), switch to Left (-X) during hold/release.
+			--         Release-time resolved input determines final shot: Left -> Finesse RIGHT foot!
+			rootF.AssemblyLinearVelocity = Vector3.new(20, 0, 0) -- moving right (+X)
+			BallService.HandleActionRequest(pFreeze :: any, {
+				action = "StartCharge",
+				chargeAction = "CurveShoot",
+				intentId = "chg_freeze_d_to_a",
+				phase = "start",
+				characterGeneration = BallService.GetPlayerGeneration(1063),
+				contextVersion = BallService.GetPlayerContextVersion(1063),
+				curveSideIntent = "Right",
+			})
+			local snapHold1 = BallService.GetPlayerMovementSnapshot(1063)
+			Expect(snapHold1.isCharging).toBeTrue()
+			Expect(snapHold1.chargeCurveSide).toBe("Right")
+			Expect(snapHold1.chargeCurveStyle).toBe("Trivela")
+			Expect(snapHold1.chargeKickFoot).toBe("Right")
+			Expect(charF:GetAttribute("ChargeCurveStyle")).toBe("Trivela")
+
+			-- Player switches movement to Left (-X) and sends release with curveSideIntent = "Left" (§22)
+			rootF.AssemblyLinearVelocity = Vector3.new(-20, 0, 0)
+			BallService.HandleActionRequest(pFreeze :: any, {
+				action = "CurveShoot",
+				chargeAction = "CurveShoot",
+				intentId = "chg_freeze_d_to_a",
+				phase = "release",
+				characterGeneration = BallService.GetPlayerGeneration(1063),
+				contextVersion = BallService.GetPlayerContextVersion(1063),
+				aimDirection = aimNorth,
+				curveSideIntent = "Left", -- §22: dynamic release-time selection
+			})
+			Expect(charF:GetAttribute("LastActionStatus")).toBe("Accepted")
+			Expect(charF:GetAttribute("ResolvedCurveStyle")).toBe("Finesse", "Start D -> hold/release A resolves to Finesse per §22")
+			Expect(charF:GetAttribute("ResolvedKickFoot")).toBe("Right")
+			Expect((BallService.GetBallState().curveImpulse :: Vector3).X).toBeLessThan(-20.0)
+			-- Snapshot cleared after release
+			Expect(BallService.GetPlayerMovementSnapshot(1063).chargeCurveStyle).toBeNil()
+
+			-- Case 2 (§22): Inverse — Start charge with A/Left (moving left -X), switch to Right (+X) on release -> Trivela!
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1063)
+			rootF.AssemblyLinearVelocity = Vector3.new(-20, 0, 0) -- moving left (-X)
+			BallService.HandleActionRequest(pFreeze :: any, {
+				action = "StartCharge",
+				chargeAction = "CurveShoot",
+				intentId = "chg_freeze_a_to_d",
+				phase = "start",
+				characterGeneration = BallService.GetPlayerGeneration(1063),
+				contextVersion = BallService.GetPlayerContextVersion(1063),
+				curveSideIntent = "Left",
+			})
+			Expect(BallService.GetPlayerMovementSnapshot(1063).chargeCurveStyle).toBe("Finesse")
+
+			-- Switch movement to Right (+X) and send release with curveSideIntent = "Right"
+			rootF.AssemblyLinearVelocity = Vector3.new(20, 0, 0)
+			BallService.HandleActionRequest(pFreeze :: any, {
+				action = "CurveShoot",
+				chargeAction = "CurveShoot",
+				intentId = "chg_freeze_a_to_d",
+				phase = "release",
+				characterGeneration = BallService.GetPlayerGeneration(1063),
+				contextVersion = BallService.GetPlayerContextVersion(1063),
+				aimDirection = aimNorth,
+				curveSideIntent = "Right",
+			})
+			Expect(charF:GetAttribute("LastActionStatus")).toBe("Accepted")
+			Expect(charF:GetAttribute("ResolvedCurveStyle")).toBe("Trivela", "Start A -> hold/release D resolves to Trivela per §22")
+			Expect(charF:GetAttribute("ResolvedKickFoot")).toBe("Right")
+			Expect((BallService.GetBallState().curveImpulse :: Vector3).X).toBeGreaterThan(20.0)
+
+			-- Case 3: Cancel charge clears snapshot, allowing a new charge press to select a different style
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1063)
+			rootF.AssemblyLinearVelocity = Vector3.new(20, 0, 0)
+			BallService.HandleActionRequest(pFreeze :: any, {
+				action = "StartCharge",
+				chargeAction = "CurveShoot",
+				intentId = "chg_to_cancel",
+				phase = "start",
+				characterGeneration = BallService.GetPlayerGeneration(1063),
+				contextVersion = BallService.GetPlayerContextVersion(1063),
+				curveSideIntent = "Right",
+			})
+			Expect(BallService.GetPlayerMovementSnapshot(1063).chargeCurveStyle).toBe("Trivela")
+
+			BallService.HandleActionRequest(pFreeze :: any, {
+				action = "CancelCharge",
+				chargeAction = "CurveShoot",
+				intentId = "chg_to_cancel",
+				phase = "cancel",
+				characterGeneration = BallService.GetPlayerGeneration(1063),
+				contextVersion = BallService.GetPlayerContextVersion(1063),
+			})
+			local snapAfterCancel = BallService.GetPlayerMovementSnapshot(1063)
+			Expect(snapAfterCancel.isCharging).toBeFalse()
+			Expect(snapAfterCancel.chargeCurveSide).toBeNil()
+			Expect(snapAfterCancel.chargeCurveStyle).toBeNil()
+			Expect(charF:GetAttribute("ChargeCurveStyle")).toBe("")
+
+			-- New press after cancel with Neutral movement selects Finesse default
+			rootF.AssemblyLinearVelocity = Vector3.zero
+			BallService.HandleActionRequest(pFreeze :: any, {
+				action = "StartCharge",
+				chargeAction = "CurveShoot",
+				intentId = "chg_neutral_after_cancel",
+				phase = "start",
+				characterGeneration = BallService.GetPlayerGeneration(1063),
+				contextVersion = BallService.GetPlayerContextVersion(1063),
+				curveSideIntent = "Neutral",
+			})
+			Expect(BallService.GetPlayerMovementSnapshot(1063).chargeCurveStyle).toBe("Finesse")
+			BallService.ResetBall()
+			Expect(BallService.GetPlayerMovementSnapshot(1063).chargeCurveStyle).toBeNil("ResetBall must clear charge snapshot")
+		end)
+	end)
+
+	Describe("T1_PlayerActions_OwnerRevisionPassFakeShotRecovery", function()
+		SafeTest("TC-P02-57_GroundPassUsesReceivableSpeedRange", function()
+			local pPass, _, _, _ = createMockPlayer(1070, "ReceivablePassTester", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1070, "North")
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1070)
+
+			local tapOk = BallService.ExecuteKick(pPass :: any, "Pass", Vector3.new(0, 0, -1), 0.5, "pass_tap_speed")
+			Expect(tapOk).toBeTrue()
+			local tapSpeed = BallService.GetBallState().velocity.Magnitude
+			Expect(tapSpeed).toBeGreaterThanOrEqual(Constants.PASS_GROUND_TAP_SPEED - 1.0, "Ground Pass tap must start inside the receivable range")
+			Expect(tapSpeed).toBeLessThanOrEqual(Constants.PASS_GROUND_TAP_SPEED + 2.0, "Ground Pass tap must stay below ordinary Direct power")
+
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1070)
+			local fullOk = BallService.ExecuteKick(pPass :: any, "Pass", Vector3.new(0, 0, -1), 1.0, "pass_full_speed")
+			Expect(fullOk).toBeTrue()
+			local fullSpeed = BallService.GetBallState().velocity.Magnitude
+			Expect(fullSpeed).toBeGreaterThanOrEqual(Constants.PASS_GROUND_FULL_SPEED - 2.0, "Ground Pass full charge must reach its configured receivable maximum")
+			Expect(fullSpeed).toBeLessThanOrEqual(Constants.PASS_GROUND_FULL_SPEED + 2.0, "Ground Pass full charge must remain receivable")
+		end)
+
+		SafeTest("TC-P02-58_FakeShotTerminalizesGroundChargeWithoutMovingBall", function()
+			local pFake, charFake, _, _ = createMockPlayer(1071, "FakeShotTester", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1071, "North")
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1071)
+			local intentId = "ground_fake_shot_intent"
+			local generation = BallService.GetPlayerGeneration(1071)
+			local contextVersion = BallService.GetPlayerContextVersion(1071)
+
+			BallService.HandleActionRequest(pFake :: any, {
+				action = "StartCharge",
+				chargeAction = "CurveShoot",
+				intentId = intentId,
+				phase = "start",
+				characterGeneration = generation,
+				contextVersion = contextVersion,
+				curveSideIntent = "Right",
+			})
+			Expect(BallService.GetPlayerMovementSnapshot(1071).isCharging).toBeTrue()
+
+			BallService.HandleActionRequest(pFake :: any, {
+				action = "FakeShot",
+				intentId = intentId,
+				phase = "feint",
+				characterGeneration = generation,
+				contextVersion = contextVersion,
+				aimDirection = Vector3.new(0, 0, -1),
+			})
+			Expect(charFake:GetAttribute("LastActionStatus")).toBe("Accepted")
+			Expect(charFake:GetAttribute("LastResolvedAction")).toBe("FakeShot")
+			Expect(BallService.GetPlayerMovementSnapshot(1071).isCharging).toBeFalse()
+			Expect(BallService.GetBallState().possessorUserId).toBe(1071, "FakeShot must preserve existing possession without moving or welding the ball")
+
+			BallService.HandleActionRequest(pFake :: any, {
+				action = "CurveShoot",
+				chargeAction = "CurveShoot",
+				intentId = intentId,
+				phase = "release",
+				characterGeneration = generation,
+				contextVersion = contextVersion,
+				aimDirection = Vector3.new(0, 0, -1),
+			})
+			Expect(charFake:GetAttribute("LastActionReason")).toBe("StaleIntent")
+			Expect(BallService.GetBallState().possessorUserId).toBe(1071, "The old mouse release must not shoot after E consumed the charge")
+		end)
+
+		SafeTest("TC-P02-59_GroundWhiffRecoveryBlocksActionsButDoesNotExpireOnPass", function()
+			local pWhiff, charWhiff, _, _ = createMockPlayer(1072, "WhiffRecoveryTester", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1072, "North")
+			BallService.SetBallPositionAndVelocity(Vector3.new(35, 1.25, 0), Vector3.zero)
+			local missOk = BallService.ExecuteKick(pWhiff :: any, "DirectShoot", Vector3.new(0, 0, -1), 0.8, "ground_whiff_recovery")
+			Expect(missOk).toBeFalse()
+			local recovery = BallService.GetPlayerMovementSnapshot(1072)
+			Expect(recovery.whiffRecoveryRemaining or 0).toBeGreaterThan(0.7, "Ground whiff must create a longer readable authoritative recovery")
+			Expect(charWhiff:GetAttribute("RecoveryRemaining") or 0).toBeGreaterThan(0.7)
+
+			BallService.HandleActionRequest(pWhiff :: any, {
+				action = "StartCharge",
+				chargeAction = "DirectShoot",
+				intentId = "shot_during_whiff_recovery",
+				phase = "start",
+				characterGeneration = BallService.GetPlayerGeneration(1072),
+				contextVersion = BallService.GetPlayerContextVersion(1072),
+			})
+			Expect(charWhiff:GetAttribute("LastActionReason")).toBe("Recovery")
+
+			BallService.SetBallPositionAndVelocity(Vector3.new(0, 1.25, -2.0), Vector3.zero)
+			BallService.SetPossessor(1072)
+			local passOk = BallService.ExecuteKick(pWhiff :: any, "Pass", Vector3.new(0, 0, -1), 0.5, "valid_pass_during_whiff_recovery")
+			Expect(passOk).toBeTrue()
+			Expect(BallService.GetPlayerMovementSnapshot(1072).whiffRecoveryRemaining or 0).toBeGreaterThan(0.6, "A valid Pass cannot clear the server whiff deadline")
+			local blockedShot = BallService.ExecuteKick(pWhiff :: any, "DirectShoot", Vector3.new(0, 0, -1), 0.8, "shot_after_pass_during_recovery")
+			Expect(blockedShot).toBeFalse()
+			Expect(charWhiff:GetAttribute("LastActionReason")).toBe("Recovery")
+		end)
+
+		SafeTest("TC-P02-60_RejectedDashLandingAndDirectReleaseHaveReadableR6Phases", function()
+			local dashLoad = PlayerActionPoseConfigs.GetDashPose(0.08)
+			local dashDrive = PlayerActionPoseConfigs.GetDashPose(0.45)
+			local dashPitch = select(1, dashLoad.RootJoint:ToOrientation())
+			Expect(dashPitch).toBeLessThan(math.rad(-4), "Dash starts in a forward athletic drive lean")
+			Expect(dashDrive.RightHip.Position.Y).toBeGreaterThan(0.0, "Dash drive shows a lifted forward leg")
+			Expect(dashDrive.LeftHip.Position.Y).toBeGreaterThanOrEqual(0.0)
+
+			local landingImpact = PlayerActionPoseConfigs.GetJumpLandingPose(0.32)
+			local landingPause = PlayerActionPoseConfigs.GetJumpLandingPose(0.60)
+			local landingExit = PlayerActionPoseConfigs.GetJumpLandingPose(1.0)
+			Expect(landingImpact.RootJoint.Position.Y).toBeLessThan(-0.25, "Landing visibly lowers the torso to absorb impact")
+			Expect(landingImpact.RightHip.Position.Y).toBeGreaterThan(0.0, "Landing coordinates both legs to sell hip/knee flex on R6")
+			Expect(landingPause.RootJoint.Position.Y).toBeLessThan(-0.035, "Landing includes a short planted recovery pause")
+			Expect(math.abs(landingExit.RootJoint.Position.Y)).toBeLessThan(0.02, "Landing returns to the neutral torso height")
+
+			local sourceContact = PlayerActionPoseConfigs.SampleAuthoredPose("A13", 0.28 + 0.72 * 0.5)
+			local directFollowThrough = PlayerActionPoseConfigs.GetDirectReleasePose(0.5)
+			local sourceX = select(1, sourceContact.RightHip:ToOrientation())
+			local revisedX = select(1, directFollowThrough.RightHip:ToOrientation())
+			Expect(revisedX).toBeGreaterThan(sourceX, "Direct release raises the right kicking leg slightly after the contact frame")
+		end)
+
+		SafeTest("TC-P02-61_FakeShotAimedBallCutLeftRightAndRotatedYaw", function()
+			-- Case 1: Player facing North (0, 0, -1), aims Right (1, 0, 0)
+			local pCutR, charCutR, rootCutR, humCutR = createMockPlayer(1073, "FakeCutRight", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1073, "North")
+			BallService.SetPossessor(1073)
+			local genR = BallService.GetPlayerGeneration(1073)
+			local ctxR = BallService.GetPlayerContextVersion(1073)
+			local intentR = "fake_cut_right_intent"
+
+			BallService.HandleActionRequest(pCutR :: any, {
+				action = "StartCharge",
+				chargeAction = "DirectShoot",
+				intentId = intentR,
+				phase = "start",
+				characterGeneration = genR,
+				contextVersion = ctxR,
+			})
+			Expect(charCutR:GetAttribute("IsCharging")).toBeTrue()
+
+			-- Opposite movement: moving Left (-10, 0, 0), but aiming Right (1, 0, 0)
+			rootCutR.AssemblyLinearVelocity = Vector3.new(-10, 0, 0)
+			BallService.HandleActionRequest(pCutR :: any, {
+				action = "FakeShot",
+				intentId = intentR,
+				phase = "feint",
+				characterGeneration = genR,
+				contextVersion = ctxR,
+				aimDirection = Vector3.new(1, 0, 0),
+				keyDDown = true,
+			})
+			Expect(charCutR:GetAttribute("LastActionStatus")).toBe("Accepted")
+			Expect(charCutR:GetAttribute("FakeShotSide")).toBe("Right")
+			local bStateR = BallService.GetBallState()
+			Expect(bStateR.possessorUserId).toBe(1073)
+			Expect(bStateR.position.X).toBeGreaterThan(1.5, "Aim Right must cut the ball noticeably to the character's right side (>1.5 studs)")
+
+			-- Step physics multi-frame simulation: ball must stay displaced during recovery
+			for frame = 1, 10 do
+				BallService.StepPhysics(0.016)
+			end
+			local bStateStep = BallService.GetBallState()
+			Expect(bStateStep.position.X).toBeGreaterThan(1.5, "Ball lateral cut must remain displaced across Heartbeat physics steps during recovery")
+			local ballInstance = BallService.EnsureBallInstance()
+			Expect(math.abs(ballInstance.Position.X - bStateStep.position.X)).toBeLessThan(0.05, "World ballPart must accurately replicate internal lateral cut position")
+
+			-- Stale intent / replayed feint rejection
+			BallService.HandleActionRequest(pCutR :: any, {
+				action = "FakeShot",
+				intentId = intentR,
+				phase = "feint",
+				characterGeneration = genR,
+				contextVersion = ctxR,
+				aimDirection = Vector3.new(1, 0, 0),
+			})
+			Expect(charCutR:GetAttribute("LastActionStatus")).toBe("Rejected", "Replayed FakeShot feint must be rejected")
+			Expect(charCutR:GetAttribute("LastActionReason")).toBe("StaleIntent")
+
+			-- Case 2: Player facing North (0, 0, -1), aims Left (-1, 0, 0)
+			local pCutL, charCutL, rootCutL, humCutL = createMockPlayer(1074, "FakeCutLeft", Vector3.new(0, 1.5, 0), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1074, "North")
+			BallService.SetPossessor(1074)
+			local genL = BallService.GetPlayerGeneration(1074)
+			local ctxL = BallService.GetPlayerContextVersion(1074)
+			local intentL = "fake_cut_left_intent"
+
+			BallService.HandleActionRequest(pCutL :: any, {
+				action = "StartCharge",
+				chargeAction = "DirectShoot",
+				intentId = intentL,
+				phase = "start",
+				characterGeneration = genL,
+				contextVersion = ctxL,
+			})
+			BallService.HandleActionRequest(pCutL :: any, {
+				action = "FakeShot",
+				intentId = intentL,
+				phase = "feint",
+				characterGeneration = genL,
+				contextVersion = ctxL,
+				aimDirection = Vector3.new(-1, 0, 0),
+				keyADown = true,
+			})
+			Expect(charCutL:GetAttribute("LastActionStatus")).toBe("Accepted")
+			Expect(charCutL:GetAttribute("FakeShotSide")).toBe("Left")
+			local bStateL = BallService.GetBallState()
+			Expect(bStateL.possessorUserId).toBe(1074)
+			Expect(bStateL.position.X).toBeLessThan(-0.5, "Aim Left must cut the ball to the character's left side")
+
+			-- Case 3: Rotated character facing East (1, 0, 0), aiming North (0, 0, -1) => character-relative Left!
+			local pCutRot, charCutRot, _, _ = createMockPlayer(1075, "FakeCutRotated", Vector3.new(0, 1.5, 0), Vector3.new(1, 0, 0))
+			BallService.SetPlayerTeamSide(1075, "North")
+			BallService.SetPossessor(1075)
+			local genRot = BallService.GetPlayerGeneration(1075)
+			local ctxRot = BallService.GetPlayerContextVersion(1075)
+			local intentRot = "fake_cut_rotated_intent"
+
+			BallService.HandleActionRequest(pCutRot :: any, {
+				action = "StartCharge",
+				chargeAction = "DirectShoot",
+				intentId = intentRot,
+				phase = "start",
+				characterGeneration = genRot,
+				contextVersion = ctxRot,
+			})
+			BallService.HandleActionRequest(pCutRot :: any, {
+				action = "FakeShot",
+				intentId = intentRot,
+				phase = "feint",
+				characterGeneration = genRot,
+				contextVersion = ctxRot,
+				aimDirection = Vector3.new(0, 0, -1),
+			})
+			Expect(charCutRot:GetAttribute("FakeShotSide")).toBe("Left", "Facing East and aiming North must resolve to character-relative Left")
+			local bStateRot = BallService.GetBallState()
+			Expect(bStateRot.position.Z).toBeLessThan(-0.5, "Ball must be cut towards North (-Z) on character's left")
+
+			-- Case 4: Nonpossessor cannot move or gain the ball with FakeShot
+			local pNonPoss, charNonPoss, _, _ = createMockPlayer(1076, "FakeNonPossessor", Vector3.new(0, 1.5, 10), Vector3.new(0, 0, -1))
+			BallService.SetPlayerTeamSide(1076, "South")
+			local genNP = BallService.GetPlayerGeneration(1076)
+			local ctxNP = BallService.GetPlayerContextVersion(1076)
+			local intentNP = "fake_nonposs_intent"
+			local ballPosBefore = BallService.GetBallState().position
+
+			BallService.HandleActionRequest(pNonPoss :: any, {
+				action = "StartCharge",
+				chargeAction = "DirectShoot",
+				intentId = intentNP,
+				phase = "start",
+				characterGeneration = genNP,
+				contextVersion = ctxNP,
+			})
+			BallService.HandleActionRequest(pNonPoss :: any, {
+				action = "FakeShot",
+				intentId = intentNP,
+				phase = "feint",
+				characterGeneration = genNP,
+				contextVersion = ctxNP,
+				aimDirection = Vector3.new(1, 0, 0),
+			})
+			local bStateNP = BallService.GetBallState()
+			Expect(bStateNP.possessorUserId).toBe(1075, "Nonpossessor cannot gain possession via FakeShot")
+			Expect((bStateNP.position - ballPosBefore).Magnitude).toBeLessThan(0.01, "Nonpossessor FakeShot cannot move the ball")
 		end)
 	end)
 

@@ -14,12 +14,24 @@ local isInitialized = false
 local activeCodexModal: Frame? = nil
 
 function TrainingHUD.ToggleCodex()
+	if not activeCodexModal or not activeCodexModal.Parent then
+		local localPlayer = Players.LocalPlayer
+		local playerGui = localPlayer and localPlayer:FindFirstChild("PlayerGui")
+		local screenGui = playerGui and playerGui:FindFirstChild("Module02_TrainingHUD")
+		activeCodexModal = if screenGui then (screenGui:FindFirstChild("ControlsCodexModal") :: Frame?) else nil
+	end
 	if activeCodexModal then
 		activeCodexModal.Visible = not activeCodexModal.Visible
 	end
 end
 
 function TrainingHUD.SetCodexVisible(visible: boolean)
+	if not activeCodexModal or not activeCodexModal.Parent then
+		local localPlayer = Players.LocalPlayer
+		local playerGui = localPlayer and localPlayer:FindFirstChild("PlayerGui")
+		local screenGui = playerGui and playerGui:FindFirstChild("Module02_TrainingHUD")
+		activeCodexModal = if screenGui then (screenGui:FindFirstChild("ControlsCodexModal") :: Frame?) else nil
+	end
 	if activeCodexModal then
 		activeCodexModal.Visible = visible
 	end
@@ -136,7 +148,7 @@ function TrainingHUD.CreateScreenGui(targetParent: Instance): ScreenGui
 	controlsLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
 	controlsLabel.Font = Enum.Font.Gotham
 	controlsLabel.TextSize = 10
-	controlsLabel.Text = "[Shift] Sprint   [Q] Dash   [Space] Jump   [LMB] Shoot/Slide   [RMB] Curve/Volley   [MMB] Pass   [Alt] Shift Lock   [X] Reset   [H] Codex"
+	controlsLabel.Text = "[Shift] Sprint  [Q] Dash  [Space] Jump  [Z/X/C] Skills  [LMB] Shoot/Slide  [RMB] Curve/Volley/Poke  [E] Pass/Fake Shot  [MMB] Cage Press  [Alt] Shift Lock  [R] Reset  [H] Codex"
 	controlsLabel.Parent = container
 
 	-- 2. Shift Lock Center Reticle
@@ -172,7 +184,7 @@ function TrainingHUD.CreateScreenGui(targetParent: Instance): ScreenGui
 	chargeGaugeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	chargeGaugeLabel.Font = Enum.Font.GothamBlack
 	chargeGaugeLabel.TextSize = 11
-	chargeGaugeLabel.Text = "50% TAP"
+	chargeGaugeLabel.Text = "20% TAP"
 	chargeGaugeLabel.Parent = chargeGaugeBg
 
 	local segmentWidths = { 16, 20, 24, 28, 32, 36, 40, 44, 49, 56 }
@@ -319,11 +331,11 @@ function TrainingHUD.CreateScreenGui(targetParent: Instance): ScreenGui
 
 	local c1Items = {
 		{ key = "W, A, S, D", desc = "เดินเคลื่อนที่พื้น (Walk 20) / เอนตัวกลางอากาศ (Air Lean)" },
-		{ key = "Left Shift", desc = "วิ่งสปรินต์เร็ว (Sprint 32, สตามินา 9%/s)" },
-		{ key = "Space", desc = "กระโดดพุ่งตัว (Directional Jump ล็อกทิศ 0.18s)" },
-		{ key = "Q", desc = "แดชพุ่งตัวเร็ว (Dash Burst 0.18s, CD 1.8s)" },
-		{ key = "LMB [ฝ่ายรับ]", desc = "สไลด์สกัดบอล [ฝ่ายรับ] (Slide Tackle 94)" },
-		{ key = "Left Alt", desc = "เปิด/ปิด Shift Lock เล็งเป้าบุคคลที่สาม" },
+		{ key = "Left Shift / Q", desc = "วิ่งสปรินต์ (Sprint 32) / แดชพุ่งตัว (Dash Burst)" },
+		{ key = "Space", desc = "งัดบอลขึ้น (BallPop เมื่อครองบอล) / กระโดด (Directional Jump)" },
+		{ key = "LMB [ฝ่ายรับ]", desc = "สไลด์สกัดบอล [ฝ่ายรับ] (Slide Tackle ระยะ 8.5m)" },
+		{ key = "RMB [ฝ่ายรับ]", desc = "จิ้มสกัดเร็ว [ฝ่ายรับ] (Quick Poke ระยะ 4.5m, CD 1.0s)" },
+		{ key = "MMB [ฝ่ายรับ]", desc = "Cage Press: ปะทะไหล่พุ่งหน้า; กลางสนามคู่แข่งยังครองบอล, ชนกรงจริงจึง Wall Splat" },
 	}
 	for i, item in ipairs(c1Items) do
 		local row = Instance.new("Frame")
@@ -398,12 +410,12 @@ function TrainingHUD.CreateScreenGui(targetParent: Instance): ScreenGui
 	c2Title.Parent = col2
 
 	local c2Items = {
-		{ key = "LMB", desc = "ยิงตรงพื้น/กลางอากาศ (Direct Shoot 125, กดค้างชาร์จ)" },
-		{ key = "RMB [พื้น]", desc = "ปั่นไซด์โค้ง (Curve Shoot 95, A=Finesse / D=Trivela)" },
-		{ key = "RMB [อากาศ]", desc = "วอลเล่ย์กลางอากาศ (Volley 108, กดค้างชาร์จ)" },
-		{ key = "MMB", desc = "ส่งบอล 3D (Pass 68, แท็ปเรียด / ค้างโด่ง)" },
-		{ key = "X", desc = "รีเซ็ตตำแหน่งลูกบอลกลับมากลางสนาม" },
-		{ key = "H", desc = "เปิด/ปิดหน้าต่างแสดงปุ่มควบคุมนี้" },
+		{ key = "LMB [ฝ่ายรุก]", desc = "ยิงตรงพื้น/กลางอากาศ (Direct Shoot, กดค้างชาร์จ)" },
+		{ key = "RMB [พื้น]", desc = "ปั่นไซด์โค้งเท้าขวา (A=Finesse แปใน / D=Trivela ก้อยนอก)" },
+		{ key = "RMB [อากาศ]", desc = "วอลเล่ย์กลางอากาศ (Volley, กดค้างชาร์จ)" },
+		{ key = "E [ฝ่ายรุก]", desc = "ส่งบอล 3D (Pass, แท็ปเบา / ค้างแรง); กด E ระหว่างง้างยิงเพื่อ Fake Shot" },
+		{ key = "Z, X, C [ฝ่ายรุก]", desc = "Z=แตะบอลไปข้างหน้า (ไม่ตาม), X=กระชากบอล (พุ่งตามบอล), C=Sombrero" },
+		{ key = "R / H / Alt", desc = "รีเซ็ตบอล [R] / เปิดคู่มือ [H] / Shift Lock [Left Alt]" },
 	}
 	for i, item in ipairs(c2Items) do
 		local row = Instance.new("Frame")
@@ -566,7 +578,7 @@ function TrainingHUD.Init()
 
 			-- Update Action Context & Charging
 			local isCharging = char:GetAttribute("IsCharging") == true
-			local chargePower = (char:GetAttribute("ChargePower") :: number?) or 0.50
+			local chargePower = (char:GetAttribute("ChargePower") :: number?) or 0.20
 			local chargeAction = (char:GetAttribute("ChargeAction") :: string?) or "DirectShoot"
 			local ctx = char:GetAttribute("ActionContext") or "Attacking"
 
@@ -575,8 +587,8 @@ function TrainingHUD.Init()
 				contextBadge.BackgroundColor3 = Color3.fromRGB(249, 115, 22)
 
 				chargeGaugeBg.Visible = true
-				local litCount = math.clamp(math.floor(chargePower * 10 + 0.49), 1, 10)
-				local isMax = chargePower >= 0.99
+				local litCount = math.clamp(math.floor(chargePower * 10 + 0.05), 1, 10)
+				local isMax = chargePower >= 0.98
 				for idx, seg in ipairs(chargeSegments) do
 					if idx <= litCount then
 						seg.fill.BackgroundTransparency = 0
@@ -599,10 +611,10 @@ function TrainingHUD.Init()
 					if isMax then
 						chargeGaugeLabel.Text = string.format("🔥 %s MAX!", actionThai)
 						chargeGaugeLabel.TextColor3 = Color3.fromRGB(249, 115, 22)
-					elseif chargePower >= 0.85 then
+					elseif chargePower >= 0.75 then
 						chargeGaugeLabel.Text = string.format("%s %d%%", actionThai, math.floor(chargePower * 100))
 						chargeGaugeLabel.TextColor3 = Color3.fromRGB(251, 146, 60)
-					elseif chargePower >= 0.65 then
+					elseif chargePower >= 0.50 then
 						chargeGaugeLabel.Text = string.format("%s %d%%", actionThai, math.floor(chargePower * 100))
 						chargeGaugeLabel.TextColor3 = Color3.fromRGB(250, 204, 21)
 					else

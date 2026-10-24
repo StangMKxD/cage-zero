@@ -37,6 +37,7 @@ local activeAction: string? = nil
 local actionStartTime = 0
 local actionDuration = 0
 local activeCurveStyle: string? = nil
+local activeActionDirection: Vector3? = nil
 local autoNextAction: string? = nil
 local canAutoNext: boolean = false
 local activeKickFoot: string? = nil
@@ -64,16 +65,18 @@ local slideDuration = 0.55
 
 -- Locomotion Stride Cycle
 local locomotionStridePhase = 0
+local locomotionIdlePhase = 0
 
 -- Recovery & Whiff States
 local isLanding = false
 local landingStartTime = 0
-local landingDuration = 0.16
+local landingDuration = Constants.LANDING_RECOVERY_SEC
 
 local isWhiffing = false
 local whiffStartTime = 0
 local whiffDuration = 0.35
 local isCurveWhiff = false
+local isAirborneWhiff = false
 
 local isSlideRecovering = false
 local slideRecoveryStartTime = 0
@@ -259,7 +262,8 @@ function R6ActionPoseController.TriggerAction(
 	durationSec: number?,
 	curveStyle: string?,
 	nextAction: string?,
-	kickFoot: string?
+	kickFoot: string?,
+	actionDirection: Vector3?
 ): number
 	currentActionToken += 1
 	local thisToken = currentActionToken
@@ -268,6 +272,7 @@ function R6ActionPoseController.TriggerAction(
 	actionStartTime = os.clock()
 	actionDuration = durationSec or 0.28
 	activeCurveStyle = curveStyle
+	activeActionDirection = actionDirection
 	autoNextAction = nextAction
 	canAutoNext = (nextAction ~= nil)
 	activeKickFoot = kickFoot
@@ -280,6 +285,33 @@ function R6ActionPoseController.TriggerAction(
 	return thisToken
 end
 
+function R6ActionPoseController.TriggerFakeShot(direction: Vector3?, durationSec: number?): number
+	local cleanDirection = if direction and direction.Magnitude > 0.05 then direction.Unit else nil
+	return R6ActionPoseController.TriggerAction(
+		"FakeShot",
+		durationSec or Constants.FAKE_SHOT_DURATION_SEC,
+		nil,
+		nil,
+		"Right",
+		cleanDirection
+	)
+end
+
+function R6ActionPoseController.TriggerSkillMove(skillId: string, durationSec: number?, direction: Vector3?, kickFoot: string?): number
+	local flat = if direction then Vector3.new(direction.X, 0, direction.Z) else Vector3.zero
+	local cleanDirection = if flat.Magnitude > 0.05 then flat.Unit else nil
+	local foot = kickFoot or "Right"
+	return R6ActionPoseController.TriggerAction(skillId, durationSec or 0.45, nil, nil, foot, cleanDirection)
+end
+
+function R6ActionPoseController.TriggerTackle(tackleType: string, durationSec: number?): number
+	if tackleType == "Slide" then
+		R6ActionPoseController.SetSliding(true)
+		return currentActionToken
+	end
+	return R6ActionPoseController.TriggerAction(tackleType, durationSec or 0.30, nil, nil, "Right")
+end
+
 function R6ActionPoseController.StopAction(token: number?, fadeOutSec: number?)
 	if token ~= nil and token ~= currentActionToken then
 		return
@@ -288,6 +320,7 @@ function R6ActionPoseController.StopAction(token: number?, fadeOutSec: number?)
 	canAutoNext = false -- TERMINAL: Never resurrects
 	autoNextAction = nil
 	activeKickFoot = nil
+	activeActionDirection = nil
 
 	local fade = fadeOutSec or 0.12
 	actionTargetWeight = 0.0
@@ -302,6 +335,7 @@ function R6ActionPoseController.CancelAction(token: number?, fadeOutSec: number?
 	canAutoNext = false -- TERMINAL: Never resurrects
 	autoNextAction = nil
 	activeKickFoot = nil
+	activeActionDirection = nil
 
 	local fade = fadeOutSec or 0.10
 	actionTargetWeight = 0.0
@@ -316,6 +350,7 @@ function R6ActionPoseController.RejectAction(token: number?, fadeOutSec: number?
 	canAutoNext = false -- TERMINAL: Never resurrects
 	autoNextAction = nil
 	activeKickFoot = nil
+	activeActionDirection = nil
 
 	local fade = fadeOutSec or 0.05
 	actionTargetWeight = 0.0
@@ -327,19 +362,26 @@ function R6ActionPoseController.GetActionState(): (ActionPlaybackState, number, 
 end
 
 function R6ActionPoseController.SetCharging(charging: boolean, action: string?, curveStyle: string?, kickFoot: string?)
-	isCharging = charging
 	if charging then
+		local resolvedAct = action or "DirectShoot"
+		if isCharging and currentActionState == "Holding" and chargeAction == resolvedAct then
+			chargeCurveStyle = curveStyle
+			chargeKickFoot = kickFoot
+			return
+		end
+		isCharging = true
 		currentActionToken += 1
 		currentActionState = "Holding"
 		canAutoNext = false
 		autoNextAction = nil
 		chargeStartTime = os.clock()
-		chargeAction = action or "DirectShoot"
+		chargeAction = resolvedAct
 		chargeCurveStyle = curveStyle
 		chargeKickFoot = kickFoot
 		actionBlendWeight = 1.0
 		actionTargetWeight = 1.0
 	else
+		isCharging = false
 		chargeStartTime = 0
 		chargeKickFoot = nil
 		if currentActionState == "Holding" then
@@ -379,16 +421,37 @@ function R6ActionPoseController.IsCustomPoseActive(): boolean
 end
 
 function R6ActionPoseController.TriggerLandingRecovery(durationSec: number?)
-	-- Stand down: standard R6 rig landing is handled natively by R6AnimationController
-	isLanding = false
+	if isWhiffing and isAirborneWhiff then
+		return
+	end
+	if isLanding and os.clock() - landingStartTime < 0.10 then
+		return
+	end
+	isLanding = true
+	landingStartTime = os.clock()
+	landingDuration = durationSec or Constants.LANDING_RECOVERY_SEC
+	activeAction = nil
+	activeActionDirection = nil
+	currentActionState = "Inactive"
 end
 
 function R6ActionPoseController.TriggerWhiff(isCurve: boolean?, durationSec: number?)
 	isWhiffing = true
 	isCurveWhiff = isCurve == true
+	isAirborneWhiff = false
 	whiffStartTime = os.clock()
-	whiffDuration = durationSec or Constants.WHIFF_RECOVERY_SEC
+	whiffDuration = durationSec or Constants.GROUND_SHOT_WHIFF_RECOVERY_SEC
 	activeAction = nil
+end
+
+function R6ActionPoseController.TriggerAirWhiff(durationSec: number?)
+	isWhiffing = true
+	isCurveWhiff = false
+	isAirborneWhiff = true
+	whiffStartTime = os.clock()
+	whiffDuration = durationSec or Constants.AIR_SHOT_WHIFF_RECOVERY_SEC
+	activeAction = nil
+	activeActionDirection = nil
 end
 
 function R6ActionPoseController.TriggerSlideRecovery(durationSec: number?)
@@ -417,6 +480,7 @@ function R6ActionPoseController.ResetPoses(char: Model?)
 	currentActionState = "Inactive"
 	canAutoNext = false
 	activeAction = nil
+	activeActionDirection = nil
 	autoNextAction = nil
 	isCharging = false
 	isDashing = false
@@ -425,6 +489,7 @@ function R6ActionPoseController.ResetPoses(char: Model?)
 	locomotionStridePhase = 0
 	isLanding = false
 	isWhiffing = false
+	isAirborneWhiff = false
 	isSlideRecovering = false
 	isAirborneRecovering = false
 	targetLeanForward = 0.0
@@ -527,7 +592,11 @@ function R6ActionPoseController.Init()
 			targetPose = PlayerActionPoseConfigs.GetSlidePose(progress)
 
 		-- PRIORITY 2: Slide Recovery (Image 3 Row 1 Step 4: Pushing up from turf)
-		elseif isSlideRecovering or (char:GetAttribute("RecoveryRemaining") or 0) > 0 then
+		elseif isSlideRecovering or ((char:GetAttribute("RecoveryRemaining") or 0) > 0
+			and (char:GetAttribute("WhiffRecoveryRemaining") or 0) <= 0
+			and (char:GetAttribute("FakeShotRecoveryRemaining") or 0) <= 0
+			and activeAction == nil)
+		then
 			local elapsed = now - slideRecoveryStartTime
 			if elapsed < slideRecoveryDuration then
 				isActionActive = true
@@ -543,7 +612,8 @@ function R6ActionPoseController.Init()
 			if elapsed < actionDuration and actionBlendWeight > 0.001 then
 				isActionActive = true
 				local progress = elapsed / actionDuration
-				local rawPose = PlayerActionPoseConfigs.GetFollowThroughPose(activeAction, progress, activeCurveStyle)
+				local localMoveDirection = if activeActionDirection then hrp.CFrame:VectorToObjectSpace(activeActionDirection) else nil
+				local rawPose = PlayerActionPoseConfigs.GetFollowThroughPose(activeAction, progress, activeCurveStyle, nil, nil, localMoveDirection)
 				local resolvedFoot = activeKickFoot or (char:GetAttribute("ResolvedKickFoot") :: string?) or (char:GetAttribute("KickFoot") :: string?)
 				if resolvedFoot == "Left" then
 					rawPose = PlayerActionPoseConfigs.MirrorPoseSagittal(rawPose)
@@ -563,6 +633,7 @@ function R6ActionPoseController.Init()
 			else
 				-- Timeline finished or fade completed
 				activeKickFoot = nil
+				activeActionDirection = nil
 				if currentActionState == "Playing" and canAutoNext and autoNextAction ~= nil then
 					local nextAct = autoNextAction
 					autoNextAction = nil
@@ -597,11 +668,14 @@ function R6ActionPoseController.Init()
 			if elapsed < whiffDuration then
 				isActionActive = true
 				local progress = elapsed / whiffDuration
-				targetPose = if isCurveWhiff
+				targetPose = if isAirborneWhiff
+					then PlayerActionPoseConfigs.GetAirWhiffPose(progress)
+					elseif isCurveWhiff
 					then PlayerActionPoseConfigs.GetCurveWhiffPose(progress)
 					else PlayerActionPoseConfigs.GetWhiffPose(progress)
 			else
 				isWhiffing = false
+				isAirborneWhiff = false
 			end
 
 		-- PRIORITY 6: Active Charge Stance ("ง้าง รอได้" windup hold)
@@ -630,7 +704,7 @@ function R6ActionPoseController.Init()
 		-- PRIORITY 8: Jump Landing Shock Absorption (Image 1 Row 1 Step 3)
 		-- Stand down: standard R6 rig uses native animation blending for landing.
 		-- Procedural A07 cushion was jerking RootJoint C0 and causing visual bounces.
-		elseif false and isLanding then
+		elseif isLanding then
 			local elapsed = now - landingStartTime
 			if elapsed < landingDuration then
 				isActionActive = true
@@ -666,6 +740,74 @@ function R6ActionPoseController.Init()
 		local hasActiveLean = math.abs(currentLeanForward) > 0.001 or math.abs(currentLeanRight) > 0.001
 		if hasActiveLean then
 			isActionActive = true
+		end
+
+		-- PRIORITY 9: Prepared Custom Base Locomotion (F-38 / HANDOFF §24)
+		-- When no high-priority action or stance is active, continuously drive the
+		-- prepared athletic R6 locomotion: Ready Idle (A01), 8-Way Walk/Sprint (A02/A03),
+		-- and Directional Jump/Fall (A06).
+		if not isActionActive then
+			if isAir then
+				local vy = if hrp then hrp.AssemblyLinearVelocity.Y else 0
+				targetPose = PlayerActionPoseConfigs.GetJumpPose(vy)
+				isActionActive = true
+				char:SetAttribute("ActiveLocomotionState", if vy >= 0 then "Jump" else "Fall")
+				char:SetAttribute("IsCustomLocomotionActive", true)
+			else
+				local horizVel = if hrp then Vector3.new(hrp.AssemblyLinearVelocity.X, 0, hrp.AssemblyLinearVelocity.Z) else Vector3.zero
+				local speed = horizVel.Magnitude
+				local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+				local possId = if ballPart then (ballPart:GetAttribute("PossessorUserId") :: number?) else nil
+				local isPossessor = (char:GetAttribute("IsPossessor") == true)
+					or (localPlayer ~= nil and possId == localPlayer.UserId and char == localPlayer.Character)
+
+				if speed > 0.5 then
+					local isSprinting = speed > 22
+					local cadence = if isSprinting
+						then (PlayerActionPoseConfigs.LOCOMOTION_TUNING.SPRINT_CADENCE or 0.30)
+						else (PlayerActionPoseConfigs.LOCOMOTION_TUNING.WALK_CADENCE or 0.36)
+					locomotionStridePhase = (locomotionStridePhase + (dt / cadence) * (2 * math.pi)) % (2 * math.pi)
+					local moveDir = if hum and hum.MoveDirection.Magnitude > 0.05
+						then hum.MoveDirection
+						else (if speed > 0.1 then horizVel.Unit else Vector3.new(0, 0, -1))
+					local motion = PlayerActionPoseConfigs.Calculate8Direction(hrp.CFrame, moveDir, speed, Constants.WALK_SPEED)
+
+					if isPossessor then
+						if char:GetAttribute("IsCloseControl") == true then
+							local localMove = hrp.CFrame:VectorToObjectSpace(moveDir)
+							targetPose = PlayerActionPoseConfigs.Get8WayStrafePose(localMove, locomotionStridePhase * 2.2)
+							isActionActive = true
+							char:SetAttribute("ActiveLocomotionState", "CloseControl")
+							char:SetAttribute("IsCustomLocomotionActive", true)
+						else
+							targetPose = PlayerActionPoseConfigs.GetAnimeDribblePose(motion, locomotionStridePhase, speed, isSprinting)
+							isActionActive = true
+							char:SetAttribute("ActiveLocomotionState", if isSprinting then "AnimeSprintDribble" else "AnimeDribble")
+							char:SetAttribute("IsCustomLocomotionActive", true)
+						end
+					else
+						targetPose = PlayerActionPoseConfigs.GetLocomotionPose(motion, locomotionStridePhase)
+						isActionActive = true
+						char:SetAttribute("ActiveLocomotionState", if isSprinting then "Sprint" else "Walk")
+						char:SetAttribute("IsCustomLocomotionActive", true)
+					end
+				else
+					locomotionIdlePhase = (locomotionIdlePhase + (dt / 1.60)) % 1.0
+					if isPossessor then
+						targetPose = PlayerActionPoseConfigs.GetAnimeDribbleIdlePose(locomotionIdlePhase)
+						isActionActive = true
+						char:SetAttribute("ActiveLocomotionState", "AnimeDribbleIdle")
+						char:SetAttribute("IsCustomLocomotionActive", true)
+					else
+						targetPose = PlayerActionPoseConfigs.SampleAuthoredPose("A01", locomotionIdlePhase)
+						isActionActive = true
+						char:SetAttribute("ActiveLocomotionState", "Idle")
+						char:SetAttribute("IsCustomLocomotionActive", true)
+					end
+				end
+			end
+		else
+			char:SetAttribute("IsCustomLocomotionActive", false)
 		end
 
 		if isActionActive then

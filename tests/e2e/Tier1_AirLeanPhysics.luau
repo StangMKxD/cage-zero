@@ -282,22 +282,42 @@ local function runAirLeanPhysicsTests(TestHarness: any)
 			Expect(angle180).toBeLessThan(5.0001, "Deflection cone at 180-deg aim must not exceed 5.0 deg")
 		end)
 
-		-- TC-ALP-06: Aim-Relative Pitch Lean Elevation Deflection (W/S)
-		SafeTest("TC-ALP-06_AimRelativePitchLeanDeflection", function()
+		-- Owner §G.1: S loft is derived from accepted body/contact orientation, not a raw-key launch override.
+		SafeTest("TC-ALP-06_ContactFrameLeanAddsSmallContinuousLoft", function()
 			local aimDir = Vector3.new(0, 0.1, -1).Unit
 			local power = 100.0
 			local upwardBias = 0.05
+			local facing = CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -1))
+			local neutralContact = facing
+			local halfLeanContact = facing * AirLeanSolver.ComputeLeanCFrame(-0.5, 0.0)
+			local fullLeanContact = facing * AirLeanSolver.ComputeLeanCFrame(-1.0, 0.0)
 
-			local velNeutral, _ = AirLeanSolver.ComputeAirShotTrajectory(aimDir, power, upwardBias, 0.0, 0.0, "DirectShoot")
-			local velFwd, _ = AirLeanSolver.ComputeAirShotTrajectory(aimDir, power, upwardBias, 1.0, 0.0, "DirectShoot")
-			local velBack, _ = AirLeanSolver.ComputeAirShotTrajectory(aimDir, power, upwardBias, -1.0, 0.0, "DirectShoot")
+			local velNeutral, _ = AirLeanSolver.ComputeContactShotTrajectory(aimDir, power, upwardBias, 0.0, 0.0, "DirectShoot", neutralContact, neutralContact)
+			local velHalf, _ = AirLeanSolver.ComputeContactShotTrajectory(aimDir, power, upwardBias, -0.5, 0.0, "DirectShoot", halfLeanContact, neutralContact)
+			local velFull, _ = AirLeanSolver.ComputeContactShotTrajectory(aimDir, power, upwardBias, -1.0, 0.0, "DirectShoot", fullLeanContact, neutralContact)
 
-			-- W (+fwd) pushes trajectory slightly down; S (-back) scoops trajectory slightly higher
-			Expect(velFwd.Y).toBeLessThan(velNeutral.Y, "W forward lean must deflect trajectory downward")
-			Expect(velBack.Y).toBeGreaterThan(velNeutral.Y, "S backward lean must deflect trajectory upward")
+			Expect(math.abs(velNeutral.Y - AirLeanSolver.ComputeAirShotTrajectory(aimDir, power, upwardBias, 0.0, 0.0, "DirectShoot").Y)).toBeLessThan(0.01, "Neutral launch must preserve its established trajectory")
+			Expect(velHalf.Y).toBeGreaterThan(velNeutral.Y, "A modest backward body lean should add a modest loft")
+			Expect(velFull.Y).toBeGreaterThan(velHalf.Y, "Loft should grow continuously with the accepted posture")
+			Expect(math.abs(velFull.Magnitude - power)).toBeLessThan(0.01, "Posture coupling must preserve launch energy")
+			local angle = math.deg(math.acos(math.clamp(velNeutral.Unit:Dot(velFull.Unit), -1, 1)))
+			Expect(angle).toBeLessThan(4.0, "Maximum S loft should remain a small posture adjustment")
+			Expect(Vector3.new(velFull.X, 0, velFull.Z).Unit:Dot(Vector3.new(aimDir.X, 0, aimDir.Z).Unit)).toBeGreaterThan(0.999, "S must not replace camera aim azimuth with character facing")
+		end)
 
-			local angleFwd = math.deg(math.acos(math.clamp(velNeutral.Unit:Dot(velFwd.Unit), -1, 1)))
-			Expect(angleFwd).toBeLessThan(5.0001, "Pitch deflection cone must not exceed 5.0 deg")
+		SafeTest("TC-ALP-06B_ContactFrameLoftHandlesAimYawAndNearVertical", function()
+			local power = 85.0
+			local upwardBias = 0.04
+			for _, aim in ipairs({Vector3.new(1, 0.15, 0), Vector3.new(0.01, 0.9998, -0.01).Unit}) do
+				local facing = CFrame.lookAt(Vector3.zero, Vector3.new(1, 0, 0))
+				local neutralContact = facing
+				local backContact = facing * AirLeanSolver.ComputeLeanCFrame(-0.8, 0.2)
+				local neutral = AirLeanSolver.ComputeContactShotTrajectory(aim, power, upwardBias, 0.0, 0.0, "Volley", neutralContact, neutralContact)
+				local leaning = AirLeanSolver.ComputeContactShotTrajectory(aim, power, upwardBias, -0.8, 0.2, "Volley", backContact, neutralContact)
+				Expect(neutral.X == neutral.X and neutral.Y == neutral.Y and neutral.Z == neutral.Z).toBeTrue()
+				Expect(leaning.X == leaning.X and leaning.Y == leaning.Y and leaning.Z == leaning.Z).toBeTrue()
+				Expect(math.abs(leaning.Magnitude - power)).toBeLessThan(0.01)
+			end
 		end)
 
 		-- TC-ALP-07: Strict Energy Conservation Cap
@@ -370,6 +390,7 @@ local function runAirLeanPhysicsTests(TestHarness: any)
 			local okJump = BallService.ExecuteDirectionalJump(pMock :: any, Vector3.new(0, 0, -1))
 			Expect(okJump).toBeTrue("Jump execution must succeed")
 			rootM.CFrame = CFrame.new(0, 5.0, 0)
+			rootM.Anchored = true -- Hold the mocked contact pose while the server slew-rate timer advances.
 
 			-- Inject accepted air lean snapshot (allow slew rate to reach target 1.0)
 			task.wait(0.18)
@@ -387,7 +408,8 @@ local function runAirLeanPhysicsTests(TestHarness: any)
 
 			-- Airborne RMB -> Volley
 			local okVolley = BallService.ExecuteKick(pMock :: any, "Volley", Vector3.new(0, 0, -1), 0.8, "intent_air_volley_01")
-			Expect(okVolley).toBeTrue("Airborne volley execution must succeed")
+			local status, reason = BallService.GetPlayerLastActionStatus(1082)
+			Expect(okVolley).toBeTrue("Airborne volley execution must succeed (" .. tostring(status) .. ": " .. tostring(reason) .. ")")
 
 			local ballSt = BallService.GetBallState()
 			Expect(ballSt.inFlightAction).toBe("Volley")

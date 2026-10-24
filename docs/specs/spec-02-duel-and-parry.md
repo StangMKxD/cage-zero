@@ -1,51 +1,87 @@
 # Spec 02 — ฟุตบอลต่อเนื่อง, Skill Moves และเกมรับ
 
+### Latest Owner delta — core FakeShot aim-side ball touch (2026-10-24)
+
+- Grounded attacking LMB/RMB charge + E retains core FakeShot cancel/terminalization behavior, but a valid controlled-ball contact must visibly touch/cut the ball left/right from the AIM side at activation; stationary/cosmetic-only FakeShot is superseded.
+- Server validates aim/side/ownership/contact/recovery and uses one shared character-relative direction for ball and pose. Camera/movement disagreement must follow aim; no world-X/A-D-only substitute, teleport, weld, invulnerability or unowned-ball capture. Existing stale-release/replay/reset/airborne/range safeguards remain.
+- This is separate from queued OpenUpFakeShot1★ loadout skill. Exact implementation/neutral-policy/tuning evidence and tests: Plan02 primary HANDOFF§23/T16; no approval/closure or unrelated scope change.
+
+> **Owner latest possession pop:** Grounded+personalpossession+Space=BallPopตามmovement ตัวยังอยู่พื้น แล้วkeyup/pressใหม่เมื่อballfreeจึงเป็นjumpปกติตาม[HANDOFF02§16](../plan/phase-01-gameplay-demo/02-player-actions/assets/HANDOFF.md). คงballphysicsเดิม เปลี่ยนเพียงinitialpoplaunch ไม่auto-jump/ไม่สร้างSkill03ใหม่.
+
+> **Owner jump adaptation:** ตาม[HANDOFF02§15](../plan/phase-01-gameplay-demo/02-player-actions/assets/HANDOFF.md)ปรับjumpเป็นstate-based+singlelaunch โดยยังล็อกmomentum/facingและให้mouseaim3Dได้. หนึ่งvalidmanualairreleaseต่อflight;Rising/Apex/Fallingออกบอลได้เมื่อvalidcontact และapexให้ผลดีที่สุดแบบsoftcontinuous ไม่hardgate. คงaim-relativeboundedlean/ปุ่มล่าสุด;ไม่มีStyles/JumpMeter/SnakeJumpหรือcamera-lockเพิ่ม.
+
+> **Owner latest tuning:** airshotเปลี่ยนมาใช้aim3D/เป้าที่เล็งเป็นฐานแล้วเบี่ยงเพียงเล็กน้อยตามleanตาม[HANDOFF02§14](../plan/phase-01-gameplay-demo/02-player-actions/assets/HANDOFF.md) แทนlockedF0shotbaseด้านล่าง;F0ยังใช้ล็อกyaw/ทิศบินcharacter. Wเอนหน้า/Sเอนหลังและต้องsmooth;ลดBloom/Haze/ballglowแบบpresentation-onlyโดยไม่เปลี่ยนสีทีม/geometry/physicskernel. Plan02ยังไม่ปิด.
+
+> **Owner delta 2026-10-23:** ปุ่มmanualshootของ02เป็นgroundLMB Direct/RMB Curve และairLMB Direct/RMB Volley;หนึ่งphysicalbindingต่อaction. GroundA/ซ้าย=Finesse,D/ขวา=Trivela. AirWASDใช้bodypitch/rollโดยไม่เปลี่ยนyaw/ทิศบินที่commit;balllaunch/spinคำนวณServerจากlockedfacing+aimelevation+acceptedleanตาม[HANDOFF02§12](../plan/phase-01-gameplay-demo/02-player-actions/assets/HANDOFF.md). ข้อความairconversion/Headerfallbackเก่าที่ขัดถูกแทนเฉพาะขอบเขตนี้;ไม่ได้เปิดPlan03/04หรือปิดPlan02.
+
 Decision Accepted / Delivery Planned; Stang ยืนยัน Q1–Q22 เมื่อ 2026-10-20 “ตรงตามนี้ ปรับแผนและเอกสารได้ (แนะนำ)” อนุญาตแก้เอกสาร ไม่ใช่ implementation approval ของ02/03 พาธไฟล์เดิมคงไว้ให้อ้างอิงได้
+
+**Owner supersession 2026-10-21:** ต่อจากAGYfix-001 ดึง sprint/dash/kick/Pass/curve+เกจจากSandbox เว้นท่าโยก ตัดLobPassแยก ดึงSlideก่อน ส่วนPoke/Shoulderทำใน03ภายหลัง; รายละเอียดการลงมืออยู่HANDOFF02 ข้อความอนุมัติเฉพาะเอกสารด้านบนเป็นรอบQ22เดิม
 
 ## 1. ขอบเขต Phase 1
 
-- เก็บเดิน/Sprint/Dash/Stamina/Shift Lock ยิงตรง/ส่งเรียดและโด่ง/เล็ง3D/ชาร์จตามระบบเดิม; ยิงโค้งเป็นปุ่มออกลูกโดยตรง แยกจากยิงปกติ ไม่ใช่ modifier ที่ต้องกดคู่ยิง/ส่ง
+- เก็บเดิน/Sprint/Dash/Stamina/Shift Lock ยิงตรง/Passแบบเดียวเล็ง3DและปรับแรงตามSandbox ไม่มีLobPass/ปุ่มส่งโด่งแยก; ยิงโค้งเป็นปุ่มออกลูกโดยตรง แยกจากยิงปกติ ไม่ใช่ modifier ที่ต้องกดคู่ยิง/ส่ง
 - Directional Jump เลือกทิศเคลื่อนตัวก่อนกระโดดและเปลี่ยนทิศกลางอากาศไม่ได้; Header/Volley/บล็อกกลางอากาศใช้ระบบบอลตามแผน02 ไม่มีผลชนะทางอัตโนมัติ
 - Skill Move 3ช่องแทนปุ่ม Feint เดิม ใช้ปุ่มช่อง+ทิศทางตอนเริ่มท่า ไม่มีคอมโบกดปุ่มเพิ่มเติมตามดาว
 - Choice Duel/หน้าจอเลือกชอยส์/ตารางชนะทาง/สโลว์เปิดดวล/คัตซีนล็อกคู่/สตั้นผู้แพ้จากผลดวลถูกตัดตามQ22 ไม่เปลี่ยนชื่อแล้วเปิดกลไกเดิม
 - บอลมี hitbox และถูกแย่งได้ตลอด ไม่มี I-frame ใน Dash/สกิล/การปะทะ ไม่มี timed Parry
 
-## 2. ปุ่มตามทีมที่ครองบอลล่าสุด
+## 2. ปุ่มตามทีมที่ครองบอลล่าสุด (TARGET vs AS-IS)
 
-| Context ที่ Server ยืนยัน | ปุ่มหลัก | ปุ่มรอง | ปุ่มที่สาม |
-| --- | --- | --- | --- |
-| ทีมเราครองบอล หรือบอลอิสระหลังทีมเราเคยครองล่าสุด | ยิง | ส่ง | ยิงโค้ง |
-| ทีมคู่แข่งเป็นฝ่ายครองล่าสุด | Slide Tackle | Quick Poke | Shoulder Charge |
+### ตารางคู่ปุ่มเป้าหมาย (TARGET Keybinding Map — 3 คู่ปุ่มหลัก)
 
+| Context ที่ Server ยืนยัน | ปุ่มหลัก (`LMB`) | ปุ่มรอง (`E`) | ปุ่มที่สาม (`RMB`) | ปุ่มที่ยกเลิก (`MMB`) |
+| --- | --- | --- | --- | --- |
+| **ทีมเราครองบอล / บอลอิสระหลังบุก** | **ยิง (Shoot)** | **ส่ง (Pass)** | **ยิงโค้งโดยตรง (Direct Curve Shot)** | *RETIRED* |
+| **ทีมคู่แข่งเป็นฝ่ายครองล่าสุด** | **Slide Tackle** (LMB) | **Quick Poke** (E) | **Body Check / พุ่งชน** (RMB) | *RETIRED* |
+
+- **ข้อยกเว้นพิเศษของการชาร์จยิง (Core FakeShot Special Case):** ขณะกดชาร์จยิงบุก (LMB/RMB) อยู่ การกดปุ่ม `E` จะทำงานเป็น **FakeShot Cancel** ตัดเข้าหาทิศที่เล็งพร้อมแตะบอลเปลี่ยนมุมทันที นี่คือข้อยกเว้นของบริบทบุกเดิม ไม่ใช่ปุ่มใหม่หรือสกิลในช่อง Loadout
+- **สถานะ AS-IS ในโค้ดปัจจุบัน เทียบกับ TARGET:**
+  - *AS-IS ในโค้ดปัจจุบัน:* ฝั่งรับใช้ `RMB` = Quick Poke, `MMB` = CagePress (ยังไม่เปลี่ยนโค้ดตามคำสั่ง documentation-only)
+  - *TARGET ตามสเปกใหม่:* ฝั่งรับใช้ `LMB` = Slide Tackle, `E` = Quick Poke, `RMB` = Body Check / Dash Tackle; ปลดระวาง `MMB` ออกจากผังปุ่มเป้าหมาย
 - ทั้งทีมคงโหมดบุกหลังยิง/ส่ง/ชิ่ง ไม่ใช่เฉพาะคนออกบอลล่าสุด
 - ปุ่มเปลี่ยนฝั่งเมื่ออีกทีมรับ/แย่งจนได้ครองบอลสำเร็จ การบล็อกจนบอลเด้ง/ชิ่งกำแพงหรือเพดานไม่เปลี่ยนโหมด
 - การเห็นปุ่มยิงไม่ได้ให้สิทธิ์ยิงจากระยะไกล ลูกต้องอยู่ในระยะสัมผัสและเงื่อนไขเล่นบอลจริง; Phase1 ยิง/ส่งจังหวะแรกได้โดยไม่ต้องจับครองก่อน
 - Server แยกผู้ครองบอลจริงจากทีมที่ยังคงโหมดบุก; fixture เริ่ม/รีเซ็ตต้องระบุ initial ball/context ชัดเจน ไม่ต้องมีแมตช์เต็ม
 - การสลับปุ่มไม่ตีความ input ที่เริ่มเป็นท่าหนึ่งให้กลายเป็นอีกท่ากลางคัน; intent ที่เงื่อนไขหมดแล้วต้องยกเลิกอย่างชัดเจน
 
-## 3. บอล การชน และเกมรับ
+## 3. บอล การชน และเกมรับ (Body Check & Outfield Stats Integration)
 
 - บอลพื้นที่รับไหวในระยะสัมผัสเมื่อแย่ง/ตัดได้เข้าครองได้; ลูกแรง/ลูกสูงโดนตัวให้เด้งอิสระ ไม่จับทุกลูกจากเพียงการยืนขวาง
 - ชนตัวคู่แข่งธรรมดาทำให้เคลื่อนช้าลง ไม่สั่งเสียบอลทันทีจากการชนร่างอย่างเดียว เพื่อนร่วมทีมผ่านตัวกันได้; ลูกบอลยังเล่น/รับ/บล็อกตามกติกาของบอล
-- Quick Poke ระยะสั้น ออกไว เสี่ยงเสียจังหวะน้อยกว่า Slide; ได้ครองเมื่อจิ้มบอลสำเร็จและรับไหว
-- Slide ระยะไกลกว่า พลาดแล้วต้องรอลุก; การโดนคนก่อนบอลตรวจต่อในแผน05 ไม่ทำระบบฟาวล์ใหม่ใน03
-- Shoulder Charge ด้านข้างและจังหวะถูกต้องทำให้คู่แข่งเสียเหลี่ยม/บอลหลุดอิสระ ต้องแย่งเก็บต่อ ไม่มอบบอลให้ผู้เบียดทันที
-- Block/Header/Volley ต้องอาศัย contact และวิถีจริง ไม่รับรองว่า Sombrero ข้ามหัวสำเร็จหรือสกิล5ดาวชนะทุกการสกัด
+- **การพุ่งชน (Body Check / Dash Tackle) — แทน Shoulder Charge เดิม:**
+  - *กติกา Target:* พุ่งชนไปข้างหน้าเข้าหาผู้ถือบอล ไม่ต้องเช็กมุมไหล่ด้านข้าง (Side-Shoulder) และไม่ต้องพึ่งการอัดกำแพง
+  - *การคำนวณแรงปะทะ:* ใช้ค่าสเตตัส `Strength` เปรียบเทียบระหว่างผู้เล่น ส่งผลต่อการตอบสนองต่อแรงปะทะ (Contact Response) และระยะเวลาชะงัก (Stagger duration) ของผู้ถูกชน โดยสูตรคำนวณ/ต้านทานโดยละเอียดยัง PENDING รอการจูนสมดุล
+  - *ผลลัพธ์ของบอล:* ลูกบอลจะกระเด็นหลุดออกจากเท้าเป็น **บอลอิสระ (Loose Ball)** ทันที เพื่อให้ทั้งสองฝ่ายเข้าแย่งเก็บบอลจังหวะสอง
+  - *Invariants เด็ดขาด:* **ไม่มี Auto-Possession** (ผู้ชนไม่ดูดบอลเข้าเท้าอัตโนมัติ), **ไม่มี I-frame** ระหว่างพุ่งชน, และหากพุ่งชนวืดจะติด Recovery Lockout ตามปกติ
+  - *ความต่างกับ AS-IS ปัจจุบัน:* โค้ดปัจจุบันใน runtime มี CagePress ที่ครองบอลติดเท้าในที่โล่งและปล่อยบอลเฉพาะตอนชนกำแพง; ในเอกสาร Target นี้ถูกแทนที่ด้วย Body Check บอลหลุดอิสระ
+- **Quick Poke:** ระยะสั้น ออกไว เสี่ยงเสียจังหวะน้อยกว่า Slide; ระยะยื่นเท้าคำนวณจากค่า `Poke Reach`
+- **Slide Tackle:** ระยะไกลกว่า พลาดแล้วต้องรอลุก; ระยะและความเร็วไถลคำนวณจากค่า `Sliding` การโดนคนก่อนบอลตรวจต่อในแผน 05
+- **Block / Jump Block / Header / Volley:**
+  - อาศัย contact และวิถีจริง; รัศมีตรวจจับบล็อกขยายตามค่า `Block` และลดความเร็วลูกสะท้อน
+  - กระโดด Directional Jump ได้รับผลจากค่า `Jump`
+- **ความเชื่อมโยงกับ Outfield Base Stats (13 ค่า) และ Character Traits (16 รายการ):**
+  - กติกาการเล่นทั้งหมดถูกออกแบบให้รองรับ 13 Outfield Base Stats (ดู [notes N-61](../plan/phase-01-gameplay-demo/01-cage-physics/notes.md#n-61--accepted-decision-13-outfield-base-stats-4-deferred-gk-stats-16-innate-traits-5-character-archetypes-and-body-check-target-mechanics-2026-10-24) และ [Phase 2 / 03 Plan](../plan/phase-02-full-match-and-progression/03-player-gacha-and-stats/plan.md))
+  - Trait ฝั่งรับเฉพาะทาง (เช่น `Iron Wall Block D1`, `Bulldozer Impact D2`, `Clean Sweeper D3`, `Shadow Chaser D5`, `Cage Guardian D7`, `Elastic Recovery #19`, `Lightning Poke #18`) ขยายขีดความสามารถการเล่นเกิน Base Cap 1.15 ได้ตามเงื่อนไขของแต่ละ Trait
 
-## 4. ชุดท่าทดสอบและตัวเริ่มต้น
+## 4. ชุดท่าเป้าหมายและตัวเริ่มต้น (Target 7 Unique Skill Moves across 3 Slots)
 
-| ดาวสกิล | Skill Move | บทบาท |
-| --- | --- | --- |
-| 1★ | Heavy Knock-On | แตะกระชากยาวไปข้างหน้าเพื่อวิ่งตาม |
-| 2★ | Drag Back & Turn | ดึงถอยแล้วเปลี่ยนทิศ |
-| 3★ | La Croqueta | แตะสลับเท้าหลบด้านข้าง |
-| 4★ | Sombrero Flick | งัดบอลข้ามแนวรับ |
-| 5★ | Elastico | หลอกออกแล้วตวัดกลับ |
+| ดาวสกิล | Skill Move (เป้าหมาย 7 ท่าไม่ซ้ำ) | บทบาท / การเคลื่อนไหว | สถานะแอนิเมชัน |
+| --- | --- | --- | --- |
+| 1★ | **Heavy Knock-On** | แตะกระชากยาวไปข้างหน้าเพื่อวิ่งตามความเร็วสูง | อยู่ระหว่างปรับแก้ (HANDOFF §Q) รอตรวจรับ |
+| 1★ | **Open Up Fake Shot** | หลอกยิงเปิดมุมลำตัวเปลี่ยนทางบอล | อยู่ระหว่างปรับแก้ (HANDOFF §Q) รอตรวจรับ |
+| 2★ | **Body Feint** | ทิ้งน้ำหนักหลอกโยกตัวแล้วแตะออกด้านข้าง | อยู่ระหว่างปรับแก้ (HANDOFF §Q) รอตรวจรับ |
+| 3★ | **Heel Chop** | ตอกส้นหักมุม 90 องศาตัดเข้าใน | อยู่ระหว่างปรับแก้ (HANDOFF §Q) รอตรวจรับ |
+| 4★ | **Sombrero Flick** | งัดบอลลอยข้ามศีรษะแนวรับ | อยู่ระหว่างปรับแก้ (HANDOFF §Q) รอตรวจรับ |
+| 4★ | **Lane Change** | ก้าวแตะสลับเท้าหลบด้านข้าง (Double Touch) | ชุดท่าเป้าหมายใหม่ (HANDOFF §Q) |
+| 5★ | **Elastico** | หลอกแตะออกนอกแล้วตวัดกลับเข้าในอย่างรวดเร็ว | ชุดตรวจเดิม รักษารูปแบบคลิป |
 
-- Phase1 มี5ท่า ดาวละ1ท่า ไม่ใช่15ท่า ตัวเริ่มต้น1ตัวระดับ Skill Move5ดาว ใช้ท่าทดลองฟรีได้ครบ
-- ติดตั้งได้3ช่อง เลือกข้ามระดับดาวภายในเพดานตัวละคร; เปลี่ยนก่อนเริ่มรอบหรือหยุด/รีเซ็ตซ้อม
-- ดาวคือเพดานท่าที่ใช้ได้ ไม่ใช่การเพิ่มstats/Tierหรือการันตีผลสกัด; presets/Default Card ของ00ไม่เปลี่ยนจากการกำหนดตัวทดสอบนี้
-- มีแอนิเมชันท่าร่าง R6 ที่อ่านจังหวะออกเท้า/ทิศทางได้ครบ5ท่า ปรับความสวยภายหลัง ออกแบบ asset/provenance และ hit timing ก่อน implementation03
+- **การติดตั้งและข้อกำหนด:** ตัวเริ่มต้นมีเพดาน Skill Move 5 ดาว ติดตั้งได้ 3 ช่อง เลือกข้ามระดับดาวได้ภายในเพดานตัวละคร; เปลี่ยนก่อนเริ่มรอบหรือหยุด/รีเซ็ตซ้อม
+- **สถานะแอนิเมชันและการตรวจรับ:** 5 แอนิเมชันเดิมที่ถูกปฏิเสธ (Heavy Knock-On, Open Up Fake Shot, Body Feint, Heel Chop, Sombrero Flick) อยู่ในกระบวนการปรับแก้ตาม HANDOFF §Q โดยการตรวจรับด้าน visual และ runtime ยังคง PENDING รอ Owner ตรวจรับ
+- **ท่าประวัติศาสตร์ที่ปลดระวาง (Historical / Retired Skills):**
+  - `Drag Back & Turn (2★)`: ถอนออกจาก active target loadout (ทดแทนด้วย Body Feint 2★)
+  - `La Croqueta (3★)`: ถอนออกจาก active target loadout (ทดแทนด้วย Heel Chop 3★)
+  - ข้อมูลและคลิปเดิมคงไว้เป็นบันทึกประวัติศาสตร์ ไม่ลบทำลายหลักฐาน
 
 ## 5. Stamina, cooldown และ recovery
 
@@ -59,6 +95,10 @@ Decision Accepted / Delivery Planned; Stang ยืนยัน Q1–Q22 เม�
 
 ## 6. งานถัดไปและอำนาจ
 
-Phase2: สุ่มตัวละคร/สุ่มสกิล/สุ่มเอฟเฟค, ท่าเพิ่มเติม, ความต่างตัวละคร/ดาว/Stats, ระบบตั้งค่าจริง/ค่าถาวร, แอนิเมชันยิงส่งจังหวะแรกและเสียจังหวะเมื่อวืด รายละเอียดเรต/ราคา/การเติบโต/ขีดสมดุลรอgrillตามแผนเจ้าของ
+Phase2: สุ่มตัวละคร/สุ่มสกิล/สุ่มเอฟเฟค, ท่าเพิ่มเติม, ระบบ 13 Outfield Base Stats, 4 Deferred GK Stats, 16 Innate Traits, 5 Character Archetypes ([03-player-gacha-and-stats](../plan/phase-02-full-match-and-progression/03-player-gacha-and-stats/plan.md)), ระบบตั้งค่าจริง/ค่าถาวร, แอนิเมชันยิงส่งจังหวะแรกและเสียจังหวะเมื่อวืด รายละเอียดเรต/ราคา/การเติบโต/ขีดสมดุลรอgrillตามแผนเจ้าของ
 
-เจ้าของ Phase1: [02-player-actions](../plan/phase-01-gameplay-demo/02-player-actions/plan.md), [03 Skill Moves/เกมรับ](../plan/phase-01-gameplay-demo/03-dribble-duel/plan.md), [06 Debug/Dummy](../plan/phase-01-gameplay-demo/06-training-ground/plan.md), [08 UI](../plan/phase-01-gameplay-demo/08-gameplay-ui/plan.md) และ [TDD](../tdd/master-test-cases.md) ไม่มีการขยายสัญญางาน00หรืออนุญาตแก้sourceในรอบเอกสารนี้
+เจ้าของ Phase1: [02-player-actions](../plan/phase-01-gameplay-demo/02-player-actions/plan.md), [03 Skill Moves/เกมรับ](../plan/phase-01-gameplay-demo/03-dribble-duel/plan.md), [06 Debug/Dummy](../plan/phase-01-gameplay-demo/06-training-ground/plan.md), [08 UI](../plan/phase-01-gameplay-demo/08-gameplay-ui/plan.md) และ [TDD](../tdd/master-test-cases.md) ไม่ขยายสัญญางาน00; รอบQ22เดิมอนุมัติเฉพาะเอกสาร ส่วนOwnerdirective2026-10-21อนุญาตเฉพาะselectiveportตามHANDOFF02
+
+## 7. Owner visual supersession — 2026-10-21
+
+Ownerไม่รับรองแอนิเมชันfix-002และเลือกShift LockแบบSandbox: เริ่มON สลับL/Alt เมาส์กลางจอ/กล้องเยื้องไหล่/8waystrafe ปล่อยเมาส์เมื่อmenu/focuslost ใช้selectedproceduralposeและค่าของprototype3เป็นฐานadaptR6ก่อนจูน02ตามHANDOFF§7 ไม่ใช้ชื่อclipหรือEdittestcountแทนposeจริง เอฟเฟกต์เต็มที่มีแผนเจ้าของรอตามแผนเดิมได้ ไม่เปิดท่าโยก/Poke/Shoulderหรือfirst-time-misspolishจากคำสั่งนี้

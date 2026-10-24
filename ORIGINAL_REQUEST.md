@@ -141,3 +141,83 @@ Owner (Stang) requested that **Variant `"A"`** (`DEFAULT_CAGE_VARIANT = "A"`) in
      - No visible neon/cyan parts obstruct the middle of the pitch.
      - `V-01`–`V-05` geometry & trajectory checks still pass 100%.
      - `Workspace.Baseplate` remains intact at `Y = -10.05` (no Z-fighting).
+
+
+## 2026-10-22T06:23:47Z
+
+Adapt the Argon R6 Football Animation Pack (A01–A18) into the existing Cage Zero R6 custom rig action system for Plan 02 (`02-player-actions`) in `C:\Users\Stang\cage-zero`, enforcing realistic athletic football locomotion, non-slip footwork, non-dislocating joints, discrete jump handling, and held shooting stance without foot shuffling or HRP anchoring.
+
+Working directory: `C:\Users\Stang\cage-zero`
+Integrity mode: development
+
+## Baseline & Verified Artifacts
+- **Current HEAD:** `617f523bb2529a2ec40bfb1107de5f6a32a208ae` + working tree
+- **ZIP Path:** `C:\Users\Stang\Downloads\Roblox_R6_Football_Animation_Pack-20261022T055539Z-1-001.zip`
+- **ZIP SHA-256:** `c82ef41b057e2a1a0675fd9b2771670a428f3f5720254cee13a8676177b46d49` (VERIFIED)
+- **Reference Extraction Path:** `docs/plan/phase-01-gameplay-demo/02-player-actions/assets/designs/argon-r6-pack/` (VERIFIED 28 entries)
+- **Source Locks (Pre-flight):**
+  - `src/shared/configs/PlayerActionPoseConfigs.luau`: `f41e9b782e800cb4e2ed465bd06e8a2d227a2f79f0271ee3804ce216b5bc4acb`
+  - `src/client/character/R6ActionPoseController.luau`: `798c592783a40159fe11f0ec2efbcad94be022f97317264effcb413aecbfdf3c`
+  - `src/client/character/R6AnimationController.luau`: `70daebfe80b3b36127aa338b91f2177f9209fc24127c4c3f71932031c27ca0e2`
+  - `src/shared/configs/RigAnimationConfigs.luau`: `89037f778d11da301ea66936e9f3684032221c95cb4761c2b6201b1a17bebd25`
+  - `src/client/controllers/InputController.luau`: `03daff87b7f1f7230fc089a886aa2d8e721945005fdbe46ad8d8246db9d9790a`
+  - `src/server/services/BallService.luau`: `7e109383afc9fd9d260e8bc4624ae29c2d801a89af7274dda3e7f5d70c05704a` (READ-ONLY)
+  - `src/shared/Types.luau`: `8341ba0ae2a34785ee33838e5a4483b3fe417f71ea3915926f7f301734593747` (READ-ONLY)
+  - `src/shared/Constants.luau`: `90dbd499918ad8e7997d823d114c0dd9ecc82f20763ef2b8e5fad91e583d4013` (READ-ONLY)
+  - `tests/e2e/Tier1_PlayerActions.luau`: `277d78b6eb41ed65241d8fa9753ca52efd08a1b9f92611b76587462868720595`
+
+---
+
+## Disjoint Team Ownership & Responsibilities
+
+| Role | Exclusive File Ownership | Responsibilities |
+| :--- | :--- | :--- |
+| **Lead Orchestrator** | `docs/plan/.../02-player-actions/assets/fix-004.md`, `plan.md`, `tasks.md`, `notes.md` | Preflight, Studio sync coordinator, intermediate doc synchronization, single report author. |
+| **Explorer / Challenger** | Read-Only (no file writes) | Inspect ZIP and callgraph, challenge edge cases for F-25..F-30, verify scope limits. |
+| **Worker 1 (Pose Data)** | `src/shared/configs/PlayerActionPoseConfigs.luau` | Adapt A01–A18 and variants (finesse/trivela, ground/lob, hit/miss), record image provenance, adjust support & clearance. |
+| **Worker 2 (Pose Runtime)** | `src/client/character/R6ActionPoseController.luau` | Single authoritative joint writer, Part0-to-Motor6D conversion, terminal cancel/fade states, character generation token binding, clean release. |
+| **Worker 3 (Animator)** | `src/client/character/R6AnimationController.luau`, `src/shared/configs/RigAnimationConfigs.luau` | Track ownership deconfliction with procedural poses, suppress walk/run during charge hold, restore track control cleanly. |
+| **Worker 4 (Input / State)** | `src/client/controllers/InputController.luau` | One-shot jump key release guard (fix continuous jump holding), bind visual intent to server-resolved actions/foot/style, real takeoff/landing lifecycle. |
+| **Test Engineer** | `tests/e2e/Tier1_PlayerActions.luau` | In-engine native behavioral and pose verification via public interfaces, Studio test execution coordination. |
+
+---
+
+## Requirements
+
+### R1. Adaptation of A01–A18 Poses into Single Joint Writer Architecture (T-05, F-21, F-25, F-26)
+- Adapt the 18 authored poses and visual variants (A01 Idle, A02 Walk, A03 Sprint, A04 Dash, A05 8-Way Strafe, A06 Jump Apex, A07 Landing Cushion, A08 Header, A09 Block, A10 Volley, A11 Bicycle Kick, A12 Direct Shoot Windup, A13 Direct Shoot Follow-through, A14 Curve Shoot Windup, A15 Curve Shoot Follow-through, A16 Single 3D Pass, A17 Slide Tackle, A18 Slide Recovery / Miss) into `PlayerActionPoseConfigs.luau`.
+- Ensure native in-engine CFrame evaluation prevents floor penetration (`minY >= 0`) during intermediate blending and transitions without modifying HRP height or physical rig schemas.
+- Reconcile A05 strafe and A16 pass representations so runtime output matches authored design geometry. Ground and lob passes remain visual variants of the single 3D pass action.
+
+### R2. Strict Terminal Cancel, Generation Guard & Track Ownership (F-27)
+- In `R6ActionPoseController.luau`, implement explicit terminal states for stop, cancel, and reject with generation token validation. Auto-next must never resurrect interrupted actions.
+- In `R6AnimationController.luau`, ensure default locomotion tracks do not fight or write over procedural poses during hold stances (e.g. charging shot). Once an action completes or cancels, joint and track ownership must be released cleanly to the active character.
+
+### R3. Discrete Jump Guard & Real Flight / Landing Lifecycle (F-28, User Directive)
+- In `InputController.luau`, implement a one-shot discrete key release guard for Spacebar (`Enum.KeyCode.Space`), ensuring that holding down the jump key does NOT cause repeated bunny-hopping or lock the airborne state.
+- Bind aerial transitions to actual flight lifecycle (`takeoff -> ascent -> apex -> descent -> landed`) and ground contact raycasts, eliminating hardcoded flight timers (`0.72s`) and world-Y fallbacks. Acrobatic bicycle kick must land naturally without mid-air upright snapping.
+
+### R4. Action Outcome Binding & Contact Synchronization (F-29)
+- Bind Header, Volley, Bicycle Kick, and Curve Shoot to server-resolved actions, styles (`Finesse` vs `Trivela`), and kicking foot (`Right` vs `Left`), including correct axis mirroring for left-foot execution.
+- Align visual contact phases with actual ball release without introducing artificial windup delays, ball writer conflicts, or altering cooldown/stamina costs.
+
+### R5. Foot Sliding Mitigation at Target Velocities (F-30)
+- Calibrate locomotion stride trajectories and animation cadence to match authoritative game velocities (`WALK_SPEED = 20.0`, `SPRINT_SPEED = 32.0`).
+- Measure and document residual foot-slip empirically without altering core gameplay speed or balance parameters.
+
+---
+
+## Acceptance Criteria
+
+### 1. Verification & Test Evidence
+- [ ] Tier 1 Player Actions test suite (`Tier1_PlayerActions.luau`) passes with 0 failures in Roblox Studio Edit DataModel.
+- [ ] Jump input requires explicit key release before another jump can trigger (no continuous auto-jump or airborne lock while holding Space).
+- [ ] During shot charge hold (`IsCharging == true`), the character maintains the windup stance smoothly without legs shuffling or walking cycles layering over it, while retaining 50% movement speed without HRP anchoring.
+- [ ] All 18 action poses and variants evaluate without limb dislocation, maintaining exact shoulder and hip socket pivots (`(1, 0.5, 0)`, `(-1, 0.5, 0)`, `(1, -1, 0)`, `(-1, -1, 0)`).
+- [ ] Left plant leg remains grounded during curve shot charge and follow-through.
+
+### 2. Governance & Deliverable Constraints
+- [ ] Single consolidated report created at `docs/plan/phase-01-gameplay-demo/02-player-actions/assets/fix-004.md` detailing A01–A18 mappings, rationale, SHA-256 hashes, test evidence, and F-25..F-30 status.
+- [ ] No git commit, push, merge, deploy, or branch alteration.
+- [ ] No plan closure (Plans 00, 01, and 02 remain open).
+- [ ] Strict Scope Guard maintained: Plan 03 (Poke/Shoulder, Skill Moves) and Plan 04 (Goalkeeper) remain excluded.

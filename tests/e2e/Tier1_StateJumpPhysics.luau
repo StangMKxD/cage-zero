@@ -268,6 +268,7 @@ local function runStateJumpPhysicsTests(TestHarness: any)
 		SafeTest("First airborne shot consumes budget; second shot in same flight is rejected with ExceededBudget", function()
 			local p1, char1, hrp1 = createMockJumpPlayer(805, "JumpMockPlayer1", Vector3.new(0, 2.0, 0), Vector3.new(0, 0, 1))
 			BallService.SetPossessor(805)
+			BallService.SetPossessor(nil)
 
 			-- Jump into air
 			local jumpOk = BallService.ExecuteDirectionalJump(p1, Vector3.new(0, 0, 1), "flight_805_1", "jump_805_1")
@@ -325,6 +326,7 @@ local function runStateJumpPhysicsTests(TestHarness: any)
 		SafeTest("Airborne kick near apex scales with peak soft quality 1.00", function()
 			local p1, char1, hrp1 = createMockJumpPlayer(807, "JumpMockPlayer1", Vector3.new(0, 2.0, 0), Vector3.new(0, 0, 1))
 			BallService.SetPossessor(807)
+			BallService.SetPossessor(nil)
 
 			BallService.ExecuteDirectionalJump(p1, Vector3.zero, "flight_807_1", "jump_807_1")
 
@@ -347,6 +349,7 @@ local function runStateJumpPhysicsTests(TestHarness: any)
 		SafeTest("Airborne kick at takeoff scales with minimum soft quality 0.90", function()
 			local p1, char1, hrp1 = createMockJumpPlayer(808, "JumpMockPlayer1", Vector3.new(0, 2.0, 0), Vector3.new(0, 0, 1))
 			BallService.SetPossessor(808)
+			BallService.SetPossessor(nil)
 
 			BallService.ExecuteDirectionalJump(p1, Vector3.zero, "flight_808_1", "jump_808_1")
 

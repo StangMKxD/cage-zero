@@ -17,7 +17,15 @@
 ## Debug tuning และ Dummy — Phase 1
 
 - ปรับค่าจูนระหว่างทดสอบได้โดยเห็นค่าdefault/currentและคืนค่าเริ่มต้นได้ ไม่ต้องแก้sourceทุกครั้ง
-- กลุ่มค่าจูนที่เสนอ: ความเร็วเดิน/Sprint/Dash, กระโดด, Stamina cost/regen, การแตะบอล/ระยะรับบอล, ความเร็วยิง/ส่ง/ความโค้ง, cooldown/recovery ของท่าที่แผนเจ้าของกำหนดแล้ว รายชื่อfields/ช่วงค่าปลอดภัยและจังหวะapplyให้ล็อกก่อนimplementation ไม่ถือว่าเพิ่มactionใหม่
+- **การควบคุม 13 Outfield Base Stats (ช่วงสมดุล 0.90–1.15 หรือ −10% ถึง +15%, ค่ากลาง 1.00):**
+  - ตัวปรับค่า 13 รายการ: `Speed` (#1), `Jump` (#2), `Shot Power` (#3), `Curve` (#4), `Sliding` (#5), `Strength` (#6), `Dribbling` (#7), `Stamina` (#9), `Pass Velocity` (#16), `Acceleration/Dash` (#27), `Poke Reach` (#30), `Recovery/Reflex` (#32), `Block` (ใหม่)
+  - รองรับการปรับและอ่านผลกระทบจริง (Effective Stat Multiplier) โดยค่าอยู่นอกช่วง 0.90–1.15 จะถูก Server ปฏิเสธ (ยกเว้นผลจาก Trait ตามเงื่อนไข)
+- **ตัวเลือก Toggle เปิด/ปิด 16 Character Traits สำหรับทดสอบ:**
+  - ยิง/ชิ่ง (4): `Whipped Finesse`, `Trivela Master`, `Knuckle Emperor`, `Wall-Breaker`
+  - เทคนิค/เคลื่อนที่ (7): `Second Wind` (#10), `Velvet Touch` (#13), `One-Touch Specialist` (#14), `Acrobat / Sky Striker` (#15), `Quick Footwork` (#17), `Lightning Poke` (#18), `Elastic Recovery` (#19)
+  - กองหลัง/เกมรับ (5): `Iron Wall Block` (D1), `Bulldozer Impact` (D2), `Clean Sweeper` (D3), `Shadow Chaser` (D5), `Cage Guardian` (D7)
+- **ปุ่มสลับ 5 Character Archetype Presets สำเร็จรูป:**
+  - สลับระหว่าง `Speedster Striker`, `Cage Playmaker`, `Power Target`, `Iron Stopper`, `Sweeper Destroyer` ได้ทันที พร้อมโหลดชุด Stats 13 ค่าและ Trait ตัวอย่างครบถ้วน (ดูตารางใน [Phase 2 / 03 Plan](../../phase-02-full-match-and-progression/03-player-gacha-and-stats/plan.md) และ [notes N-61](../01-cage-physics/notes.md#n-61--accepted-decision-13-outfield-base-stats-4-deferred-gk-stats-16-innate-traits-5-character-archetypes-and-body-check-target-mechanics-2026-10-24))
 - เมื่อระบบ07พร้อม เพิ่มtargetSpeed/เวลาActiveของRebound Rushในกลุ่มค่าจูนที่รองรับ ไม่สร้างeventphysicsใน06แทน07
 - เมื่อevent5/6พร้อม เพิ่มtoggleสถานะOverdrive/เวลาActive และLowRoofheight(default12)/warning-descentตามช่วงที่ปลอดภัย ใช้modifierของ07ไม่แก้staminacostหรือgeometrybaseถาวร
 - ค่าDebugมีผลเฉพาะtest session มีvalidationและServerเป็นผู้applyค่าที่กระทบเกม; ค่าไม่ถูกต้องต้องrejectพร้อมเหตุผล ไม่เปลี่ยนdefaultของเกมหรือข้อมูลตัวละครถาวรจากแผงนี้

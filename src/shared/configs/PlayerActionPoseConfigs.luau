@@ -11,6 +11,8 @@
 
 local Shared = script.Parent.Parent
 local Constants = require(Shared:WaitForChild("Constants"))
+local AirLeanSolver = require(Shared:WaitForChild("AirLeanSolver"))
+local SkillMoveConfigs = require(script.Parent:WaitForChild("SkillMoveConfigs"))
 
 export type DirectionalWeights = {
 	forward: number,
@@ -468,6 +470,110 @@ function PlayerActionPoseConfigs.GetLocomotionPose(motion: DribbleMotionState, s
 	})
 end
 
+function PlayerActionPoseConfigs.GetAnimeDribblePose(
+	motion: DribbleMotionState,
+	stridePhase: number,
+	speed: number,
+	isSprinting: boolean
+): R6JointPoseOffsets
+	local touchWave = math.sin(stridePhase)
+	local tapPulse = math.cos(stridePhase)
+	local w = motion.weights
+	local sAlpha = math.clamp(motion.speedAlpha, 0.5, 2.0)
+
+	-- 1. Aggressive Anime Torso Lean & Swagger Sway ("วิ่งเลี้ยงแบบเว่อๆ พุ่งทะลวง")
+	local pitchAngle = if isSprinting then -24.0 else -16.0
+	local torsoYaw = touchWave * (if isSprinting then 16.0 else 11.0)
+	local torsoRoll = touchWave * (if isSprinting then 8.0 else 5.0)
+
+	local rootY = 0.12 + 0.10 * math.max(0, math.sin(stridePhase * 2))
+	local rootTorso = CFrame.new(0, rootY, 0) * CFrame.Angles(
+		math.rad(pitchAngle * w.forward + 8 * w.backward),
+		math.rad(torsoYaw + 8 * (w.left - w.right)),
+		math.rad(torsoRoll + 8 * (w.right - w.left))
+	)
+
+	-- 2. Focused Head Tracking Forward
+	local headNeck = CFrame.Angles(
+		math.rad(-pitchAngle * 0.70),
+		math.rad(-torsoYaw * 0.55),
+		0
+	)
+
+	-- 3. Exaggerated Kinetic Arms ("แบบเว่อๆ" - dynamic anime wing flare & guard)
+	local armPitchAmp = if isSprinting then 52.0 else 40.0
+	local armFlare = if isSprinting then 42.0 else 32.0
+
+	local rArmPitch = -armPitchAmp * touchWave
+	local lArmPitch = armPitchAmp * touchWave
+
+	local rArmRoll = math.rad(armFlare + (if touchWave < 0 then 18 else 0))
+	local lArmRoll = math.rad(-armFlare - (if touchWave > 0 then 18 else 0))
+	local rArmYaw = math.rad(touchWave * 12)
+	local lArmYaw = math.rad(touchWave * 12)
+
+	local fwdRightShoulder = CFrame.Angles(math.rad(rArmPitch), rArmYaw, rArmRoll)
+	local fwdLeftShoulder = CFrame.Angles(math.rad(lArmPitch), lArmYaw, lArmRoll)
+
+	-- 4. Snappy Footwork & Touch Leg Dynamics
+	local legPitchAmp = if isSprinting then 58.0 else 44.0
+	local touchInwardYaw = 12.0 * tapPulse
+
+	local rLegPitch = legPitchAmp * touchWave
+	local rLegYaw = touchInwardYaw + (if touchWave > 0 then -8 else 4)
+	local rLegRoll = if touchWave > 0 then 6 else -4
+
+	local lLegPitch = -legPitchAmp * touchWave
+	local lLegYaw = -touchInwardYaw + (if touchWave < 0 then 8 else -4)
+	local lLegRoll = if touchWave < 0 then -6 else 4
+
+	local fwdRightHip = CFrame.Angles(math.rad(rLegPitch), math.rad(rLegYaw), math.rad(rLegRoll))
+	local fwdLeftHip = CFrame.Angles(math.rad(lLegPitch), math.rad(lLegYaw), math.rad(lLegRoll))
+
+	-- Blend with lateral strafes if moving diagonally/sideways
+	local leftRightHip = CFrame.Angles(math.rad(18 * tapPulse), math.rad(22 * tapPulse), math.rad(-16))
+	local leftLeftHip = CFrame.Angles(math.rad(-18 * tapPulse), math.rad(16 * tapPulse), math.rad(-10))
+	local rightRightHip = CFrame.Angles(math.rad(18 * tapPulse), math.rad(-22 * tapPulse), math.rad(16))
+	local rightLeftHip = CFrame.Angles(math.rad(-18 * tapPulse), math.rad(-16 * tapPulse), math.rad(10))
+
+	local rHip = fwdRightHip:Lerp(leftRightHip, w.left):Lerp(rightRightHip, w.right)
+	local lHip = fwdLeftHip:Lerp(leftLeftHip, w.left):Lerp(rightLeftHip, w.right)
+	local rShoulder = fwdRightShoulder
+	local lShoulder = fwdLeftShoulder
+
+	return PlayerActionPoseConfigs.ApplyClearanceOffset({
+		RootJoint = rootTorso,
+		Neck = headNeck,
+		RightShoulder = rShoulder,
+		LeftShoulder = lShoulder,
+		RightHip = rHip,
+		LeftHip = lHip,
+	})
+end
+
+function PlayerActionPoseConfigs.GetAnimeDribbleIdlePose(idlePhase: number): R6JointPoseOffsets
+	local pulse = math.sin(idlePhase * 2 * math.pi)
+	local subtle = pulse * 2.0
+
+	local rootCF = CFrame.new(0, 0.08 + subtle * 0.02, 0) * CFrame.Angles(math.rad(-6.0), math.rad(6.0), math.rad(-2.0))
+	local neckCF = CFrame.Angles(math.rad(5.0), math.rad(-5.0), 0)
+
+	local rShoulder = CFrame.Angles(math.rad(12.0 + subtle), math.rad(4.0), math.rad(24.0))
+	local lShoulder = CFrame.Angles(math.rad(-8.0 - subtle), math.rad(-4.0), math.rad(-24.0))
+
+	local rHip = CFrame.new(0, 0.06, 0.12) * CFrame.Angles(math.rad(16.0 + subtle), math.rad(-10.0), math.rad(8.0))
+	local lHip = CFrame.Angles(math.rad(-8.0 - subtle), math.rad(6.0), math.rad(-4.0))
+
+	return PlayerActionPoseConfigs.ApplyClearanceOffset({
+		RootJoint = rootCF,
+		Neck = neckCF,
+		RightShoulder = rShoulder,
+		LeftShoulder = lShoulder,
+		RightHip = rHip,
+		LeftHip = lHip,
+	})
+end
+
 function PlayerActionPoseConfigs.Get8WayStrafePose(localMove: Vector3, stridePhase: number): R6JointPoseOffsets
 	local flatMove = Vector3.new(localMove.X, 0, localMove.Z)
 	if flatMove.Magnitude < 0.05 then
@@ -510,7 +616,43 @@ end
 -- 6. Dash, Charge Stance Hold, and Action Follow-Through Poses
 -- ============================================================================
 function PlayerActionPoseConfigs.GetDashPose(progress: number): R6JointPoseOffsets
-	return PlayerActionPoseConfigs.SampleAuthoredPose("A04", math.clamp(progress, 0, 1))
+	local p = math.clamp(progress, 0, 1)
+	local pose: R6JointPoseOffsets
+	if p < 0.18 then
+		local load = p / 0.18
+		pose = {
+			RootJoint = CFrame.new(0, -0.10 * load, 0.08 * load) * CFrame.Angles(math.rad(-12 * load), 0, 0),
+			Neck = CFrame.Angles(math.rad(8 * load), 0, 0),
+			RightShoulder = CFrame.Angles(math.rad(38 * load), 0, math.rad(18 * load)),
+			LeftShoulder = CFrame.Angles(math.rad(-34 * load), 0, math.rad(-18 * load)),
+			RightHip = CFrame.new(0, 0, -0.10 * load) * CFrame.Angles(math.rad(-44 * load), 0, math.rad(5 * load)),
+			LeftHip = CFrame.Angles(math.rad(24 * load), 0, math.rad(-4 * load)),
+		}
+	elseif p < 0.76 then
+		local cycle = (p - 0.18) / 0.58
+		local stride = math.sin(cycle * math.pi * 2)
+		local lift = math.max(0, math.cos(cycle * math.pi * 2))
+		pose = {
+			RootJoint = CFrame.new(0, -0.10 + 0.06 * lift, -0.06) * CFrame.Angles(math.rad(-22 + 4 * lift), 0, 0),
+			Neck = CFrame.Angles(math.rad(16), 0, 0),
+			RightShoulder = CFrame.Angles(math.rad(-30 * stride), 0, math.rad(24)),
+			LeftShoulder = CFrame.Angles(math.rad(30 * stride), 0, math.rad(-24)),
+			RightHip = CFrame.new(0, 0.06 * math.max(0, stride), 0) * CFrame.Angles(math.rad(46 * stride), 0, math.rad(4)),
+			LeftHip = CFrame.new(0, 0.06 * math.max(0, -stride), 0) * CFrame.Angles(math.rad(-46 * stride), 0, math.rad(-4)),
+		}
+	else
+		local settle = (p - 0.76) / 0.24
+		local recover = 1 - settle
+		pose = {
+			RootJoint = CFrame.new(0, -0.10 * recover, -0.06 * recover) * CFrame.Angles(math.rad(-22 * recover), 0, 0),
+			Neck = CFrame.Angles(math.rad(16 * recover), 0, 0),
+			RightShoulder = CFrame.Angles(math.rad(-28 * recover), 0, math.rad(24 * recover)),
+			LeftShoulder = CFrame.Angles(math.rad(28 * recover), 0, math.rad(-24 * recover)),
+			RightHip = CFrame.Angles(math.rad(42 * recover), 0, math.rad(4 * recover)),
+			LeftHip = CFrame.Angles(math.rad(-42 * recover), 0, math.rad(-4 * recover)),
+		}
+	end
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
 end
 
 function PlayerActionPoseConfigs.GetChargePose(chargeAction: string, elapsed: number, curveStyle: string?): R6JointPoseOffsets
@@ -585,17 +727,488 @@ function PlayerActionPoseConfigs.GetPassPose(progress: number, elevationDeg: num
 	})
 end
 
+function PlayerActionPoseConfigs.GetSkillMovePose(skillId: string, progress: number, localMoveDirection: Vector3?): R6JointPoseOffsets
+	local p = math.clamp(progress, 0, 1)
+	local pose: R6JointPoseOffsets
+
+	if skillId == "HeavyKnockOn" then
+		-- 1★ Heavy Knock-On (0.36s / v02 Owner Confirmed):
+		-- Phase 1 (0..0.33): Readable support plant on left foot, right leg swings forward through the ball
+		-- Phase 2 (0.33..0.66): Ball pushed ahead a short visible lead; ONE brief body acceleration burst slightly faster than run
+		-- Phase 3 (0.66..1.00): Decelerate and blend smoothly into ordinary run stride
+		if p < 0.33 then
+			local a = p / 0.33
+			pose = {
+				RootJoint = CFrame.new(0, -0.06 * a, -0.08 * a) * CFrame.Angles(math.rad(-10 * a), math.rad(-10 * a), 0),
+				Neck = CFrame.Angles(math.rad(8 * a), math.rad(10 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(32 * a), 0, math.rad(16 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-38 * a), 0, math.rad(-20 * a)),
+				RightHip = CFrame.new(0, 0.08 * a, -0.14 * a) * CFrame.Angles(math.rad(-38 * a), 0, math.rad(6 * a)),
+				LeftHip = CFrame.Angles(math.rad(18 * a), 0, math.rad(-4 * a)),
+			}
+		elseif p < 0.66 then
+			local a = (p - 0.33) / 0.33
+			local snap = math.sin(a * math.pi * 0.5)
+			pose = {
+				RootJoint = CFrame.new(0, -0.06 * (1 - snap), -0.08 + 0.16 * snap) * CFrame.Angles(math.rad(-10 - 6 * snap), math.rad(-10 + 18 * snap), 0),
+				Neck = CFrame.Angles(math.rad(8 + 4 * snap), math.rad(10 - 18 * snap), 0),
+				RightShoulder = CFrame.Angles(math.rad(32 - 76 * snap), 0, math.rad(16 + 8 * snap)),
+				LeftShoulder = CFrame.Angles(math.rad(-38 + 80 * snap), 0, math.rad(-20 - 6 * snap)),
+				RightHip = CFrame.new(0, 0.08 - 0.08 * snap, -0.14 + 0.32 * snap) * CFrame.Angles(math.rad(-38 + 86 * snap), 0, math.rad(6)),
+				LeftHip = CFrame.Angles(math.rad(18 - 44 * snap), 0, math.rad(-4)),
+			}
+		else
+			local a = 1.0 - ((p - 0.66) / 0.34)
+			pose = {
+				RootJoint = CFrame.new(0, 0, 0.08 * a) * CFrame.Angles(math.rad(-16 * a), math.rad(8 * a), 0),
+				Neck = CFrame.Angles(math.rad(12 * a), math.rad(-8 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-44 * a), 0, math.rad(24 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(42 * a), 0, math.rad(-26 * a)),
+				RightHip = CFrame.Angles(math.rad(48 * a), 0, math.rad(6 * a)),
+				LeftHip = CFrame.Angles(math.rad(-26 * a), 0, math.rad(-4 * a)),
+			}
+		end
+	elseif skillId == "OpenUpFakeShot" then
+		-- 1★ Open Up Fake Shot (0.38s / v02 Owner Confirmed):
+		-- Phase 1 (0..0.35): Leg/hip/body suggests start of heavy shot (readable strike windup)
+		-- Phase 2 (0.35..0.68): Abruptly check feint and open hips wide; real foot contact cushions ball diagonally forward
+		-- Phase 3 (0.68..1.00): Short automatic following step into open space and blend to run
+		if p < 0.35 then
+			local a = p / 0.35
+			pose = {
+				RootJoint = CFrame.new(0, -0.08 * a, 0) * CFrame.Angles(math.rad(-14 * a), math.rad(-20 * a), math.rad(8 * a)),
+				Neck = CFrame.Angles(math.rad(10 * a), math.rad(16 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(36 * a), 0, math.rad(24 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-42 * a), 0, math.rad(-26 * a)),
+				RightHip = CFrame.new(0.08 * a, 0.06 * a, -0.16 * a) * CFrame.Angles(math.rad(-54 * a), math.rad(18 * a), math.rad(14 * a)),
+				LeftHip = CFrame.Angles(math.rad(26 * a), 0, math.rad(-6 * a)),
+			}
+		elseif p < 0.68 then
+			local a = (p - 0.35) / 0.33
+			pose = {
+				RootJoint = CFrame.new(0.14 * a, -0.08, 0.08 * a) * CFrame.Angles(math.rad(-14 + 8 * a), math.rad(-20 + 44 * a), math.rad(8 - 18 * a)),
+				Neck = CFrame.Angles(math.rad(10 - 16 * a), math.rad(16 - 28 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(36 - 64 * a), 0, math.rad(24 + 10 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-42 + 68 * a), 0, math.rad(-26 - 8 * a)),
+				RightHip = CFrame.new(0.08 + 0.14 * a, 0.06, -0.16 + 0.32 * a) * CFrame.Angles(math.rad(-54 + 92 * a), math.rad(18 - 36 * a), math.rad(14 - 28 * a)),
+				LeftHip = CFrame.Angles(math.rad(26 - 48 * a), 0, math.rad(-6 + 10 * a)),
+			}
+		else
+			local a = 1.0 - ((p - 0.68) / 0.32)
+			pose = {
+				RootJoint = CFrame.new(0.14 * a, -0.06 * a, 0.08 * a) * CFrame.Angles(math.rad(-6 * a), math.rad(24 * a), math.rad(-10 * a)),
+				Neck = CFrame.Angles(math.rad(-6 * a), math.rad(-12 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-28 * a), 0, math.rad(34 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(26 * a), 0, math.rad(-34 * a)),
+				RightHip = CFrame.new(0.22 * a, 0, 0.16 * a) * CFrame.Angles(math.rad(38 * a), math.rad(-18 * a), math.rad(-14 * a)),
+				LeftHip = CFrame.Angles(math.rad(-22 * a), 0, math.rad(4 * a)),
+			}
+		end
+	elseif skillId == "BodyFeint" then
+		-- 2★ Body Feint (0.36s / v02 Owner Confirmed):
+		-- Phase 1 (0..0.38): Shoulder & hip sell false direction opposite exit; ball stays between/near feet!
+		-- Phase 2 (0.38..0.72): Rapid weight transfer across body; contacting foot touches ball toward actual exit
+		-- Phase 3 (0.72..1.00): Short following exit step pushing off back foot, regain run stance
+		if p < 0.38 then
+			local a = p / 0.38
+			pose = {
+				RootJoint = CFrame.new(0.18 * a, -0.06 * a, 0) * CFrame.Angles(math.rad(6 * a), math.rad(-18 * a), math.rad(-20 * a)),
+				Neck = CFrame.Angles(math.rad(-6 * a), math.rad(14 * a), math.rad(12 * a)),
+				RightShoulder = CFrame.Angles(math.rad(30 * a), 0, math.rad(36 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-26 * a), 0, math.rad(-34 * a)),
+				RightHip = CFrame.new(0.16 * a, 0, -0.08 * a) * CFrame.Angles(math.rad(30 * a), math.rad(-18 * a), math.rad(22 * a)),
+				LeftHip = CFrame.Angles(math.rad(-18 * a), 0, math.rad(-14 * a)),
+			}
+		elseif p < 0.72 then
+			local a = (p - 0.38) / 0.34
+			pose = {
+				RootJoint = CFrame.new(0.18 - 0.38 * a, -0.08, 0.06 * a) * CFrame.Angles(math.rad(6 + 8 * a), math.rad(-18 + 40 * a), math.rad(-20 + 42 * a)),
+				Neck = CFrame.Angles(math.rad(-6 - 4 * a), math.rad(14 - 30 * a), math.rad(12 - 24 * a)),
+				RightShoulder = CFrame.Angles(math.rad(30 - 64 * a), 0, math.rad(36 - 16 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-26 + 62 * a), 0, math.rad(-34 + 14 * a)),
+				RightHip = CFrame.new(0.16 - 0.32 * a, 0, -0.08 + 0.24 * a) * CFrame.Angles(math.rad(30 - 68 * a), math.rad(-18 + 42 * a), math.rad(22 - 46 * a)),
+				LeftHip = CFrame.new(0.18 * a, 0, -0.16 * a) * CFrame.Angles(math.rad(-18 + 56 * a), math.rad(-16 * a), math.rad(-14 + 28 * a)),
+			}
+		else
+			local a = 1.0 - ((p - 0.72) / 0.28)
+			pose = {
+				RootJoint = CFrame.new(-0.20 * a, -0.06 * a, 0.06 * a) * CFrame.Angles(math.rad(14 * a), math.rad(22 * a), math.rad(22 * a)),
+				Neck = CFrame.Angles(math.rad(-10 * a), math.rad(-16 * a), math.rad(-12 * a)),
+				RightShoulder = CFrame.Angles(math.rad(-34 * a), 0, math.rad(20 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(36 * a), 0, math.rad(-20 * a)),
+				RightHip = CFrame.Angles(math.rad(-38 * a), math.rad(24 * a), math.rad(-24 * a)),
+				LeftHip = CFrame.new(0.18 * a, 0, -0.16 * a) * CFrame.Angles(math.rad(38 * a), math.rad(-16 * a), math.rad(14 * a)),
+			}
+		end
+	elseif skillId == "HeelChop" then
+		-- 3★ Heel Chop (0.36s / v02 Owner Confirmed):
+		-- NO JUMP! Grounded balance/leg spread near starting position; body DOES NOT pursue ball.
+		-- A / Left: RIGHT foot cuts/hooks around left/support leg, ball exits LEFT beside body.
+		-- D / Right: Mirrored (LEFT foot cuts/hooks around right/support leg, ball exits RIGHT).
+		if p < 0.35 then
+			local a = p / 0.35
+			pose = {
+				RootJoint = CFrame.new(0, -0.12 * a, 0) * CFrame.Angles(math.rad(10 * a), math.rad(-12 * a), math.rad(-6 * a)),
+				Neck = CFrame.Angles(math.rad(-10 * a), math.rad(8 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-20 * a), 0, math.rad(30 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(28 * a), 0, math.rad(-32 * a)),
+				RightHip = CFrame.new(-0.10 * a, 0.08 * a, 0.16 * a) * CFrame.Angles(math.rad(-48 * a), math.rad(-18 * a), math.rad(-12 * a)),
+				LeftHip = CFrame.new(-0.12 * a, 0, -0.18 * a) * CFrame.Angles(math.rad(36 * a), 0, math.rad(-10 * a)),
+			}
+		elseif p < 0.70 then
+			local a = (p - 0.35) / 0.35
+			pose = {
+				RootJoint = CFrame.new(0.06 * a, -0.14, 0) * CFrame.Angles(math.rad(10 + 6 * a), math.rad(-12 + 54 * a), math.rad(-6 - 10 * a)),
+				Neck = CFrame.Angles(math.rad(-10 + 4 * a), math.rad(8 - 26 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-20 + 56 * a), 0, math.rad(30 + 10 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(28 - 54 * a), 0, math.rad(-32 - 8 * a)),
+				RightHip = CFrame.new(-0.10 - 0.16 * a, 0.08 - 0.08 * a, 0.16 - 0.32 * a) * CFrame.Angles(math.rad(-48 + 108 * a), math.rad(-18 - 18 * a), math.rad(-12 - 16 * a)),
+				LeftHip = CFrame.new(-0.12, 0, -0.18 + 0.12 * a) * CFrame.Angles(math.rad(36 - 48 * a), 0, math.rad(-10 + 12 * a)),
+			}
+		else
+			local a = 1.0 - ((p - 0.70) / 0.30)
+			pose = {
+				RootJoint = CFrame.new(0.06 * a, -0.10 * a, 0) * CFrame.Angles(math.rad(16 * a), math.rad(42 * a), math.rad(-16 * a)),
+				Neck = CFrame.Angles(math.rad(-6 * a), math.rad(-18 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(36 * a), 0, math.rad(40 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-26 * a), 0, math.rad(-40 * a)),
+				RightHip = CFrame.new(-0.26 * a, 0, -0.16 * a) * CFrame.Angles(math.rad(60 * a), math.rad(-36 * a), math.rad(-28 * a)),
+				LeftHip = CFrame.Angles(math.rad(-12 * a), 0, math.rad(4 * a)),
+			}
+		end
+	elseif skillId == "LaneChange" then
+		-- 4★ Lane Change (0.34s): Rapid inside glide (0..0.35) -> Forward-lateral exit push (0.35..0.70) -> Stride recovery (0.70..1.00)
+		if p < 0.35 then
+			local a = p / 0.35
+			pose = {
+				RootJoint = CFrame.new(-0.16 * a, -0.08 * a, 0) * CFrame.Angles(math.rad(-8 * a), math.rad(16 * a), math.rad(12 * a)),
+				Neck = CFrame.Angles(math.rad(-6 * a), math.rad(-14 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-18 * a), 0, math.rad(24 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(26 * a), 0, math.rad(-28 * a)),
+				RightHip = CFrame.new(-0.18 * a, 0, -0.12 * a) * CFrame.Angles(math.rad(24 * a), math.rad(18 * a), math.rad(-16 * a)),
+				LeftHip = CFrame.Angles(math.rad(-16 * a), 0, math.rad(-8 * a)),
+			}
+		elseif p < 0.70 then
+			local a = (p - 0.35) / 0.35
+			pose = {
+				RootJoint = CFrame.new(-0.16 + 0.32 * a, -0.08, 0) * CFrame.Angles(math.rad(-8 + 14 * a), math.rad(16 - 30 * a), math.rad(12 - 24 * a)),
+				Neck = CFrame.Angles(math.rad(-6 - 4 * a), math.rad(-14 + 22 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-18 + 48 * a), 0, math.rad(24)),
+				LeftShoulder = CFrame.Angles(math.rad(26 - 52 * a), 0, math.rad(-28)),
+				RightHip = CFrame.new(-0.18 + 0.30 * a, 0, -0.12 + 0.24 * a) * CFrame.Angles(math.rad(24 - 48 * a), math.rad(18 - 28 * a), math.rad(-16 + 28 * a)),
+				LeftHip = CFrame.new(0.18 * a, 0, -0.16 * a) * CFrame.Angles(math.rad(-16 + 50 * a), math.rad(-16 * a), math.rad(-8 + 20 * a)),
+			}
+		else
+			local a = 1.0 - ((p - 0.70) / 0.30)
+			pose = {
+				RootJoint = CFrame.new(0.16 * a, -0.04 * a, 0) * CFrame.Angles(math.rad(6 * a), math.rad(-14 * a), math.rad(-12 * a)),
+				Neck = CFrame.Angles(math.rad(-10 * a), math.rad(8 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(30 * a), 0, math.rad(24 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-26 * a), 0, math.rad(-28 * a)),
+				RightHip = CFrame.Angles(math.rad(-24 * a), math.rad(-10 * a), math.rad(12 * a)),
+				LeftHip = CFrame.new(0.18 * a, 0, -0.16 * a) * CFrame.Angles(math.rad(34 * a), math.rad(-16 * a), math.rad(12 * a)),
+			}
+		end
+	elseif skillId == "DragBackTurn" then
+		-- Retired move kept for backward compatibility with historical tests
+		if p < 0.30 then
+			local a = p / 0.30
+			pose = {
+				RootJoint = CFrame.new(0, -0.12 * a, 0) * CFrame.Angles(math.rad(8 * a), math.rad(-15 * a), 0),
+				Neck = CFrame.Angles(math.rad(-18 * a), math.rad(15 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-25 * a), 0, math.rad(24 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(28 * a), 0, math.rad(-24 * a)),
+				RightHip = CFrame.new(0, 0.15 * a, -0.25 * a) * CFrame.Angles(math.rad(48 * a), 0, math.rad(8 * a)),
+				LeftHip = CFrame.Angles(math.rad(-16 * a), 0, math.rad(-6 * a)),
+			}
+		elseif p < 0.70 then
+			local a = (p - 0.30) / 0.40
+			pose = {
+				RootJoint = CFrame.new(0, -0.12, 0) * CFrame.Angles(math.rad(8 - 18 * a), math.rad(-15 + 135 * a), math.rad(-10 * math.sin(a * math.pi))),
+				Neck = CFrame.Angles(math.rad(-18 + 12 * a), math.rad(15 - 45 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-25 + 60 * a), 0, math.rad(24 + 12 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(28 - 55 * a), 0, math.rad(-24 - 12 * a)),
+				RightHip = CFrame.new(0, 0.15 * (1 - a), -0.25 + 0.50 * a) * CFrame.Angles(math.rad(48 - 92 * a), math.rad(25 * a), math.rad(8)),
+				LeftHip = CFrame.Angles(math.rad(-16 + 38 * a), math.rad(-20 * a), math.rad(-6)),
+			}
+		else
+			local a = 1.0 - ((p - 0.70) / 0.30)
+			pose = {
+				RootJoint = CFrame.new(0, -0.12 * a, 0) * CFrame.Angles(math.rad(-10 * a), math.rad(120 * a), 0),
+				Neck = CFrame.Angles(math.rad(-6 * a), math.rad(-30 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(35 * a), 0, math.rad(36 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-27 * a), 0, math.rad(-36 * a)),
+				RightHip = CFrame.new(0, 0, 0.25 * a) * CFrame.Angles(math.rad(-44 * a), math.rad(25 * a), math.rad(8 * a)),
+				LeftHip = CFrame.Angles(math.rad(22 * a), math.rad(-20 * a), math.rad(-6 * a)),
+			}
+		end
+	elseif skillId == "LaCroqueta" then
+		-- Retired move kept for backward compatibility with historical tests
+		if p < 0.27 then
+			local a = p / 0.27
+			pose = {
+				RootJoint = CFrame.new(-0.18 * a, -0.08 * a, 0) * CFrame.Angles(math.rad(-6 * a), math.rad(14 * a), math.rad(12 * a)),
+				Neck = CFrame.Angles(math.rad(-10 * a), math.rad(-14 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-20 * a), 0, math.rad(28 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(24 * a), 0, math.rad(-32 * a)),
+				RightHip = CFrame.new(-0.22 * a, 0, -0.15 * a) * CFrame.Angles(math.rad(28 * a), math.rad(24 * a), math.rad(-22 * a)),
+				LeftHip = CFrame.Angles(math.rad(-12 * a), 0, math.rad(-10 * a)),
+			}
+		elseif p < 0.54 then
+			local a = (p - 0.27) / 0.27
+			pose = {
+				RootJoint = CFrame.new(-0.18 - 0.24 * a, -0.08, 0) * CFrame.Angles(math.rad(-6 - 4 * a), math.rad(14 - 28 * a), math.rad(12 - 26 * a)),
+				Neck = CFrame.Angles(math.rad(-10), math.rad(-14 + 28 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-20 + 40 * a), 0, math.rad(28)),
+				LeftShoulder = CFrame.Angles(math.rad(24 - 44 * a), 0, math.rad(-32)),
+				RightHip = CFrame.new(-0.22 * (1 - a), 0, -0.15 * (1 - a)) * CFrame.Angles(math.rad(28 - 40 * a), math.rad(24 * (1 - a)), math.rad(-22 + 28 * a)),
+				LeftHip = CFrame.new(0.20 * a, 0, -0.18 * a) * CFrame.Angles(math.rad(-12 + 46 * a), math.rad(-22 * a), math.rad(-10 + 28 * a)),
+			}
+		elseif p < 0.80 then
+			local a = (p - 0.54) / 0.26
+			pose = {
+				RootJoint = CFrame.new(-0.42 * (1 - 0.5 * a), -0.08 * (1 - a), 0) * CFrame.Angles(math.rad(-10), math.rad(-14 * (1 - a)), math.rad(-14 * (1 - a))),
+				Neck = CFrame.Angles(math.rad(-6), math.rad(14 * (1 - a)), 0),
+				RightShoulder = CFrame.Angles(math.rad(20 * (1 - a)), 0, math.rad(22)),
+				LeftShoulder = CFrame.Angles(math.rad(-20 * (1 - a)), 0, math.rad(-22)),
+				RightHip = CFrame.Angles(math.rad(-12 + 28 * a), 0, math.rad(6)),
+				LeftHip = CFrame.new(0.20 * (1 - a), 0, -0.18 * (1 - a)) * CFrame.Angles(math.rad(34 - 50 * a), math.rad(-22 * (1 - a)), math.rad(18 * (1 - a))),
+			}
+		else
+			local a = 1.0 - ((p - 0.80) / 0.20)
+			pose = {
+				RootJoint = CFrame.new(-0.21 * a, 0, 0) * CFrame.Angles(math.rad(-10 * a), 0, 0),
+				Neck = CFrame.Angles(math.rad(-6 * a), 0, 0),
+				RightShoulder = CFrame.Angles(0, 0, math.rad(22 * a)),
+				LeftShoulder = CFrame.Angles(0, 0, math.rad(-22 * a)),
+				RightHip = CFrame.Angles(math.rad(16 * a), 0, math.rad(6 * a)),
+				LeftHip = CFrame.Angles(math.rad(-16 * a), 0, 0),
+			}
+		end
+	elseif skillId == "SombreroFlick" then
+		-- 4★ Sombrero Flick (0.55s): Toe scoop windup (0..0.27) -> High overhead flick (0.27..0.68) -> Sprint under arc (0.68..1.00)
+		if p < 0.27 then
+			local a = p / 0.27
+			pose = {
+				RootJoint = CFrame.new(0, -0.14 * a, 0) * CFrame.Angles(math.rad(-12 * a), math.rad(-10 * a), 0),
+				Neck = CFrame.Angles(math.rad(-14 * a), math.rad(10 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(28 * a), 0, math.rad(22 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-32 * a), 0, math.rad(-22 * a)),
+				RightHip = CFrame.new(0, 0, -0.18 * a) * CFrame.Angles(math.rad(-24 * a), 0, math.rad(8 * a)),
+				LeftHip = CFrame.Angles(math.rad(18 * a), 0, math.rad(-6 * a)),
+			}
+		elseif p < 0.68 then
+			local a = (p - 0.27) / 0.41
+			local arc = math.sin(a * math.pi)
+			pose = {
+				RootJoint = CFrame.new(0, -0.14 * (1 - a), 0) * CFrame.Angles(math.rad(-12 + 28 * arc), math.rad(-10 + 18 * a), 0),
+				Neck = CFrame.Angles(math.rad(-14 + 36 * arc), 0, 0),
+				RightShoulder = CFrame.Angles(math.rad(28 - 95 * arc), 0, math.rad(22 + 24 * arc)),
+				LeftShoulder = CFrame.Angles(math.rad(-32 + 85 * arc), 0, math.rad(-22 - 24 * arc)),
+				RightHip = CFrame.new(0, 0.18 * arc, -0.32 * arc) * CFrame.Angles(math.rad(-24 + 108 * arc), math.rad(-8 * arc), math.rad(8)),
+				LeftHip = CFrame.Angles(math.rad(18 - 34 * arc), 0, math.rad(-6)),
+			}
+		else
+			local a = 1.0 - ((p - 0.68) / 0.32)
+			pose = {
+				RootJoint = CFrame.Angles(math.rad(-10 * a), math.rad(8 * a), 0),
+				Neck = CFrame.Angles(math.rad(14 * a), 0, 0),
+				RightShoulder = CFrame.Angles(math.rad(-24 * a), 0, math.rad(20 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(24 * a), 0, math.rad(-20 * a)),
+				RightHip = CFrame.Angles(math.rad(28 * a), 0, math.rad(6 * a)),
+				LeftHip = CFrame.Angles(math.rad(-22 * a), 0, math.rad(-6 * a)),
+			}
+		end
+	else
+		-- 5★ Elastico (0.44s / v03 Owner Confirmed):
+		-- Continuous two contacts on the SAME foot:
+		-- Phase 1 (0..0.30): Outside of right foot nudges ball outward right, torso leans right
+		-- Phase 2 (0.30..0.65): SAME foot immediately snaps inward, right instep cuts ball sharply left across body (no pause!)
+		-- Phase 3 (0.65..1.00): Body weight follows true exit with one short decisive step
+		if p < 0.30 then
+			local a = p / 0.30
+			pose = {
+				RootJoint = CFrame.new(0.20 * a, -0.10 * a, 0) * CFrame.Angles(math.rad(-10 * a), math.rad(-24 * a), math.rad(-18 * a)),
+				Neck = CFrame.Angles(math.rad(-8 * a), math.rad(20 * a), math.rad(10 * a)),
+				RightShoulder = CFrame.Angles(math.rad(-38 * a), 0, math.rad(40 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(34 * a), 0, math.rad(-28 * a)),
+				RightHip = CFrame.new(0.20 * a, 0.08 * a, -0.18 * a) * CFrame.Angles(math.rad(36 * a), math.rad(-28 * a), math.rad(28 * a)),
+				LeftHip = CFrame.Angles(math.rad(-14 * a), 0, math.rad(-12 * a)),
+			}
+		elseif p < 0.65 then
+			local a = (p - 0.30) / 0.35
+			pose = {
+				RootJoint = CFrame.new(0.20 - 0.52 * a, -0.10, 0.06 * a) * CFrame.Angles(math.rad(-10 - 4 * a), math.rad(-24 + 52 * a), math.rad(-18 + 42 * a)),
+				Neck = CFrame.Angles(math.rad(-8 + 2 * a), math.rad(20 - 42 * a), math.rad(10 - 22 * a)),
+				RightShoulder = CFrame.Angles(math.rad(-38 + 84 * a), 0, math.rad(40 - 16 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(34 - 72 * a), 0, math.rad(-28 - 12 * a)),
+				RightHip = CFrame.new(0.20 - 0.48 * a, 0.08, -0.18) * CFrame.Angles(math.rad(36 + 12 * a), math.rad(-28 + 62 * a), math.rad(28 - 58 * a)),
+				LeftHip = CFrame.Angles(math.rad(-14 + 30 * a), 0, math.rad(-12 + 20 * a)),
+			}
+		else
+			local a = 1.0 - ((p - 0.65) / 0.35)
+			pose = {
+				RootJoint = CFrame.new(-0.32 * a, -0.08 * a, 0.06 * a) * CFrame.Angles(math.rad(-14 * a), math.rad(28 * a), math.rad(24 * a)),
+				Neck = CFrame.Angles(math.rad(-6 * a), math.rad(-22 * a), math.rad(-12 * a)),
+				RightShoulder = CFrame.Angles(math.rad(46 * a), 0, math.rad(24 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-38 * a), 0, math.rad(-40 * a)),
+				RightHip = CFrame.new(-0.28 * a, 0, -0.18 * a) * CFrame.Angles(math.rad(48 * a), math.rad(34 * a), math.rad(-30 * a)),
+				LeftHip = CFrame.Angles(math.rad(16 * a), 0, math.rad(8 * a)),
+			}
+		end
+	end
+
+	local skillDef = SkillMoveConfigs.GetSkill(skillId)
+	if skillDef and skillDef.directionPolicy == "LateralCut" then
+		local move = localMoveDirection or Vector3.zero
+		local _, lateral = SkillMoveConfigs.ResolveCharacterRelativeDirection(skillDef, move, move, CFrame.identity)
+		local root = pose.RootJoint or CFrame.identity
+		pose.RootJoint = CFrame.new(lateral * 0.14, 0, 0) * CFrame.Angles(0, math.rad(lateral * 8), 0) * root
+	end
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
+end
+
+function PlayerActionPoseConfigs.GetTacklePose(tackleType: string, progress: number): R6JointPoseOffsets
+	local p = math.clamp(progress, 0, 1)
+	local pose: R6JointPoseOffsets
+
+	if tackleType == "CagePressWallSplat" then
+		-- Carrier impact: brace, compress against the wall, then recover upright.
+		if p < 0.18 then
+			local a = p / 0.18
+			pose = {
+				RootJoint = CFrame.new(0, -0.12 * a, 0.08 * a) * CFrame.Angles(math.rad(10 * a), 0, math.rad(8 * a)),
+				Neck = CFrame.Angles(math.rad(-8 * a), 0, 0),
+				RightShoulder = CFrame.Angles(math.rad(-35 * a), 0, math.rad(30 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-35 * a), 0, math.rad(-30 * a)),
+				RightHip = CFrame.Angles(math.rad(28 * a), 0, math.rad(8 * a)),
+				LeftHip = CFrame.Angles(math.rad(26 * a), 0, math.rad(-8 * a)),
+			}
+		elseif p < 0.64 then
+			local a = (p - 0.18) / 0.46
+			local brace = math.sin(a * math.pi * 0.5)
+			pose = {
+				RootJoint = CFrame.new(0, -0.12 - 0.18 * brace, 0.08) * CFrame.Angles(math.rad(10 + 9 * brace), 0, math.rad(8 * (1 - brace))),
+				Neck = CFrame.Angles(math.rad(-8 - 12 * brace), 0, 0),
+				RightShoulder = CFrame.Angles(math.rad(-35 - 18 * brace), 0, math.rad(30 + 10 * brace)),
+				LeftShoulder = CFrame.Angles(math.rad(-35 - 18 * brace), 0, math.rad(-30 - 10 * brace)),
+				RightHip = CFrame.Angles(math.rad(28 + 12 * brace), 0, math.rad(8)),
+				LeftHip = CFrame.Angles(math.rad(26 + 12 * brace), 0, math.rad(-8)),
+			}
+		else
+			local a = 1 - ((p - 0.64) / 0.36)
+			pose = {
+				RootJoint = CFrame.new(0, -0.30 * a, 0.08 * a) * CFrame.Angles(math.rad(19 * a), 0, math.rad(5 * a)),
+				Neck = CFrame.Angles(math.rad(-20 * a), 0, 0),
+				RightShoulder = CFrame.Angles(math.rad(-53 * a), 0, math.rad(40 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-53 * a), 0, math.rad(-40 * a)),
+				RightHip = CFrame.Angles(math.rad(40 * a), 0, math.rad(8 * a)),
+				LeftHip = CFrame.Angles(math.rad(38 * a), 0, math.rad(-8 * a)),
+			}
+		end
+	elseif tackleType == "Poke" or tackleType == "QuickPoke" then
+		-- Quick Poke (0.28s): Windup (0..0.28) -> Active Lunging Jab (0.28..0.64) -> Recovery (0.64..1.00)
+		if p < 0.28 then
+			local a = p / 0.28
+			pose = {
+				RootJoint = CFrame.new(0, -0.10 * a, 0) * CFrame.Angles(math.rad(-10 * a), math.rad(-14 * a), 0),
+				Neck = CFrame.Angles(math.rad(8 * a), math.rad(14 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(28 * a), 0, math.rad(20 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-28 * a), 0, math.rad(-20 * a)),
+				RightHip = CFrame.Angles(math.rad(-22 * a), 0, math.rad(6 * a)),
+				LeftHip = CFrame.Angles(math.rad(18 * a), 0, math.rad(-6 * a)),
+			}
+		elseif p < 0.64 then
+			local a = (p - 0.28) / 0.36
+			local jab = math.sin(a * math.pi * 0.5)
+			pose = {
+				RootJoint = CFrame.new(0, -0.10 - 0.16 * jab, -0.22 * jab) * CFrame.Angles(math.rad(-10 - 14 * jab), math.rad(-14 + 26 * jab), 0),
+				Neck = CFrame.Angles(math.rad(8 + 12 * jab), math.rad(14 - 26 * jab), 0),
+				RightShoulder = CFrame.Angles(math.rad(28 - 72 * jab), 0, math.rad(20 + 18 * jab)),
+				LeftShoulder = CFrame.Angles(math.rad(-28 + 68 * jab), 0, math.rad(-20 - 18 * jab)),
+				RightHip = CFrame.new(0, 0.08 * jab, -0.35 * jab) * CFrame.Angles(math.rad(-22 + 88 * jab), 0, math.rad(6)),
+				LeftHip = CFrame.Angles(math.rad(18 - 48 * jab), 0, math.rad(-6)),
+			}
+		else
+			local a = 1.0 - ((p - 0.64) / 0.36)
+			pose = {
+				RootJoint = CFrame.new(0, -0.26 * a, -0.22 * a) * CFrame.Angles(math.rad(-24 * a), math.rad(12 * a), 0),
+				Neck = CFrame.Angles(math.rad(20 * a), math.rad(-12 * a), 0),
+				RightShoulder = CFrame.Angles(math.rad(-44 * a), 0, math.rad(38 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(40 * a), 0, math.rad(-38 * a)),
+				RightHip = CFrame.new(0, 0.08 * a, -0.35 * a) * CFrame.Angles(math.rad(66 * a), 0, math.rad(6 * a)),
+				LeftHip = CFrame.Angles(math.rad(-30 * a), 0, math.rad(-6 * a)),
+			}
+		end
+	elseif tackleType == "CagePress" then
+		-- Forward shoulder brace, short collision, then balanced recovery.
+		if p < 0.25 then
+			local a = p / 0.25
+			pose = {
+				RootJoint = CFrame.new(0, -0.18 * a, -0.12 * a) * CFrame.Angles(math.rad(-18 * a), 0, math.rad(8 * a)),
+				Neck = CFrame.Angles(math.rad(12 * a), 0, math.rad(-5 * a)),
+				RightShoulder = CFrame.Angles(math.rad(32 * a), 0, math.rad(18 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-42 * a), 0, math.rad(-24 * a)),
+				RightHip = CFrame.Angles(math.rad(-34 * a), 0, math.rad(8 * a)),
+				LeftHip = CFrame.Angles(math.rad(22 * a), 0, math.rad(-6 * a)),
+			}
+		elseif p < 0.62 then
+			local a = (p - 0.25) / 0.37
+			local drive = math.sin(a * math.pi * 0.5)
+			pose = {
+				RootJoint = CFrame.new(0, -0.18, -0.30 * drive) * CFrame.Angles(math.rad(-18 - 8 * drive), 0, math.rad(8 - 6 * drive)),
+				Neck = CFrame.Angles(math.rad(12 + 8 * drive), 0, 0),
+				RightShoulder = CFrame.Angles(math.rad(32 + 26 * drive), 0, math.rad(18 + 8 * drive)),
+				LeftShoulder = CFrame.Angles(math.rad(-42 + 32 * drive), 0, math.rad(-24 - 8 * drive)),
+				RightHip = CFrame.new(0, 0.10 * drive, -0.22 * drive) * CFrame.Angles(math.rad(-34 + 55 * drive), 0, math.rad(8)),
+				LeftHip = CFrame.Angles(math.rad(22 - 35 * drive), 0, math.rad(-6)),
+			}
+		else
+			local a = 1.0 - ((p - 0.62) / 0.38)
+			pose = {
+				RootJoint = CFrame.new(0, -0.18 * a, -0.30 * a) * CFrame.Angles(math.rad(-26 * a), 0, math.rad(2 * a)),
+				Neck = CFrame.Angles(math.rad(20 * a), 0, 0),
+				RightShoulder = CFrame.Angles(math.rad(58 * a), 0, math.rad(26 * a)),
+				LeftShoulder = CFrame.Angles(math.rad(-10 * a), 0, math.rad(-32 * a)),
+				RightHip = CFrame.Angles(math.rad(21 * a), 0, math.rad(8 * a)),
+				LeftHip = CFrame.Angles(math.rad(-13 * a), 0, math.rad(-6 * a)),
+			}
+		end
+	else
+		return PlayerActionPoseConfigs.GetSlidePose(p)
+	end
+
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
+end
+
 function PlayerActionPoseConfigs.GetFollowThroughPose(
 	actionType: string,
 	progress: number,
 	curveStyle: string?,
 	passPower: number?,
-	passElevationDeg: number?
+	passElevationDeg: number?,
+	localMoveDirection: Vector3?
 ): R6JointPoseOffsets
 	local clamped = math.clamp(progress, 0, 1)
-	local swing = math.sin(clamped * math.pi)
 
-	if actionType == "Header" then
+	if actionType == "FakeShot" then
+		return PlayerActionPoseConfigs.GetFakeShotPose(clamped, localMoveDirection)
+	elseif
+		actionType == "HeavyKnockOn"
+		or actionType == "DragBackTurn"
+		or actionType == "LaCroqueta"
+		or actionType == "SombreroFlick"
+		or actionType == "Elastico"
+	then
+		return PlayerActionPoseConfigs.GetSkillMovePose(actionType, clamped, localMoveDirection)
+	elseif
+		actionType == "Poke"
+		or actionType == "QuickPoke"
+		or actionType == "CagePress"
+		or actionType == "CagePressWallSplat"
+	then
+		return PlayerActionPoseConfigs.GetTacklePose(actionType, clamped)
+	elseif actionType == "Header" then
 		return PlayerActionPoseConfigs.SampleAuthoredPose("A08", clamped)
 	elseif actionType == "Block" then
 		return PlayerActionPoseConfigs.SampleAuthoredPose("A09", clamped)
@@ -615,8 +1228,9 @@ function PlayerActionPoseConfigs.GetFollowThroughPose(
 	elseif actionType == "jump" then
 		return PlayerActionPoseConfigs.GetJumpPose()
 	else
-		-- DirectShoot (A13)
-		return PlayerActionPoseConfigs.SampleAuthoredPose("A13", clamped)
+		-- DirectShoot starts on the server's release/contact frame; the supporting
+		-- foot remains planted while the right leg carries through the strike.
+		return PlayerActionPoseConfigs.GetDirectReleasePose(clamped)
 	end
 end
 
@@ -676,7 +1290,101 @@ function PlayerActionPoseConfigs.GetJumpPose(verticalVelocity: number?): R6Joint
 end
 
 function PlayerActionPoseConfigs.GetJumpLandingPose(progress: number): R6JointPoseOffsets
-	return PlayerActionPoseConfigs.SampleAuthoredPose("A07", math.clamp(progress, 0, 1))
+	local p = math.clamp(progress, 0, 1)
+	local pose: R6JointPoseOffsets
+	if p < 0.32 then
+		local absorb = p / 0.32
+		pose = {
+			RootJoint = CFrame.new(0, -0.34 * absorb, 0) * CFrame.Angles(math.rad(18 * absorb), 0, 0),
+			Neck = CFrame.Angles(math.rad(-10 * absorb), 0, 0),
+			RightShoulder = CFrame.Angles(math.rad(-12 * absorb), 0, math.rad(18 * absorb)),
+			LeftShoulder = CFrame.Angles(math.rad(-12 * absorb), 0, math.rad(-18 * absorb)),
+			RightHip = CFrame.new(0, 0.08 * absorb, 0) * CFrame.Angles(math.rad(48 * absorb), 0, math.rad(4 * absorb)),
+			LeftHip = CFrame.new(0, 0.08 * absorb, 0) * CFrame.Angles(math.rad(42 * absorb), 0, math.rad(-4 * absorb)),
+		}
+	elseif p < 0.76 then
+		local hold = (p - 0.32) / 0.44
+		local settle = math.sin(hold * math.pi * 0.5)
+		local plant = math.clamp((hold - 0.30) / 0.70, 0, 1)
+		pose = {
+			RootJoint = CFrame.new(0, -0.34 * (1 - plant), 0) * CFrame.Angles(math.rad(18 * (1 - plant)), 0, 0),
+			Neck = CFrame.Angles(math.rad(-10 * (1 - plant) + 4 * settle), 0, 0),
+			RightShoulder = CFrame.Angles(math.rad(-12 * (1 - plant)), 0, math.rad(18 * (1 - plant))),
+			LeftShoulder = CFrame.Angles(math.rad(-12 * (1 - plant)), 0, math.rad(-18 * (1 - plant))),
+			RightHip = CFrame.new(0, 0.08 * (1 - plant), 0) * CFrame.Angles(math.rad(48 * (1 - plant)), 0, math.rad(4 * (1 - plant))),
+			LeftHip = CFrame.new(0, 0.08 * (1 - plant), 0) * CFrame.Angles(math.rad(42 * (1 - plant)), 0, math.rad(-4 * (1 - plant))),
+		}
+	else
+		local rise = (p - 0.76) / 0.24
+		local recover = 1 - rise
+		pose = {
+			RootJoint = CFrame.new(0, -0.34 * recover, 0) * CFrame.Angles(math.rad(18 * recover), 0, 0),
+			Neck = CFrame.Angles(math.rad(-6 * recover), 0, 0),
+			RightShoulder = CFrame.Angles(0, 0, math.rad(10 * recover)),
+			LeftShoulder = CFrame.Angles(0, 0, math.rad(-10 * recover)),
+			RightHip = CFrame.Angles(math.rad(48 * recover), 0, math.rad(4 * recover)),
+			LeftHip = CFrame.Angles(math.rad(42 * recover), 0, math.rad(-4 * recover)),
+		}
+	end
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
+end
+
+function PlayerActionPoseConfigs.GetDirectReleasePose(progress: number): R6JointPoseOffsets
+	local p = math.clamp(progress, 0, 1)
+	local sourcePhase = 0.28 + 0.72 * p
+	local pose = PlayerActionPoseConfigs.SampleAuthoredPose("A13", sourcePhase)
+	local legLift = math.sin(math.clamp(p / 0.72, 0, 1) * math.pi * 0.5)
+	pose.RightHip = CFrame.Angles(math.rad(8.0 * legLift), 0, 0) * pose.RightHip
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
+end
+
+function PlayerActionPoseConfigs.GetFakeShotPose(progress: number, localMoveDirection: Vector3?): R6JointPoseOffsets
+	local p = math.clamp(progress, 0, 1)
+	local move = localMoveDirection or Vector3.new(0, 0, -1)
+	local flatMove = Vector3.new(move.X, 0, move.Z)
+	local rawSide = if flatMove.Magnitude > 0.05 then flatMove.Unit.X else 1
+	local side = if math.abs(rawSide) > 0.10 then math.clamp(rawSide, -1, 1) else 1
+	local forward = if flatMove.Magnitude > 0.05 then math.clamp(-flatMove.Unit.Z, -1, 1) else 1
+	local pose: R6JointPoseOffsets
+
+	if p < 0.28 then
+		-- Phase 1: Aggressive strike windup (fake kick illusion)
+		local a = p / 0.28
+		pose = {
+			RootJoint = CFrame.new(0, -0.08 * a, 0.10 * a) * CFrame.Angles(math.rad(-14 * a), math.rad(-12 * side * a), math.rad(8 * side * a)),
+			Neck = CFrame.Angles(math.rad(10 * a), math.rad(10 * side * a), 0),
+			RightShoulder = CFrame.Angles(math.rad(-42 * a), 0, math.rad(40 * a)),
+			LeftShoulder = CFrame.Angles(math.rad(38 * a), 0, math.rad(-38 * a)),
+			RightHip = CFrame.new(0, 0, -0.25 * a) * CFrame.Angles(math.rad(-52 * a), 0, math.rad(12 * a)),
+			LeftHip = CFrame.Angles(math.rad(24 * a), 0, math.rad(-8 * a)),
+		}
+	elseif p < 0.65 then
+		-- Phase 2: Sudden foot chop & sharp body feint ("โยกตัวหลบตามทิศ A/D")
+		local a = (p - 0.28) / 0.37
+		local leanSide = side * (0.8 + 0.2 * a)
+		pose = {
+			RootJoint = CFrame.new(side * 0.22 * a, -0.14, 0.10 - 0.05 * a) * CFrame.Angles(math.rad(-14 + 10 * a), math.rad(24 * leanSide), math.rad(18 * leanSide)),
+			Neck = CFrame.Angles(math.rad(6 - 8 * a), math.rad(-20 * leanSide), 0),
+			RightShoulder = CFrame.Angles(math.rad(-42 + 65 * a), 0, math.rad(40 - 20 * a)),
+			LeftShoulder = CFrame.Angles(math.rad(38 - 60 * a), 0, math.rad(-38 + 20 * a)),
+			RightHip = CFrame.new(0, 0.10 * a, -0.25 + 0.35 * a) * CFrame.Angles(math.rad(-52 + 65 * a), 0, math.rad(16 * side)),
+			LeftHip = CFrame.new(0, 0, 0.08 * a) * CFrame.Angles(math.rad(24 - 36 * a), 0, math.rad(-12 * side)),
+		}
+	else
+		-- Phase 3: Explosive forward-lateral burst follow-through stride ("ตัวละครตามไปทีหลัง เหมือนกระชากบอล")
+		local a = (p - 0.65) / 0.35
+		local decay = 1 - a
+		pose = {
+			RootJoint = CFrame.new(side * 0.22 * decay, -0.14 * decay, -0.10 * a) * CFrame.Angles(math.rad(14 * forward * a), math.rad(16 * side * decay), math.rad(10 * side * decay)),
+			Neck = CFrame.Angles(math.rad(-4 * decay), math.rad(-8 * side * decay), 0),
+			RightShoulder = CFrame.Angles(math.rad(23 + 25 * a), 0, math.rad(20 * decay + 12)),
+			LeftShoulder = CFrame.Angles(math.rad(-22 - 25 * a), 0, math.rad(-20 * decay - 12)),
+			RightHip = CFrame.Angles(math.rad(13 - 35 * a), 0, math.rad(8 * side * decay)),
+			LeftHip = CFrame.Angles(math.rad(-12 + 35 * a), 0, math.rad(-8 * side * decay)),
+		}
+	end
+
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
 end
 
 function PlayerActionPoseConfigs.GetWhiffPose(progress: number): R6JointPoseOffsets
@@ -719,16 +1427,42 @@ end
 
 function PlayerActionPoseConfigs.GetCurveWhiffPose(progress: number): R6JointPoseOffsets
 	local p = math.clamp(progress, 0, 1)
-	local twist = math.sin(p * math.pi)
-
-	return {
-		RootJoint = CFrame.Angles(math.rad(16 * twist), math.rad(-42 * twist), math.rad(-30 * twist)),
-		Neck = CFrame.Angles(math.rad(-12 * twist), math.rad(22 * twist), 0),
-		RightShoulder = CFrame.Angles(math.rad(-52 * twist), 0, math.rad(48 * twist)),
-		LeftShoulder = CFrame.Angles(math.rad(62 * twist), 0, math.rad(-52 * twist)),
-		RightHip = CFrame.Angles(math.rad(92 * twist), math.rad(-48 * twist), math.rad(35 * twist)),
-		LeftHip = CFrame.Angles(math.rad(-25 * twist), math.rad(15 * twist), 0),
-	}
+	local pose: R6JointPoseOffsets
+	if p < 0.40 then
+		local a = math.sin((p / 0.40) * math.pi * 0.5)
+		pose = {
+			RootJoint = CFrame.new(0, 0, 0.12 * a) * CFrame.Angles(math.rad(20 * a), math.rad(-28 * a), math.rad(-24 * a)),
+			Neck = CFrame.Angles(math.rad(-14 * a), math.rad(18 * a), 0),
+			RightShoulder = CFrame.Angles(math.rad(-72 * a), 0, math.rad(50 * a)),
+			LeftShoulder = CFrame.Angles(math.rad(68 * a), 0, math.rad(-54 * a)),
+			RightHip = CFrame.new(0, 0.06 * a, -0.08 * a) * CFrame.Angles(math.rad(112 * a), math.rad(-34 * a), math.rad(28 * a)),
+			LeftHip = CFrame.Angles(math.rad(-22 * a), math.rad(12 * a), math.rad(-8 * a)),
+		}
+	elseif p < 0.70 then
+		local a = (p - 0.40) / 0.30
+		local stumble = math.sin(a * math.pi * 0.5)
+		pose = {
+			RootJoint = CFrame.new(0.08 * stumble, -0.16 * stumble, 0.12 * (1 - a)) * CFrame.Angles(math.rad(20 - 8 * a), math.rad(-28 + 58 * stumble), math.rad(-24 + 42 * stumble)),
+			Neck = CFrame.Angles(math.rad(-14 + 10 * a), math.rad(18 - 36 * stumble), 0),
+			RightShoulder = CFrame.Angles(math.rad(-72 + 86 * stumble), 0, math.rad(50 - 22 * stumble)),
+			LeftShoulder = CFrame.Angles(math.rad(68 - 82 * stumble), 0, math.rad(-54 + 28 * stumble)),
+			RightHip = CFrame.Angles(math.rad(112 - 68 * a), math.rad(-34 + 20 * a), math.rad(28 - 12 * a)),
+			LeftHip = CFrame.new(-0.08 * stumble, 0, 0) * CFrame.Angles(math.rad(-22 + 46 * stumble), math.rad(12 * stumble), math.rad(-8)),
+		}
+	else
+		local a = (p - 0.70) / 0.30
+		local hold = math.clamp(1 - a / 0.45, 0, 1)
+		local recover = math.clamp((a - 0.35) / 0.65, 0, 1)
+		pose = {
+			RootJoint = CFrame.new(0, -0.16 * (1 - recover), 0) * CFrame.Angles(math.rad(12 * hold), math.rad(30 * hold), math.rad(18 * hold)),
+			Neck = CFrame.Angles(math.rad(-8 * hold), math.rad(-18 * hold), 0),
+			RightShoulder = CFrame.Angles(math.rad(18 * hold), 0, math.rad(32 * hold)),
+			LeftShoulder = CFrame.Angles(math.rad(-12 * hold), 0, math.rad(-28 * hold)),
+			RightHip = CFrame.Angles(math.rad(26 * (1 - recover)), 0, math.rad(8 * hold)),
+			LeftHip = CFrame.Angles(math.rad(18 * (1 - recover)), 0, math.rad(-8 * hold)),
+		}
+	end
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
 end
 
 function PlayerActionPoseConfigs.GetAirborneRecoveryPose(progress: number): R6JointPoseOffsets
@@ -744,6 +1478,56 @@ function PlayerActionPoseConfigs.GetAirborneRecoveryPose(progress: number): R6Jo
 		RightHip = CFrame.Angles(math.rad(45 * (1 - rise) + 15 * rise), 0, 0),
 		LeftHip = CFrame.Angles(math.rad(45 * (1 - rise) + 15 * rise), 0, 0),
 	}
+end
+
+function PlayerActionPoseConfigs.GetAirWhiffPose(progress: number): R6JointPoseOffsets
+	local p = math.clamp(progress, 0, 1)
+	local pose: R6JointPoseOffsets
+	if p < 0.26 then
+		local a = p / 0.26
+		pose = {
+			RootJoint = CFrame.new(0, 0.10 * a, 0) * CFrame.Angles(math.rad(28 * a), math.rad(-8 * a), math.rad(-10 * a)),
+			Neck = CFrame.Angles(math.rad(-22 * a), math.rad(8 * a), 0),
+			RightShoulder = CFrame.Angles(math.rad(-82 * a), 0, math.rad(44 * a)),
+			LeftShoulder = CFrame.Angles(math.rad(52 * a), 0, math.rad(-40 * a)),
+			RightHip = CFrame.new(0, 0, -0.12 * a) * CFrame.Angles(math.rad(108 * a), 0, math.rad(12 * a)),
+			LeftHip = CFrame.Angles(math.rad(-34 * a), 0, math.rad(-10 * a)),
+		}
+	elseif p < 0.58 then
+		local a = (p - 0.26) / 0.32
+		local fall = math.sin(a * math.pi * 0.5)
+		pose = {
+			RootJoint = CFrame.new(0, -0.08 * fall, 0.10 * fall) * CFrame.Angles(math.rad(28 + 24 * fall), math.rad(-8 + 12 * fall), math.rad(-10 - 18 * fall)),
+			Neck = CFrame.Angles(math.rad(-22 + 8 * fall), math.rad(8 - 8 * fall), 0),
+			RightShoulder = CFrame.Angles(math.rad(-82 + 26 * fall), 0, math.rad(44 + 12 * fall)),
+			LeftShoulder = CFrame.Angles(math.rad(52 - 18 * fall), 0, math.rad(-40 - 10 * fall)),
+			RightHip = CFrame.Angles(math.rad(108 - 28 * fall), 0, math.rad(12 + 8 * fall)),
+			LeftHip = CFrame.Angles(math.rad(-34 + 50 * fall), 0, math.rad(-10 - 8 * fall)),
+		}
+	elseif p < 0.84 then
+		local a = (p - 0.58) / 0.26
+		local impact = math.sin(a * math.pi * 0.5)
+		pose = {
+			RootJoint = CFrame.new(0, -0.30 * impact, 0) * CFrame.Angles(math.rad(52 - 10 * impact), math.rad(4 * impact), math.rad(-28 * impact)),
+			Neck = CFrame.Angles(math.rad(-14 + 6 * impact), 0, 0),
+			RightShoulder = CFrame.Angles(math.rad(-56 + 28 * impact), 0, math.rad(56 - 18 * impact)),
+			LeftShoulder = CFrame.Angles(math.rad(34 - 14 * impact), 0, math.rad(-50 + 14 * impact)),
+			RightHip = CFrame.new(0, 0.12 * impact, 0) * CFrame.Angles(math.rad(80 - 24 * impact), 0, math.rad(14 * impact)),
+			LeftHip = CFrame.new(0, 0.12 * impact, 0) * CFrame.Angles(math.rad(30 - 18 * impact), 0, math.rad(-10 * impact)),
+		}
+	else
+		local a = (p - 0.84) / 0.16
+		local settle = 1 - a
+		pose = {
+			RootJoint = CFrame.new(0, -0.30 * settle, 0) * CFrame.Angles(math.rad(42 * settle), 0, math.rad(-14 * settle)),
+			Neck = CFrame.Angles(math.rad(-10 * settle), 0, 0),
+			RightShoulder = CFrame.Angles(math.rad(-28 * settle), 0, math.rad(38 * settle)),
+			LeftShoulder = CFrame.Angles(math.rad(20 * settle), 0, math.rad(-34 * settle)),
+			RightHip = CFrame.Angles(math.rad(56 * settle), 0, math.rad(8 * settle)),
+			LeftHip = CFrame.Angles(math.rad(14 * settle), 0, math.rad(-6 * settle)),
+		}
+	end
+	return PlayerActionPoseConfigs.ApplyClearanceOffset(pose)
 end
 
 -- ============================================================================
@@ -766,8 +1550,89 @@ function PlayerActionPoseConfigs.MirrorPoseSagittal(pose: R6JointPoseOffsets): R
 end
 
 -- ============================================================================
--- 10. Curve Shot Resolver (from SandboxConfig.luau:344-420)
+-- 10. Curve Shot Resolver (from SandboxConfig.luau:344-420 & Owner Delta §18–§20)
 -- ============================================================================
+-- Resolves character-relative lateral movement side intent at initial press (§19 & §20):
+--   1. Actual character-relative horizontal movement (Humanoid.MoveDirection or velocity)
+--      takes priority: localMove.X < -0.12 -> "Left" (Finesse), localMove.X > +0.12 -> "Right" (Trivela).
+--   2. Forward/backward movement without lateral component (|localMove.X| <= 0.12) -> "Neutral" (Finesse).
+--   3. Input-only fallback (keyADown / keyDDown) is used ONLY when there is no active movement
+--      (flatMove.Magnitude <= 0.08), never overriding contradictory actual movement.
+function PlayerActionPoseConfigs.ResolveCurveSideFromMovement(
+	hrpCFrame: CFrame,
+	moveDirection: Vector3?,
+	keyADown: boolean?,
+	keyDDown: boolean?
+): ("Left" | "Right" | "Neutral")
+	if typeof(moveDirection) == "Vector3" then
+		local flatMove = Vector3.new(moveDirection.X, 0, moveDirection.Z)
+		if flatMove.Magnitude > 0.08 then
+			local localMove = hrpCFrame:VectorToObjectSpace(flatMove.Unit)
+			if localMove.X < -0.12 then
+				return "Left"
+			elseif localMove.X > 0.12 then
+				return "Right"
+			else
+				return "Neutral"
+			end
+		end
+	end
+
+	-- Stationary fallback: use raw A/D key state only when character has no active movement vector
+	if keyADown and not keyDDown then
+		return "Left"
+	elseif keyDDown and not keyADown then
+		return "Right"
+	end
+	return "Neutral"
+end
+
+-- Owner Delta §23: Resolve character-relative lateral cut side for core FakeShot
+-- Prioritizes A/D movement keys / character-relative movement over aim direction
+function PlayerActionPoseConfigs.ResolveFakeShotSideFromAim(
+	hrpCFrame: CFrame,
+	aimDirection: Vector3?,
+	moveDirection: Vector3?,
+	keyADown: boolean?,
+	keyDDown: boolean?
+): ("Left" | "Right" | "Neutral", number)
+	-- Priority 1: Direct A/D physical key input
+	if keyADown and not keyDDown then
+		return "Left", -1
+	elseif keyDDown and not keyADown then
+		return "Right", 1
+	end
+
+	-- Priority 2: Character-relative horizontal movement
+	if typeof(moveDirection) == "Vector3" then
+		local flatMove = Vector3.new(moveDirection.X, 0, moveDirection.Z)
+		if flatMove.Magnitude > 0.08 then
+			local localMove = hrpCFrame:VectorToObjectSpace(flatMove.Unit)
+			if localMove.X < -0.12 then
+				return "Left", -1
+			elseif localMove.X > 0.12 then
+				return "Right", 1
+			end
+		end
+	end
+
+	-- Priority 3: Aim direction fallback
+	if typeof(aimDirection) == "Vector3" then
+		local flatAim = Vector3.new(aimDirection.X, 0, aimDirection.Z)
+		if flatAim.Magnitude > 0.08 then
+			local localAim = hrpCFrame:VectorToObjectSpace(flatAim.Unit)
+			if localAim.X < -0.12 then
+				return "Left", -1
+			elseif localAim.X > 0.12 then
+				return "Right", 1
+			else
+				return "Neutral", 1
+			end
+		end
+	end
+	return "Neutral", 1
+end
+
 function PlayerActionPoseConfigs.ResolveCurveShot(
 	hrpCFrame: CFrame,
 	aimDir: Vector3,
@@ -943,2098 +1808,2120 @@ function PlayerActionPoseConfigs.SampleAuthoredTransforms(
 	return result
 end
 
+local AIR_CONTACT_POSES = table.freeze({
+	DirectShoot = table.freeze({ animationId = "A13", phase = 0.28 }),
+	Header = table.freeze({ animationId = "A08", phase = 0.45 }),
+	Volley = table.freeze({ animationId = "A10", phase = 0.46 }),
+})
+
+function PlayerActionPoseConfigs.GetAirContactFrames(
+	actionType: string,
+	rootCFrame: CFrame,
+	leanForward: number,
+	leanRight: number
+): (CFrame, CFrame)
+	local spec = AIR_CONTACT_POSES[actionType]
+	if not spec then
+		return rootCFrame, rootCFrame
+	end
+	local rest = PlayerActionPoseConfigs.REST_FRAMES.RootJoint
+	local motorOffset = PlayerActionPoseConfigs.SampleAuthoredTransforms(spec.animationId, spec.phase, nil).RootJoint or CFrame.identity
+	local neutralContact = rootCFrame * rest.C0 * motorOffset * rest.C1:Inverse()
+	local lean = AirLeanSolver.ComputeLeanCFrame(leanForward, leanRight)
+	return neutralContact * lean, neutralContact
+end
+
 -- ============================================================================
 -- 12. Complete Authored Animation Dataset (A01 - A18 with Visual Variants & Fixes)
 -- ============================================================================
 PlayerActionPoseConfigs.ANIMATIONS = table.freeze({
-
-    ["A01"] = {
-        id = "A01",
-        name = "Idle / Ready",
-        mode = "Loop",
-        duration = 1.60,
-        blendIn = 0.15,
-        blendOut = 0.12,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 0.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Neutral Athletic Ready (Start)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.25,
-                timeSec = 0.400,
-                label = "Inhale & Slight Right Weight Shift",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.040, 0.159, -0.020), rotDeg = Vector3.new(-7.0, -2.0, -1.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(7.0, 2.0, 1.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(13.0, -8.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(11.0, 8.0, -13.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -4.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, -3.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.50,
-                timeSec = 0.800,
-                label = "Center Settle & Low Ready Micro-Dip",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.137, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -5.0, 11.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 5.0, -11.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-7.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(7.0, 5.0, -4.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 0.75,
-                timeSec = 1.200,
-                label = "Slight Left Weight Shift & Counter-Arm",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.040, 0.128, 0.020), rotDeg = Vector3.new(-7.5, -5.0, 1.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(7.5, 5.0, -1.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(9.0, -6.0, 13.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 6.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -5.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(5.0, 5.0, -5.0) },
-                },
-            },
-            {
-                kf = 5,
-                t = 1.00,
-                timeSec = 1.600,
-                label = "Neutral Athletic Ready (Loop Closure)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                },
-            },
+  ["A01"] = {
+    id = "A01",
+    name = "Idle / Ready",
+    mode = "Loop",
+    duration = 1.60,
+    blendIn = 0.15,
+    blendOut = 0.12,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 0.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Neutral Athletic Ready (Start)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.25,
+        timeSec = 0.400,
+        label = "Inhale & Slight Right Weight Shift",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.040, 0.159, -0.020), rotDeg = Vector3.new(-7.0, -2.0, -1.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(7.0, 2.0, 1.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(13.0, -8.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(11.0, 8.0, -13.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -4.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, -3.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.50,
+        timeSec = 0.800,
+        label = "Center Settle & Low Ready Micro-Dip",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.137, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -5.0, 11.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 5.0, -11.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-7.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(7.0, 5.0, -4.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.75,
+        timeSec = 1.200,
+        label = "Slight Left Weight Shift & Counter-Arm",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.040, 0.128, 0.020), rotDeg = Vector3.new(-7.5, -5.0, 1.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(7.5, 5.0, -1.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(9.0, -6.0, 13.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 6.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -5.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(5.0, 5.0, -5.0) },
+        },
+      },
+      {
+        kf = 5,
+        t = 1.00,
+        timeSec = 1.600,
+        label = "Neutral Athletic Ready (Loop Closure)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+        },
+      },
     },
-    ["A02"] = {
-        id = "A02",
-        name = "Walk (Forward & Backward)",
-        mode = "Loop",
-        duration = 0.48,
-        blendIn = 0.12,
-        blendOut = 0.12,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 20.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Right Foot Strike / Double Support",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.041, 0.000), rotDeg = Vector3.new(-10.0, 8.0, 1.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -8.0, -1.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, 0.0, 8.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 0.0, -8.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 2.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 0.0, -2.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.25,
-                timeSec = 0.120,
-                label = "Right Mid-Stance / Left Passing",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.030, 0.125, 0.000), rotDeg = Vector3.new(-10.0, 0.0, -2.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 0.0, 2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, 10.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, 0.0, -10.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(2.0, 0.0, 2.5) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, -6.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.50,
-                timeSec = 0.240,
-                label = "Left Foot Strike / Opposite Contact",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.041, 0.000), rotDeg = Vector3.new(-10.0, -8.0, -1.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 8.0, 1.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 0.0, 8.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, 0.0, -8.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 0.0, 2.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, -2.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 0.75,
-                timeSec = 0.360,
-                label = "Left Mid-Stance / Right Passing",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.030, 0.125, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 2.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 0.0, -2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, 0.0, 10.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, -10.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(2.0, 0.0, -2.5) },
-                },
-            },
-            {
-                kf = 5,
-                t = 1.00,
-                timeSec = 0.480,
-                label = "Right Foot Strike (Loop Closure)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.041, 0.000), rotDeg = Vector3.new(-10.0, 8.0, 1.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -8.0, -1.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, 0.0, 8.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 0.0, -8.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 2.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 0.0, -2.0) },
-                },
-            },
+  },
+  ["A02"] = {
+    id = "A02",
+    name = "Walk (Forward & Backward)",
+    mode = "Loop",
+    duration = 0.48,
+    blendIn = 0.12,
+    blendOut = 0.12,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 20.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Right Foot Strike / Double Support",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.041, 0.000), rotDeg = Vector3.new(-10.0, 8.0, 1.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -8.0, -1.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, 0.0, 8.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 0.0, -8.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 2.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 0.0, -2.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.25,
+        timeSec = 0.120,
+        label = "Right Mid-Stance / Left Passing",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.030, 0.125, 0.000), rotDeg = Vector3.new(-10.0, 0.0, -2.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 0.0, 2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, 10.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, 0.0, -10.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(2.0, 0.0, 2.5) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, -6.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.50,
+        timeSec = 0.240,
+        label = "Left Foot Strike / Opposite Contact",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.041, 0.000), rotDeg = Vector3.new(-10.0, -8.0, -1.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 8.0, 1.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 0.0, 8.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, 0.0, -8.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 0.0, 2.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, -2.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.75,
+        timeSec = 0.360,
+        label = "Left Mid-Stance / Right Passing",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.030, 0.125, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 2.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 0.0, -2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, 0.0, 10.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, -10.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(2.0, 0.0, -2.5) },
+        },
+      },
+      {
+        kf = 5,
+        t = 1.00,
+        timeSec = 0.480,
+        label = "Right Foot Strike (Loop Closure)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.041, 0.000), rotDeg = Vector3.new(-10.0, 8.0, 1.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -8.0, -1.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, 0.0, 8.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 0.0, -8.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 2.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 0.0, -2.0) },
+        },
+      },
     },
-    ["A03"] = {
-        id = "A03",
-        name = "Sprint",
-        mode = "Loop",
-        duration = 0.38,
-        blendIn = 0.10,
-        blendOut = 0.12,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 32.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Right Drive Contact & Forward Lean",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, 14.0, 2.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, -12.0, -2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, 8.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, -3.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.25,
-                timeSec = 0.095,
-                label = "Right Push-Off / Airborne Float Phase",
-                hrpRefY = 3.00,
-                obbMinY = 0.220,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.040, 0.226, -0.050), rotDeg = Vector3.new(-26.0, 0.0, -3.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 0.0, 2.5) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 16.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, -16.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -7.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.50,
-                timeSec = 0.190,
-                label = "Left Drive Contact & Counter-Torque",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, -14.0, -2.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 12.0, 2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, -8.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, -3.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 0.75,
-                timeSec = 0.285,
-                label = "Left Push-Off / Airborne Float Phase",
-                hrpRefY = 3.00,
-                obbMinY = 0.220,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.040, 0.226, -0.050), rotDeg = Vector3.new(-26.0, 0.0, 3.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 0.0, -2.5) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, 16.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, -16.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 7.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, -3.0) },
-                },
-            },
-            {
-                kf = 5,
-                t = 1.00,
-                timeSec = 0.380,
-                label = "Right Drive Contact (Loop Closure)",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, 14.0, 2.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, -12.0, -2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, 8.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, -3.0) },
-                },
-            },
+  },
+  ["A03"] = {
+    id = "A03",
+    name = "Sprint",
+    mode = "Loop",
+    duration = 0.38,
+    blendIn = 0.10,
+    blendOut = 0.12,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 32.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Right Drive Contact & Forward Lean",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, 14.0, 2.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, -12.0, -2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, 8.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, -3.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.25,
+        timeSec = 0.095,
+        label = "Right Push-Off / Airborne Float Phase",
+        hrpRefY = 3.00,
+        obbMinY = 0.220,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.040, 0.226, -0.050), rotDeg = Vector3.new(-26.0, 0.0, -3.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 0.0, 2.5) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 16.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, -16.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -7.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.50,
+        timeSec = 0.190,
+        label = "Left Drive Contact & Counter-Torque",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, -14.0, -2.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 12.0, 2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, -8.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, -3.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.75,
+        timeSec = 0.285,
+        label = "Left Push-Off / Airborne Float Phase",
+        hrpRefY = 3.00,
+        obbMinY = 0.220,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.040, 0.226, -0.050), rotDeg = Vector3.new(-26.0, 0.0, 3.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 0.0, -2.5) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, 16.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, -16.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 7.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, -3.0) },
+        },
+      },
+      {
+        kf = 5,
+        t = 1.00,
+        timeSec = 0.380,
+        label = "Right Drive Contact (Loop Closure)",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, 14.0, 2.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, -12.0, -2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, 8.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, -3.0) },
+        },
+      },
     },
-    ["A04"] = {
-        id = "A04",
-        name = "Dash Burst",
-        mode = "OneShot",
-        duration = 0.22,
-        blendIn = 0.03,
-        blendOut = 0.06,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 42.0,
-        nextAnimOnComplete = "A03",
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Entry Coil & Rear Foot Load",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.071, 0.180), rotDeg = Vector3.new(-18.0, -10.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 10.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, 0.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -4.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.27,
-                timeSec = 0.060,
-                label = "Explosive Push-Off & Chest Drop",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.103, 0.040), rotDeg = Vector3.new(-34.0, 12.0, 3.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -12.0, -2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-68.0, 0.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(74.0, 10.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, 0.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, 0.0, -4.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.68,
-                timeSec = 0.150,
-                label = "Peak Horizontal Surge (Visual Offset -Z)",
-                hrpRefY = 3.00,
-                obbMinY = 0.120,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.093, -0.180), rotDeg = Vector3.new(-30.0, 8.0, 2.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, -8.0, -1.5) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 0.0, 15.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(48.0, 0.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-44.0, 0.0, -3.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.220,
-                label = "Exit Catch -> Seamless Hand-off to Sprint",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, -14.0, -2.5) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 12.0, 2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, -8.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, -3.0) },
-                },
-            },
+  },
+  ["A04"] = {
+    id = "A04",
+    name = "Dash Burst",
+    mode = "OneShot",
+    duration = 0.22,
+    blendIn = 0.03,
+    blendOut = 0.06,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 42.0,
+    nextAnimOnComplete = "A03",
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Entry Coil & Rear Foot Load",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.071, 0.180), rotDeg = Vector3.new(-18.0, -10.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 10.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, 0.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -4.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.27,
+        timeSec = 0.060,
+        label = "Explosive Push-Off & Chest Drop",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.103, 0.040), rotDeg = Vector3.new(-34.0, 12.0, 3.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -12.0, -2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-68.0, 0.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(74.0, 10.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, 0.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, 0.0, -4.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.68,
+        timeSec = 0.150,
+        label = "Peak Horizontal Surge (Visual Offset -Z)",
+        hrpRefY = 3.00,
+        obbMinY = 0.120,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.093, -0.180), rotDeg = Vector3.new(-30.0, 8.0, 2.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, -8.0, -1.5) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 0.0, 15.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(48.0, 0.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-44.0, 0.0, -3.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.220,
+        label = "Exit Catch -> Seamless Hand-off to Sprint",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.056, 0.000), rotDeg = Vector3.new(-24.0, -14.0, -2.5) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 12.0, 2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, -8.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-56.0, 0.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 0.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(56.0, 0.0, -3.0) },
+        },
+      },
     },
-    ["A05"] = {
-        id = "A05",
-        name = "Shift Lock 8-Way Strafe",
-        mode = "Loop",
-        duration = 0.44,
-        blendIn = 0.08,
-        blendOut = 0.10,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 20.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Wide Lateral Push-Off (Strafe Right Contact)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.352, 0.000), rotDeg = Vector3.new(-10.0, -8.0, -8.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 8.0, 6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -8.0, 26.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 8.0, -22.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 28.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -24.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.25,
-                timeSec = 0.110,
-                label = "Low Shuffle Glide / Mid-Gather",
-                hrpRefY = 3.00,
-                obbMinY = 0.040,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.050, 0.304, 0.000), rotDeg = Vector3.new(-11.0, -6.0, -10.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(11.0, 6.0, 8.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -6.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -18.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, -6.0, 14.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 4.0, 6.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.50,
-                timeSec = 0.220,
-                label = "Left Plant & Right Lead Reach",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.030, 0.347, 0.000), rotDeg = Vector3.new(-10.0, -10.0, -6.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 10.0, 5.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, -8.0, 22.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 8.0, -26.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -10.0, 32.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -12.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 0.75,
-                timeSec = 0.330,
-                label = "Right Plant & Left Push Recovery",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.020, 0.250, 0.000), rotDeg = Vector3.new(-11.0, -8.0, -7.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(11.0, 8.0, 6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -8.0, 20.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 8.0, -20.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 16.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, 6.0, -18.0) },
-                },
-            },
-            {
-                kf = 5,
-                t = 1.00,
-                timeSec = 0.440,
-                label = "Wide Lateral Push-Off (Loop Closure)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.352, 0.000), rotDeg = Vector3.new(-10.0, -8.0, -8.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 8.0, 6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -8.0, 26.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 8.0, -22.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 28.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -24.0) },
-                },
-            },
+  },
+  ["A05"] = {
+    id = "A05",
+    name = "Shift Lock 8-Way Strafe",
+    mode = "Loop",
+    duration = 0.44,
+    blendIn = 0.08,
+    blendOut = 0.10,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 20.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Wide Lateral Push-Off (Strafe Right Contact)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.352, 0.000), rotDeg = Vector3.new(-10.0, -8.0, -8.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 8.0, 6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -8.0, 26.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 8.0, -22.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 28.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -24.0) },
         },
-        eightWayTable = {
-            { dir = "F (0°)", moveVec = Vector3.new(0.00, 0.00, -1.00), torsoRx = -10.0, torsoRy = 0.0, torsoRz = 0.0, neckRy = 0.0, hipRxAmp = 36.0, hipRzAmp = 2.0 },
-            { dir = "FR (+45°)", moveVec = Vector3.new(0.71, 0.00, -0.71), torsoRx = -9.0, torsoRy = -24.0, torsoRz = -6.0, neckRy = 20.0, hipRxAmp = 28.0, hipRzAmp = 18.0 },
-            { dir = "R (+90°)", moveVec = Vector3.new(1.00, 0.00, 0.00), torsoRx = -10.0, torsoRy = -8.0, torsoRz = -8.0, neckRy = 8.0, hipRxAmp = 8.0, hipRzAmp = 28.0 },
-            { dir = "BR (+135°)", moveVec = Vector3.new(0.71, 0.00, 0.71), torsoRx = -5.0, torsoRy = 24.0, torsoRz = -6.0, neckRy = -20.0, hipRxAmp = -26.0, hipRzAmp = 18.0 },
-            { dir = "B (180°)", moveVec = Vector3.new(0.00, 0.00, 1.00), torsoRx = -4.0, torsoRy = 0.0, torsoRz = 0.0, neckRy = 0.0, hipRxAmp = -32.0, hipRzAmp = 3.0 },
-            { dir = "BL (-135°)", moveVec = Vector3.new(-0.71, 0.00, 0.71), torsoRx = -5.0, torsoRy = -24.0, torsoRz = 6.0, neckRy = 20.0, hipRxAmp = -26.0, hipRzAmp = -18.0 },
-            { dir = "L (-90°)", moveVec = Vector3.new(-1.00, 0.00, 0.00), torsoRx = -10.0, torsoRy = 8.0, torsoRz = 8.0, neckRy = -8.0, hipRxAmp = 8.0, hipRzAmp = -28.0 },
-            { dir = "FL (-45°)", moveVec = Vector3.new(-0.71, 0.00, -0.71), torsoRx = -9.0, torsoRy = 24.0, torsoRz = 6.0, neckRy = -20.0, hipRxAmp = 28.0, hipRzAmp = -18.0 },
+      },
+      {
+        kf = 2,
+        t = 0.25,
+        timeSec = 0.110,
+        label = "Low Shuffle Glide / Mid-Gather",
+        hrpRefY = 3.00,
+        obbMinY = 0.040,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.050, 0.304, 0.000), rotDeg = Vector3.new(-11.0, -6.0, -10.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(11.0, 6.0, 8.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -6.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -18.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, -6.0, 14.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 4.0, 6.0) },
         },
+      },
+      {
+        kf = 3,
+        t = 0.50,
+        timeSec = 0.220,
+        label = "Left Plant & Right Lead Reach",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.030, 0.347, 0.000), rotDeg = Vector3.new(-10.0, -10.0, -6.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 10.0, 5.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, -8.0, 22.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 8.0, -26.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -10.0, 32.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -12.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.75,
+        timeSec = 0.330,
+        label = "Right Plant & Left Push Recovery",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.020, 0.250, 0.000), rotDeg = Vector3.new(-11.0, -8.0, -7.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(11.0, 8.0, 6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -8.0, 20.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 8.0, -20.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 16.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, 6.0, -18.0) },
+        },
+      },
+      {
+        kf = 5,
+        t = 1.00,
+        timeSec = 0.440,
+        label = "Wide Lateral Push-Off (Loop Closure)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.352, 0.000), rotDeg = Vector3.new(-10.0, -8.0, -8.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 8.0, 6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -8.0, 26.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 8.0, -22.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 28.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -24.0) },
+        },
+      },
     },
-    ["A06"] = {
-        id = "A06",
-        name = "Directional Jump / Fall",
-        mode = "StateAirborne",
-        duration = 0.72,
-        blendIn = 0.04,
-        blendOut = 0.04,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 20.0,
-        nextAnimOnComplete = "A07",
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Takeoff Coil & Directional Impulse Lock",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.095, 0.000), rotDeg = Vector3.new(-18.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -6.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 6.0, -6.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.25,
-                timeSec = 0.180,
-                label = "Ascent Drive (Rising Velocity vy > 0)",
-                hrpRefY = 4.10,
-                obbMinY = 0.800,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.299, 0.000), rotDeg = Vector3.new(-6.0, -8.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 8.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(110.0, 0.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(95.0, 0.0, -18.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 0.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, -5.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.50,
-                timeSec = 0.360,
-                label = "Dynamic Apex Transition (vy ≈ 0)",
-                hrpRefY = 4.80,
-                obbMinY = 1.500,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.142, 0.000), rotDeg = Vector3.new(8.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(68.0, 0.0, 34.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(68.0, 0.0, -34.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -6.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 6.0, -8.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 0.78,
-                timeSec = 0.560,
-                label = "Descent Counter-Balance (vy < 0)",
-                hrpRefY = 4.00,
-                obbMinY = 0.700,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.151, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, -4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 42.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -42.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -4.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 4.0, -6.0) },
-                },
-            },
-            {
-                kf = 5,
-                t = 1.00,
-                timeSec = 0.720,
-                label = "Pre-Landing Reach (Hands off to A07)",
-                hrpRefY = 3.15,
-                obbMinY = 0.100,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.055, 0.000), rotDeg = Vector3.new(-12.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 24.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -24.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -5.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 5.0, -6.0) },
-                },
-            },
-        },
+    eightWayTable = {
+      { dir = "F (0°)", moveVec = Vector3.new(0.00, 0.00, -1.00), torsoRx = -10.0, torsoRy = 0.0, torsoRz = 0.0, neckRy = 0.0, hipRxAmp = 36.0, hipRzAmp = 2.0 },
+      { dir = "FR (+45°)", moveVec = Vector3.new(0.71, 0.00, -0.71), torsoRx = -9.0, torsoRy = -24.0, torsoRz = -6.0, neckRy = 20.0, hipRxAmp = 28.0, hipRzAmp = 18.0 },
+      { dir = "R (+90°)", moveVec = Vector3.new(1.00, 0.00, 0.00), torsoRx = -10.0, torsoRy = -8.0, torsoRz = -8.0, neckRy = 8.0, hipRxAmp = 8.0, hipRzAmp = 28.0 },
+      { dir = "BR (+135°)", moveVec = Vector3.new(0.71, 0.00, 0.71), torsoRx = -5.0, torsoRy = 24.0, torsoRz = -6.0, neckRy = -20.0, hipRxAmp = -26.0, hipRzAmp = 18.0 },
+      { dir = "B (180°)", moveVec = Vector3.new(0.00, 0.00, 1.00), torsoRx = -4.0, torsoRy = 0.0, torsoRz = 0.0, neckRy = 0.0, hipRxAmp = -32.0, hipRzAmp = 3.0 },
+      { dir = "BL (-135°)", moveVec = Vector3.new(-0.71, 0.00, 0.71), torsoRx = -5.0, torsoRy = -24.0, torsoRz = 6.0, neckRy = 20.0, hipRxAmp = -26.0, hipRzAmp = -18.0 },
+      { dir = "L (-90°)", moveVec = Vector3.new(-1.00, 0.00, 0.00), torsoRx = -10.0, torsoRy = 8.0, torsoRz = 8.0, neckRy = -8.0, hipRxAmp = 8.0, hipRzAmp = -28.0 },
+      { dir = "FL (-45°)", moveVec = Vector3.new(-0.71, 0.00, -0.71), torsoRx = -9.0, torsoRy = 24.0, torsoRz = 6.0, neckRy = -20.0, hipRxAmp = 28.0, hipRzAmp = -18.0 },
     },
-    ["A07"] = {
-        id = "A07",
-        name = "Landing Cushion",
-        mode = "OneShot",
-        duration = 0.24,
-        blendIn = 0.03,
-        blendOut = 0.08,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 0.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Touchdown Contact (From A06 Descent)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.115, 0.000), rotDeg = Vector3.new(-12.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 24.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -24.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -5.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 5.0, -6.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.33,
-                timeSec = 0.080,
-                label = "Peak Impact Absorption (Split-Leg R6 Cushion)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.109, 0.000), rotDeg = Vector3.new(-24.0, -6.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 6.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -8.0, 28.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 8.0, -26.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -8.0, 10.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(30.0, 8.0, -10.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.67,
-                timeSec = 0.160,
-                label = "Elastic Rebound & Hip Gather",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.111, 0.000), rotDeg = Vector3.new(-14.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, -6.0, 16.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -16.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -6.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -6.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.240,
-                label = "Ready / Locomotion Recovery",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                },
-            },
+  },
+  ["A06"] = {
+    id = "A06",
+    name = "Directional Jump / Fall",
+    mode = "StateAirborne",
+    duration = 0.72,
+    blendIn = 0.04,
+    blendOut = 0.04,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 20.0,
+    nextAnimOnComplete = "A07",
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Takeoff Coil & Directional Impulse Lock",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.095, 0.000), rotDeg = Vector3.new(-18.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -6.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 6.0, -6.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.25,
+        timeSec = 0.180,
+        label = "Ascent Drive (Rising Velocity vy > 0)",
+        hrpRefY = 4.10,
+        obbMinY = 0.800,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.299, 0.000), rotDeg = Vector3.new(-6.0, -8.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 8.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(110.0, 0.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(95.0, 0.0, -18.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 0.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, -5.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.50,
+        timeSec = 0.360,
+        label = "Dynamic Apex Transition (vy ≈ 0)",
+        hrpRefY = 4.80,
+        obbMinY = 1.500,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.142, 0.000), rotDeg = Vector3.new(8.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(68.0, 0.0, 34.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(68.0, 0.0, -34.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -6.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 6.0, -8.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.78,
+        timeSec = 0.560,
+        label = "Descent Counter-Balance (vy < 0)",
+        hrpRefY = 4.00,
+        obbMinY = 0.700,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.151, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, -4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 42.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -42.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -4.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 4.0, -6.0) },
+        },
+      },
+      {
+        kf = 5,
+        t = 1.00,
+        timeSec = 0.720,
+        label = "Pre-Landing Reach (Hands off to A07)",
+        hrpRefY = 3.15,
+        obbMinY = 0.100,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.055, 0.000), rotDeg = Vector3.new(-12.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 24.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -24.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -5.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 5.0, -6.0) },
+        },
+      },
     },
-    ["A08"] = {
-        id = "A08",
-        name = "Header",
-        mode = "OneShot",
-        duration = 0.48,
-        blendIn = 0.06,
-        blendOut = 0.10,
-        holdPhase = nil,
-        contactPhase = 0.45,
-        referenceSpeed = 16.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Torso Arch & Chest Expansion Coil",
-                hrpRefY = 3.45,
-                obbMinY = 0.400,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.019, 0.120), rotDeg = Vector3.new(22.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, 32.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, -32.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -5.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 5.0, -5.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.45,
-                timeSec = 0.216,
-                label = "Forehead Strike Contact (Kinetic Whip)",
-                hrpRefY = 3.60,
-                obbMinY = 0.500,
-                contact = {
-                    part = "Head",
-                    localPoint = Vector3.new(0.000, 0.500, -0.500),
-                    worldPoint = Vector3.new(0.000, 5.095, -1.415),
-                    ballCenter = Vector3.new(0.000, 5.047, -2.664),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.061, -0.140), rotDeg = Vector3.new(-20.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 0.0, 22.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 0.0, -22.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, -4.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 4.0, -4.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.72,
-                timeSec = 0.346,
-                label = "Full Torso Follow-Through & Pike",
-                hrpRefY = 3.30,
-                obbMinY = 0.250,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.018, -0.180), rotDeg = Vector3.new(-28.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, 0.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, 0.0, -18.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(32.0, -5.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 5.0, -5.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.480,
-                label = "Balance Recovery & Landing Prep",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.136, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, 16.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, -16.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -4.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 4.0, -5.0) },
-                },
-            },
+  },
+  ["A07"] = {
+    id = "A07",
+    name = "Landing Cushion",
+    mode = "OneShot",
+    duration = 0.24,
+    blendIn = 0.03,
+    blendOut = 0.08,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 0.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Touchdown Contact (From A06 Descent)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.115, 0.000), rotDeg = Vector3.new(-12.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 24.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -24.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -5.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 5.0, -6.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.33,
+        timeSec = 0.080,
+        label = "Peak Impact Absorption (Split-Leg R6 Cushion)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.109, 0.000), rotDeg = Vector3.new(-24.0, -6.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 6.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -8.0, 28.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 8.0, -26.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -8.0, 10.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(30.0, 8.0, -10.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.67,
+        timeSec = 0.160,
+        label = "Elastic Rebound & Hip Gather",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.111, 0.000), rotDeg = Vector3.new(-14.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, -6.0, 16.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -16.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -6.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -6.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.240,
+        label = "Ready / Locomotion Recovery",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+        },
+      },
     },
-    ["A09"] = {
-        id = "A09",
-        name = "Aerial Block",
-        mode = "OneShot",
-        duration = 0.52,
-        blendIn = 0.05,
-        blendOut = 0.10,
-        holdPhase = nil,
-        contactPhase = 0.42,
-        referenceSpeed = 12.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Intercept Rise & Arms Pin Behind Back",
-                hrpRefY = 3.50,
-                obbMinY = 0.450,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.132, 0.000), rotDeg = Vector3.new(6.0, 18.0, -6.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -14.0, 4.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 20.0, 6.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, -20.0, -6.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -8.0, 14.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 8.0, -12.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.42,
-                timeSec = 0.218,
-                label = "Broad Chest / Upper-Torso Wall Contact",
-                hrpRefY = 3.75,
-                obbMinY = 0.700,
-                contact = {
-                    part = "Torso",
-                    localPoint = Vector3.new(0.062, 0.255, -0.500),
-                    worldPoint = Vector3.new(-0.098, 4.235, -0.438),
-                    ballCenter = Vector3.new(-0.566, 4.476, -1.572),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.142, 0.000), rotDeg = Vector3.new(12.0, 22.0, -8.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -18.0, 6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 24.0, 4.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -24.0, -4.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -10.0, 18.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, 10.0, -14.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.72,
-                timeSec = 0.374,
-                label = "Impact Absorption Recoil in Air",
-                hrpRefY = 3.40,
-                obbMinY = 0.350,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.121, 0.100), rotDeg = Vector3.new(18.0, 26.0, -10.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -20.0, 8.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 14.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -14.0, -18.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -6.0, 12.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-26.0, 6.0, -12.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.520,
-                label = "Re-Center & Touchdown Preparation",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.153, 0.000), rotDeg = Vector3.new(-10.0, 6.0, -2.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -6.0, 2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 20.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -20.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, -5.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 5.0, -6.0) },
-                },
-            },
+  },
+  ["A08"] = {
+    id = "A08",
+    name = "Header",
+    mode = "OneShot",
+    duration = 0.48,
+    blendIn = 0.06,
+    blendOut = 0.10,
+    holdPhase = nil,
+    contactPhase = 0.45,
+    referenceSpeed = 16.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Torso Arch & Chest Expansion Coil",
+        hrpRefY = 3.45,
+        obbMinY = 0.400,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.019, 0.120), rotDeg = Vector3.new(22.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, 32.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, -32.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -5.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 5.0, -5.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.45,
+        timeSec = 0.216,
+        label = "Forehead Strike Contact (Kinetic Whip)",
+        hrpRefY = 3.60,
+        obbMinY = 0.500,
+        contact = {
+          part = "Head",
+          localPoint = Vector3.new(0.000, 0.500, -0.500),
+          worldPoint = Vector3.new(0.000, 5.095, -1.415),
+          ballCenter = Vector3.new(0.000, 5.047, -2.664),
+          surfaceDist = 1.250,
+        },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.061, -0.140), rotDeg = Vector3.new(-20.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 0.0, 22.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 0.0, -22.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, -4.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 4.0, -4.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.72,
+        timeSec = 0.346,
+        label = "Full Torso Follow-Through & Pike",
+        hrpRefY = 3.30,
+        obbMinY = 0.250,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.018, -0.180), rotDeg = Vector3.new(-28.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, 0.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, 0.0, -18.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(32.0, -5.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 5.0, -5.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.480,
+        label = "Balance Recovery & Landing Prep",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.136, 0.000), rotDeg = Vector3.new(-10.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, 16.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, -16.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -4.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 4.0, -5.0) },
+        },
+      },
     },
-    ["A10"] = {
-        id = "A10",
-        name = "Mid-Air Volley",
-        mode = "OneShot",
-        duration = 0.56,
-        blendIn = 0.05,
-        blendOut = 0.10,
-        holdPhase = nil,
-        contactPhase = 0.46,
-        referenceSpeed = 14.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Airborne Side-Tilt & Kicking Leg Chamber",
-                hrpRefY = 3.55,
-                obbMinY = 0.500,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.087, 0.000), rotDeg = Vector3.new(12.0, -28.0, 22.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 24.0, -14.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -12.0, 36.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 12.0, -48.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -18.0, 28.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 10.0, -16.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.25,
-                timeSec = 0.140,
-                label = "Hip Whip Initiation & Scissor Fold",
-                hrpRefY = 3.75,
-                obbMinY = 0.750,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.308, 0.000), rotDeg = Vector3.new(18.0, -6.0, 28.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -18.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, 42.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 0.0, -56.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -14.0, 26.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 8.0, -20.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.46,
-                timeSec = 0.258,
-                label = "Mid-Air Side-Volley Strike [Contact]",
-                hrpRefY = 3.80,
-                obbMinY = 0.850,
-                contact = {
-                    part = "Right Leg",
-                    localPoint = Vector3.new(-0.500, -1.000, 0.208),
-                    worldPoint = Vector3.new(0.608, 3.850, -2.881),
-                    ballCenter = Vector3.new(0.449, 3.920, -4.119),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.351, -0.060), rotDeg = Vector3.new(24.0, 26.0, 32.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -22.0, -20.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-44.0, 12.0, 34.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, -14.0, -52.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, -16.0, 18.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 12.0, -22.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 0.72,
-                timeSec = 0.403,
-                label = "High Across-Body Follow-Through",
-                hrpRefY = 3.45,
-                obbMinY = 0.450,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.323, -0.040), rotDeg = Vector3.new(18.0, 42.0, 24.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, -34.0, -14.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 18.0, 28.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -18.0, -40.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(78.0, -10.0, -8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 8.0, -16.0) },
-                },
-            },
-            {
-                kf = 5,
-                t = 1.00,
-                timeSec = 0.560,
-                label = "Upright Re-Alignment & Landing Catch",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.158, 0.000), rotDeg = Vector3.new(-10.0, 8.0, 4.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, -4.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, 20.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 0.0, -20.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 4.0, -8.0) },
-                },
-            },
+  },
+  ["A09"] = {
+    id = "A09",
+    name = "Aerial Block",
+    mode = "OneShot",
+    duration = 0.52,
+    blendIn = 0.05,
+    blendOut = 0.10,
+    holdPhase = nil,
+    contactPhase = 0.42,
+    referenceSpeed = 12.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Intercept Rise & Arms Pin Behind Back",
+        hrpRefY = 3.50,
+        obbMinY = 0.450,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.132, 0.000), rotDeg = Vector3.new(6.0, 18.0, -6.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -14.0, 4.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, 20.0, 6.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, -20.0, -6.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -8.0, 14.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 8.0, -12.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.42,
+        timeSec = 0.218,
+        label = "Broad Chest / Upper-Torso Wall Contact",
+        hrpRefY = 3.75,
+        obbMinY = 0.700,
+        contact = {
+          part = "Torso",
+          localPoint = Vector3.new(0.062, 0.255, -0.500),
+          worldPoint = Vector3.new(-0.098, 4.235, -0.438),
+          ballCenter = Vector3.new(-0.566, 4.476, -1.572),
+          surfaceDist = 1.250,
+        },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.142, 0.000), rotDeg = Vector3.new(12.0, 22.0, -8.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -18.0, 6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, 24.0, 4.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -24.0, -4.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -10.0, 18.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, 10.0, -14.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.72,
+        timeSec = 0.374,
+        label = "Impact Absorption Recoil in Air",
+        hrpRefY = 3.40,
+        obbMinY = 0.350,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.121, 0.100), rotDeg = Vector3.new(18.0, 26.0, -10.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -20.0, 8.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 14.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -14.0, -18.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -6.0, 12.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-26.0, 6.0, -12.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.520,
+        label = "Re-Center & Touchdown Preparation",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.153, 0.000), rotDeg = Vector3.new(-10.0, 6.0, -2.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -6.0, 2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 20.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -20.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, -5.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 5.0, -6.0) },
+        },
+      },
     },
-    ["A11"] = {
-        id = "A11",
-        name = "Bicycle Kick",
-        mode = "OneShot",
-        duration = 0.88,
-        blendIn = 0.06,
-        blendOut = 0.12,
-        holdPhase = nil,
-        contactPhase = 0.48,
-        referenceSpeed = 6.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Back-Lean Launch & Left Knee/Leg Pump",
-                hrpRefY = 3.20,
-                obbMinY = 0.250,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.012, 0.000), rotDeg = Vector3.new(-36.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-35.0, 0.0, 20.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-35.0, 0.0, -20.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, 0.0, -5.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.24,
-                timeSec = 0.211,
-                label = "Inversion Pitch & Scissor Cocking",
-                hrpRefY = 3.85,
-                obbMinY = 1.400,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -1.280, -0.100), rotDeg = Vector3.new(-108.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 0.0, 38.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 0.0, -38.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, 0.0, -6.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.48,
-                timeSec = 0.422,
-                label = "Inverted Overhead Strike [Ball Contact]",
-                hrpRefY = 4.15,
-                obbMinY = 1.800,
-                contact = {
-                    part = "Right Leg",
-                    localPoint = Vector3.new(-0.067, -1.000, 0.500),
-                    worldPoint = Vector3.new(0.574, 6.050, -1.214),
-                    ballCenter = Vector3.new(0.613, 5.929, -2.457),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.459, -0.150), rotDeg = Vector3.new(-154.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 0.0, 44.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 0.0, -44.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, 0.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 0.0, -4.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 0.68,
-                timeSec = 0.598,
-                label = "Overhead Follow-Through & Arm Reach Down",
-                hrpRefY = 3.55,
-                obbMinY = 1.100,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -1.071, -0.200), rotDeg = Vector3.new(-128.0, -8.0, 6.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(30.0, 6.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, 0.0, 26.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, 0.0, -26.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-76.0, 0.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 0.0, -6.0) },
-                },
-            },
-            {
-                kf = 5,
-                t = 0.84,
-                timeSec = 0.739,
-                label = "Horizontal Back/Arm Cushion Breakfall",
-                hrpRefY = 3.00,
-                obbMinY = 0.020,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -1.702, -0.150), rotDeg = Vector3.new(-82.0, -12.0, 4.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 8.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 24.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -24.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, 6.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 0.0, -6.0) },
-                },
-            },
-            {
-                kf = 6,
-                t = 0.92,
-                timeSec = 0.810,
-                label = "Kip-Up Transitional Rise (Clearance Guard)",
-                hrpRefY = 3.00,
-                obbMinY = 0.020,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.350, -0.050), rotDeg = Vector3.new(-25.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(15.0, 0.0, 25.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(15.0, 0.0, -25.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 2.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -2.0, -4.0) },
-                },
-            },
-            {
-                kf = 7,
-                t = 1.00,
-                timeSec = 0.880,
-                label = "Snap-Up Recovery to Athletic Ready",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.152, 0.000), rotDeg = Vector3.new(-6.0, 0.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 0.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, -6.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 5.0, -4.0) },
-                },
-            },
+  },
+  ["A10"] = {
+    id = "A10",
+    name = "Mid-Air Volley",
+    mode = "OneShot",
+    duration = 0.56,
+    blendIn = 0.05,
+    blendOut = 0.10,
+    holdPhase = nil,
+    contactPhase = 0.46,
+    referenceSpeed = 14.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Airborne Side-Tilt & Kicking Leg Chamber",
+        hrpRefY = 3.55,
+        obbMinY = 0.500,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.087, 0.000), rotDeg = Vector3.new(12.0, -28.0, 22.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 24.0, -14.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -12.0, 36.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 12.0, -48.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -18.0, 28.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 10.0, -16.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.25,
+        timeSec = 0.140,
+        label = "Hip Whip Initiation & Scissor Fold",
+        hrpRefY = 3.75,
+        obbMinY = 0.750,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.308, 0.000), rotDeg = Vector3.new(18.0, -6.0, 28.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -18.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, 42.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 0.0, -56.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -14.0, 26.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 8.0, -20.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.46,
+        timeSec = 0.258,
+        label = "Mid-Air Side-Volley Strike [Contact]",
+        hrpRefY = 3.80,
+        obbMinY = 0.850,
+        contact = {
+          part = "Right Leg",
+          localPoint = Vector3.new(-0.500, -1.000, 0.208),
+          worldPoint = Vector3.new(0.608, 3.850, -2.881),
+          ballCenter = Vector3.new(0.449, 3.920, -4.119),
+          surfaceDist = 1.250,
+        },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.351, -0.060), rotDeg = Vector3.new(24.0, 26.0, 32.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -22.0, -20.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-44.0, 12.0, 34.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, -14.0, -52.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(64.0, -16.0, 18.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 12.0, -22.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.72,
+        timeSec = 0.403,
+        label = "High Across-Body Follow-Through",
+        hrpRefY = 3.45,
+        obbMinY = 0.450,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.323, -0.040), rotDeg = Vector3.new(18.0, 42.0, 24.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, -34.0, -14.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, 18.0, 28.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -18.0, -40.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(78.0, -10.0, -8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 8.0, -16.0) },
+        },
+      },
+      {
+        kf = 5,
+        t = 1.00,
+        timeSec = 0.560,
+        label = "Upright Re-Alignment & Landing Catch",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.158, 0.000), rotDeg = Vector3.new(-10.0, 8.0, 4.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, -4.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 0.0, 20.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 0.0, -20.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 4.0, -8.0) },
+        },
+      },
     },
-    ["A12"] = {
-        id = "A12",
-        name = "Direct Shoot Wind-up / Hold",
-        mode = "Hold",
-        duration = 0.34,
-        blendIn = 0.06,
-        blendOut = 0.08,
-        holdPhase = 0.50,
-        contactPhase = nil,
-        referenceSpeed = 0.0,
-        nextAnimOnRelease = "A13",
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Enter: Plant Foot Step & Shoulder Turn",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.081, 0.000), rotDeg = Vector3.new(-8.0, -8.0, 2.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 8.0, -2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 0.0, 16.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 8.0, -20.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -4.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, -4.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.35,
-                timeSec = 0.126,
-                label = "Enter: Deep Backswing Loading",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.040, 0.126, 0.040), rotDeg = Vector3.new(-12.0, -14.0, 5.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 14.0, -4.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, -6.0, 22.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 12.0, -28.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -6.0, 7.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 5.0, -5.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.50,
-                timeSec = 0.180,
-                label = "HOLD LOCK: Coiled Power Stance (Frozen Pose)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.060, 0.149, 0.060), rotDeg = Vector3.new(-14.0, -18.0, 6.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 18.0, -5.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -8.0, 24.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(50.0, 14.0, -32.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, -6.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 6.0, -6.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.340,
-                label = "Cancel Branch: Smooth De-escalation to Ready",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                },
-            },
+  },
+  ["A11"] = {
+    id = "A11",
+    name = "Bicycle Kick",
+    mode = "OneShot",
+    duration = 0.88,
+    blendIn = 0.06,
+    blendOut = 0.12,
+    holdPhase = nil,
+    contactPhase = 0.48,
+    referenceSpeed = 6.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Back-Lean Launch & Left Knee/Leg Pump",
+        hrpRefY = 3.20,
+        obbMinY = 0.250,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.012, 0.000), rotDeg = Vector3.new(-36.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-35.0, 0.0, 20.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-35.0, 0.0, -20.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, 0.0, -5.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.24,
+        timeSec = 0.211,
+        label = "Inversion Pitch & Scissor Cocking",
+        hrpRefY = 3.85,
+        obbMinY = 1.400,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -1.280, -0.100), rotDeg = Vector3.new(-108.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 0.0, 38.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 0.0, -38.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, 0.0, -6.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.48,
+        timeSec = 0.422,
+        label = "Inverted Overhead Strike [Ball Contact]",
+        hrpRefY = 4.15,
+        obbMinY = 1.800,
+        contact = {
+          part = "Right Leg",
+          localPoint = Vector3.new(-0.067, -1.000, 0.500),
+          worldPoint = Vector3.new(0.574, 6.050, -1.214),
+          ballCenter = Vector3.new(0.613, 5.929, -2.457),
+          surfaceDist = 1.250,
+        },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.459, -0.150), rotDeg = Vector3.new(-154.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 0.0, 44.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 0.0, -44.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, 0.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 0.0, -4.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.68,
+        timeSec = 0.598,
+        label = "Overhead Follow-Through & Arm Reach Down",
+        hrpRefY = 3.55,
+        obbMinY = 1.100,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -1.071, -0.200), rotDeg = Vector3.new(-128.0, -8.0, 6.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(30.0, 6.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, 0.0, 26.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, 0.0, -26.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-76.0, 0.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 0.0, -6.0) },
+        },
+      },
+      {
+        kf = 5,
+        t = 0.84,
+        timeSec = 0.739,
+        label = "Horizontal Back/Arm Cushion Breakfall",
+        hrpRefY = 3.00,
+        obbMinY = 0.020,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -1.702, -0.150), rotDeg = Vector3.new(-82.0, -12.0, 4.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 8.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 24.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, -24.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, 6.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 0.0, -6.0) },
+        },
+      },
+      {
+        kf = 6,
+        t = 0.92,
+        timeSec = 0.810,
+        label = "Kip-Up Transitional Rise (Clearance Guard)",
+        hrpRefY = 3.00,
+        obbMinY = 0.020,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.350, -0.050), rotDeg = Vector3.new(-25.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(15.0, 0.0, 25.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(15.0, 0.0, -25.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 2.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-12.0, -2.0, -4.0) },
+        },
+      },
+      {
+        kf = 7,
+        t = 1.00,
+        timeSec = 0.880,
+        label = "Snap-Up Recovery to Athletic Ready",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.152, 0.000), rotDeg = Vector3.new(-6.0, 0.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 0.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, -6.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 5.0, -4.0) },
+        },
+      },
     },
-    ["A13"] = {
-        id = "A13",
-        name = "Direct Shoot Follow-Through",
-        mode = "OneShot",
-        duration = 0.42,
-        blendIn = 0.00,
-        blendOut = 0.10,
-        holdPhase = nil,
-        contactPhase = 0.28,
-        referenceSpeed = 0.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Release Initiation (Exact Hand-off from A12 Hold)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.060, 0.149, 0.060), rotDeg = Vector3.new(-14.0, -18.0, 6.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 18.0, -5.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -8.0, 24.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(50.0, 14.0, -32.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, -6.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 6.0, -6.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.28,
-                timeSec = 0.118,
-                label = "Instep Power Strike [Ball Contact]",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                contact = {
-                    part = "Right Leg",
-                    localPoint = Vector3.new(0.116, -0.664, -0.500),
-                    worldPoint = Vector3.new(0.776, 0.824, -1.007),
-                    ballCenter = Vector3.new(0.650, 1.250, -2.176),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.040, 0.164, 0.000), rotDeg = Vector3.new(-6.0, 4.0, 5.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, -4.0, -4.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 8.0, -28.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 0.0, 3.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 4.0, -5.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.62,
-                timeSec = 0.260,
-                label = "High Power Follow-Through & Counter-Twist",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.040, 0.229, -0.040), rotDeg = Vector3.new(10.0, 22.0, 8.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -20.0, -6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, 10.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-44.0, -8.0, -24.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(68.0, 4.0, -4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 4.0, -6.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.420,
-                label = "Step-Down Recovery to Ready",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.137, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -4.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 4.0, -4.0) },
-                },
-            },
+  },
+  ["A12"] = {
+    id = "A12",
+    name = "Direct Shoot Wind-up / Hold",
+    mode = "Hold",
+    duration = 0.34,
+    blendIn = 0.06,
+    blendOut = 0.08,
+    holdPhase = 0.50,
+    contactPhase = nil,
+    referenceSpeed = 0.0,
+    nextAnimOnRelease = "A13",
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Enter: Plant Foot Step & Shoulder Turn",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.081, 0.000), rotDeg = Vector3.new(-8.0, -8.0, 2.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 8.0, -2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 0.0, 16.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 8.0, -20.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -4.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, -4.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.35,
+        timeSec = 0.126,
+        label = "Enter: Deep Backswing Loading",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.040, 0.126, 0.040), rotDeg = Vector3.new(-12.0, -14.0, 5.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 14.0, -4.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-34.0, -6.0, 22.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 12.0, -28.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -6.0, 7.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 5.0, -5.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.50,
+        timeSec = 0.180,
+        label = "HOLD LOCK: Coiled Power Stance (Frozen Pose)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.060, 0.149, 0.060), rotDeg = Vector3.new(-14.0, -18.0, 6.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 18.0, -5.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -8.0, 24.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(50.0, 14.0, -32.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, -6.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 6.0, -6.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.340,
+        label = "Cancel Branch: Smooth De-escalation to Ready",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+        },
+      },
     },
-    ["A14"] = {
-        id = "A14",
-        name = "Curve Shoot Wind-up / Hold",
-        mode = "Hold",
-        duration = 0.36,
-        blendIn = 0.06,
-        blendOut = 0.08,
-        holdPhase = 0.50,
-        contactPhase = nil,
-        referenceSpeed = 0.0,
-        nextAnimOnRelease = "A15",
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Enter: Wide Oblique Plant & Hip Open",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.080, 0.245, 0.040), rotDeg = Vector3.new(-6.0, -18.0, -6.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 16.0, 5.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -10.0, 24.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 12.0, -28.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -16.0, 14.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 10.0, 6.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.35,
-                timeSec = 0.140,
-                label = "Enter: Angled Sweeping Chamber",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.120, 0.163, 0.060), rotDeg = Vector3.new(-9.0, -26.0, -8.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 24.0, 6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, -14.0, 32.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 18.0, -38.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -24.0, 20.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 12.0, 8.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.50,
-                timeSec = 0.200,
-                label = "HOLD LOCK: Open-Hip Curve Chamber (Frozen Pose)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.360,
-                label = "Cancel Branch: Smooth Return to Ready",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                },
-            },
+  },
+  ["A13"] = {
+    id = "A13",
+    name = "Direct Shoot Follow-Through",
+    mode = "OneShot",
+    duration = 0.42,
+    blendIn = 0.00,
+    blendOut = 0.10,
+    holdPhase = nil,
+    contactPhase = 0.28,
+    referenceSpeed = 0.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Release Initiation (Exact Hand-off from A12 Hold)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.060, 0.149, 0.060), rotDeg = Vector3.new(-14.0, -18.0, 6.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 18.0, -5.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -8.0, 24.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(50.0, 14.0, -32.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-58.0, -6.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 6.0, -6.0) },
         },
+      },
+      {
+        kf = 2,
+        t = 0.28,
+        timeSec = 0.118,
+        label = "Instep Power Strike [Ball Contact]",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        contact = {
+          part = "Right Leg",
+          localPoint = Vector3.new(0.116, -0.664, -0.500),
+          worldPoint = Vector3.new(0.776, 0.824, -1.007),
+          ballCenter = Vector3.new(0.650, 1.250, -2.176),
+          surfaceDist = 1.250,
+        },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.040, 0.164, 0.000), rotDeg = Vector3.new(-6.0, 4.0, 5.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, -4.0, -4.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 0.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 8.0, -28.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 0.0, 3.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 4.0, -5.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.62,
+        timeSec = 0.260,
+        label = "High Power Follow-Through & Counter-Twist",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.040, 0.229, -0.040), rotDeg = Vector3.new(10.0, 22.0, 8.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -20.0, -6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, 10.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-44.0, -8.0, -24.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(68.0, 4.0, -4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 4.0, -6.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.420,
+        label = "Step-Down Recovery to Ready",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.137, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -4.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 4.0, -4.0) },
+        },
+      },
     },
-    ["A15"] = {
-        id = "A15",
-        name = "Curve Shoot Follow-Through (Finesse & Trivela Variants)",
-        mode = "OneShot",
-        duration = 0.44,
-        blendIn = 0.00,
-        blendOut = 0.10,
-        holdPhase = nil,
-        contactPhase = 0.30,
-        referenceSpeed = 0.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Release from A14 Hold (External Hip Rotation Lock)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.30,
-                timeSec = 0.132,
-                label = "Finesse Inside-Surface Whip Contact [Ball Contact]",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                contact = {
-                    part = "Right Leg",
-                    localPoint = Vector3.new(-0.500, -0.202, -0.085),
-                    worldPoint = Vector3.new(0.842, 1.391, -1.150),
-                    ballCenter = Vector3.new(-0.091, 1.250, -1.971),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.100, 0.277, 0.000), rotDeg = Vector3.new(-4.0, 8.0, 14.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -8.0, -10.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 28.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 12.0, -36.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -48.0, 16.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 10.0, -12.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.65,
-                timeSec = 0.286,
-                label = "Crescent Wrap Follow-Through Across Body",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.060, 0.321, -0.040), rotDeg = Vector3.new(8.0, 28.0, 16.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -24.0, -12.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 16.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -14.0, -28.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, -52.0, -18.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 8.0, -10.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.440,
-                label = "Balanced Recovery to Ready",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.151, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 2.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -4.0, -2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, -4.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -4.0) },
-                },
-            },
+  },
+  ["A14"] = {
+    id = "A14",
+    name = "Curve Shoot Wind-up / Hold",
+    mode = "Hold",
+    duration = 0.36,
+    blendIn = 0.06,
+    blendOut = 0.08,
+    holdPhase = 0.50,
+    contactPhase = nil,
+    referenceSpeed = 0.0,
+    nextAnimOnRelease = "A15",
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Enter: Wide Oblique Plant & Hip Open",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.080, 0.245, 0.040), rotDeg = Vector3.new(-6.0, -18.0, -6.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 16.0, 5.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -10.0, 24.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 12.0, -28.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -16.0, 14.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 10.0, 6.0) },
         },
-        variants = {
-            ["finesse"] = {
-                name = "A15-finesse (Inside-Foot Curl)",
-                contactSurfaceDesc = "Medial (inner -X) surface of Right Leg at (-0.50, -0.55, -0.15) via external hip rotation ry = -48°",
-                keyframes = {
-                    {
-                        kf = 1,
-                        t = 0.00,
-                        timeSec = 0.000,
-                        label = "Release from A14 Hold (External Hip Rotation Lock)",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
-                        },
-                    },
-                    {
-                        kf = 2,
-                        t = 0.30,
-                        timeSec = 0.132,
-                        label = "Finesse Inside-Surface Whip Contact [Ball Contact]",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        contact = {
-                            part = "Right Leg",
-                            localPoint = Vector3.new(-0.500, -0.202, -0.085),
-                            worldPoint = Vector3.new(0.842, 1.391, -1.150),
-                            ballCenter = Vector3.new(-0.091, 1.250, -1.971),
-                            surfaceDist = 1.250,
-                        },
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.100, 0.277, 0.000), rotDeg = Vector3.new(-4.0, 8.0, 14.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -8.0, -10.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 28.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 12.0, -36.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -48.0, 16.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 10.0, -14.0) },
-                        },
-                    },
-                    {
-                        kf = 3,
-                        t = 0.65,
-                        timeSec = 0.286,
-                        label = "Crescent Wrap Follow-Through Across Body",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.060, 0.321, -0.040), rotDeg = Vector3.new(8.0, 28.0, 16.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -24.0, -12.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 16.0, 12.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -14.0, -28.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, -52.0, -18.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 8.0, -16.0) },
-                        },
-                    },
-                    {
-                        kf = 4,
-                        t = 1.00,
-                        timeSec = 0.440,
-                        label = "Balanced Recovery to Ready",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.151, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 2.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -4.0, -2.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, -4.0, 12.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, -12.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 4.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -4.0) },
-                        },
-                    },
-                },
-            },
-            ["trivela"] = {
-                name = "A15-trivela (Outside-Foot Reverse Curl)",
-                contactSurfaceDesc = "Lateral (outer +X) surface of Right Leg at (+0.50, -0.55, -0.15) via internal hip rotation ry = +38°",
-                keyframes = {
-                    {
-                        kf = 1,
-                        t = 0.00,
-                        timeSec = 0.000,
-                        label = "Release from A14 Hold (Internal Hip Twist Prep)",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
-                        },
-                    },
-                    {
-                        kf = 2,
-                        t = 0.30,
-                        timeSec = 0.132,
-                        label = "Trivela Outside-Surface Slice Contact [Ball Contact]",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        contact = {
-                            part = "Right Leg",
-                            localPoint = Vector3.new(0.500, 0.161, -0.500),
-                            worldPoint = Vector3.new(0.154, 1.439, -0.331),
-                            ballCenter = Vector3.new(1.225, 1.250, -0.946),
-                            surfaceDist = 1.250,
-                        },
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.120, 0.200, 0.000), rotDeg = Vector3.new(-8.0, -12.0, -14.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 12.0, 10.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -8.0, 32.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 14.0, -34.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 38.0, -12.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 12.0, 14.0) },
-                        },
-                    },
-                    {
-                        kf = 3,
-                        t = 0.65,
-                        timeSec = 0.286,
-                        label = "OutwardWhip Slice Follow-Through",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.100, -0.065, -0.020), rotDeg = Vector3.new(6.0, 8.0, -18.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -8.0, 14.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, -12.0, 42.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 10.0, -24.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(58.0, 42.0, 26.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 10.0, 18.0) },
-                        },
-                    },
-                    {
-                        kf = 4,
-                        t = 1.00,
-                        timeSec = 0.440,
-                        label = "Balanced Recovery to Ready",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.134, 0.000), rotDeg = Vector3.new(-8.0, -4.0, -2.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 2.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 14.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -14.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 6.0, 6.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 4.0, -4.0) },
-                        },
-                    },
-                },
-            },
+      },
+      {
+        kf = 2,
+        t = 0.35,
+        timeSec = 0.140,
+        label = "Enter: Angled Sweeping Chamber",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.120, 0.163, 0.060), rotDeg = Vector3.new(-9.0, -26.0, -8.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 24.0, 6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, -14.0, 32.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 18.0, -38.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -24.0, 20.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 12.0, 8.0) },
         },
+      },
+      {
+        kf = 3,
+        t = 0.50,
+        timeSec = 0.200,
+        label = "HOLD LOCK: Open-Hip Curve Chamber (Frozen Pose)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.360,
+        label = "Cancel Branch: Smooth Return to Ready",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+        },
+      },
     },
-    ["A16"] = {
-        id = "A16",
-        name = "Single 3D Pass (Parametric Ground & Lob Pass)",
-        mode = "OneShot",
-        duration = 0.36,
-        blendIn = 0.05,
-        blendOut = 0.08,
-        holdPhase = nil,
-        contactPhase = 0.32,
-        referenceSpeed = 0.0,
-        keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Compact Pass Chamber (Open Hip Push Prep)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.050, 0.123, 0.020), rotDeg = Vector3.new(-8.0, -14.0, 2.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 14.0, -2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -6.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 8.0, -22.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -36.0, 12.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -6.0) },
-                },
-            },
-            {
-                kf = 2,
-                t = 0.32,
-                timeSec = 0.115,
-                label = "Flat Inside-Foot Push Contact [Ground Pass]",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                contact = {
-                    part = "Right Leg",
-                    localPoint = Vector3.new(-0.500, -0.012, -0.219),
-                    worldPoint = Vector3.new(0.520, 1.273, -0.893),
-                    ballCenter = Vector3.new(-0.464, 1.250, -1.664),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.040, 0.160, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 4.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -4.0, -3.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 16.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -20.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -42.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 4.0, -5.0) },
-                },
-            },
-            {
-                kf = 3,
-                t = 0.65,
-                timeSec = 0.234,
-                label = "Controlled Short Follow-Through (Abrupt Stop)",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(-0.030, 0.167, -0.020), rotDeg = Vector3.new(-4.0, 12.0, 5.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -12.0, -4.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 6.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -4.0, -18.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, -38.0, 2.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 4.0, -5.0) },
-                },
-            },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.360,
-                label = "Instant Play Continuation Ready",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                },
-            },
+  },
+  ["A15"] = {
+    id = "A15",
+    name = "Curve Shoot Follow-Through (Finesse & Trivela Variants)",
+    mode = "OneShot",
+    duration = 0.44,
+    blendIn = 0.00,
+    blendOut = 0.10,
+    holdPhase = nil,
+    contactPhase = 0.30,
+    referenceSpeed = 0.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Release from A14 Hold (External Hip Rotation Lock)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
         },
-        variants = {
-            ["ground"] = {
-                name = "A16-ground (Driven Ground Pass: elevation=0°, power=0.6)",
-                contactSurfaceDesc = "Medial inner surface (-0.50, -0.50, -0.10) at mid-ball height (Y ≈ 1.02 studs), Torso leaned forward -8°",
-                keyframes = {
-                    {
-                        kf = 1,
-                        t = 0.00,
-                        timeSec = 0.000,
-                        label = "Compact Pass Chamber (Open Hip Push Prep)",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.050, 0.123, 0.020), rotDeg = Vector3.new(-8.0, -14.0, 2.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 14.0, -2.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -6.0, 18.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 8.0, -22.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -36.0, 12.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -6.0) },
-                        },
-                    },
-                    {
-                        kf = 2,
-                        t = 0.32,
-                        timeSec = 0.115,
-                        label = "Flat Inside-Foot Push Contact [Ground Pass]",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        contact = {
-                            part = "Right Leg",
-                            localPoint = Vector3.new(-0.500, -0.012, -0.219),
-                            worldPoint = Vector3.new(0.520, 1.273, -0.893),
-                            ballCenter = Vector3.new(-0.464, 1.250, -1.664),
-                            surfaceDist = 1.250,
-                        },
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.040, 0.160, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 4.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -4.0, -3.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 16.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -20.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -42.0, 8.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 4.0, -5.0) },
-                        },
-                    },
-                    {
-                        kf = 3,
-                        t = 0.65,
-                        timeSec = 0.234,
-                        label = "Controlled Short Follow-Through (Abrupt Stop)",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.030, 0.167, -0.020), rotDeg = Vector3.new(-4.0, 12.0, 5.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -12.0, -4.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 6.0, 14.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -4.0, -18.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, -38.0, 2.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 4.0, -5.0) },
-                        },
-                    },
-                    {
-                        kf = 4,
-                        t = 1.00,
-                        timeSec = 0.360,
-                        label = "Instant Play Continuation Ready",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                        },
-                    },
-                },
-            },
-            ["lob"] = {
-                name = "A16-lob (Lofted / Chipped Pass: elevation=35°, power=0.85)",
-                contactSurfaceDesc = "Lower-medial front edge (-0.35, -0.85, -0.50) wedged under ball equator (Y ≈ 0.68 studs), Torso reclined +6°",
-                keyframes = {
-                    {
-                        kf = 1,
-                        t = 0.00,
-                        timeSec = 0.000,
-                        label = "Lob Pass Chamber (Deeper Dip & Backswing)",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.060, 0.167, 0.040), rotDeg = Vector3.new(-4.0, -20.0, 4.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 18.0, -3.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -8.0, 22.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, 12.0, -28.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -28.0, 14.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 8.0, -8.0) },
-                        },
-                    },
-                    {
-                        kf = 2,
-                        t = 0.32,
-                        timeSec = 0.115,
-                        label = "Under-Ball Wedge Scoop Contact [Lob Pass]",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        contact = {
-                            part = "Right Leg",
-                            localPoint = Vector3.new(-0.500, -1.000, -0.500),
-                            worldPoint = Vector3.new(0.610, 0.903, -1.972),
-                            ballCenter = Vector3.new(0.724, 1.250, -3.167),
-                            surfaceDist = 1.250,
-                        },
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.050, 0.147, 0.020), rotDeg = Vector3.new(6.0, 6.0, 6.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -6.0, -4.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, 20.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 8.0, -26.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -26.0, 8.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 6.0, -6.0) },
-                        },
-                    },
-                    {
-                        kf = 3,
-                        t = 0.65,
-                        timeSec = 0.234,
-                        label = "Upward Chip Lift Follow-Through",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(-0.040, 0.200, -0.020), rotDeg = Vector3.new(10.0, 18.0, 8.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -16.0, -6.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 8.0, 16.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -6.0, -22.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(52.0, -24.0, -6.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 6.0, -6.0) },
-                        },
-                    },
-                    {
-                        kf = 4,
-                        t = 1.00,
-                        timeSec = 0.360,
-                        label = "Instant Play Continuation Ready",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                        },
-                    },
-                },
-            },
+      },
+      {
+        kf = 2,
+        t = 0.30,
+        timeSec = 0.132,
+        label = "Finesse Inside-Surface Whip Contact [Ball Contact]",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        contact = {
+          part = "Right Leg",
+          localPoint = Vector3.new(-0.500, -0.202, -0.085),
+          worldPoint = Vector3.new(0.842, 1.391, -1.150),
+          ballCenter = Vector3.new(-0.091, 1.250, -1.971),
+          surfaceDist = 1.250,
         },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.100, 0.277, 0.000), rotDeg = Vector3.new(-4.0, 8.0, 14.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -8.0, -10.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 28.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 12.0, -36.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -48.0, 16.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 10.0, -12.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.65,
+        timeSec = 0.286,
+        label = "Crescent Wrap Follow-Through Across Body",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.060, 0.321, -0.040), rotDeg = Vector3.new(8.0, 28.0, 16.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -24.0, -12.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 16.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -14.0, -28.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, -52.0, -18.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 8.0, -10.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.440,
+        label = "Balanced Recovery to Ready",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.151, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 2.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -4.0, -2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, -4.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -4.0) },
+        },
+      },
     },
-    ["A17"] = {
-        id = "A17",
-        name = "Slide Tackle",
-        mode = "OneShot",
-        duration = 0.55,
-        blendIn = 0.05,
-        blendOut = 0.00,
-        holdPhase = nil,
-        contactPhase = 0.38,
-        referenceSpeed = 28.0,
-        nextAnimOnComplete = "A18",
+    variants = {
+      ["finesse"] = {
+        name = "A15-finesse (Inside-Foot Curl)",
+        contactSurfaceDesc = "Medial (inner -X) surface of Right Leg at (-0.50, -0.55, -0.15) via external hip rotation ry = -48°",
         keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Drop Entry & Hip Side-Collapse",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.108, 0.050), rotDeg = Vector3.new(24.0, 14.0, -10.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -12.0, 6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 26.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, -20.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, -8.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, -22.0) },
-                },
+          {
+            kf = 1,
+            t = 0.00,
+            timeSec = 0.000,
+            label = "Release from A14 Hold (External Hip Rotation Lock)",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
             },
-            {
-                kf = 2,
-                t = 0.18,
-                timeSec = 0.099,
-                label = "Intermediate Support Drop (Clearance Guard)",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.250, -0.050), rotDeg = Vector3.new(42.0, 18.0, -14.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -12.0, 6.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-25.0, 0.0, 42.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(35.0, 0.0, -42.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, -9.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(0.0, -22.0, -26.0) },
-                },
+          },
+          {
+            kf = 2,
+            t = 0.30,
+            timeSec = 0.132,
+            label = "Finesse Inside-Surface Whip Contact [Ball Contact]",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            contact = {
+              part = "Right Leg",
+              localPoint = Vector3.new(-0.500, -0.202, -0.085),
+              worldPoint = Vector3.new(0.842, 1.391, -1.150),
+              ballCenter = Vector3.new(-0.091, 1.250, -1.971),
+              surfaceDist = 1.250,
             },
-            {
-                kf = 3,
-                t = 0.38,
-                timeSec = 0.209,
-                label = "Active Full-Extension Slide [Ball Contact]",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                contact = {
-                    part = "Right Leg",
-                    localPoint = Vector3.new(0.365, -1.000, -0.233),
-                    worldPoint = Vector3.new(-0.047, 1.448, -3.262),
-                    ballCenter = Vector3.new(-0.385, 1.250, -4.449),
-                    surfaceDist = 1.250,
-                },
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -1.027, -0.180), rotDeg = Vector3.new(58.0, 22.0, -16.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -18.0, 10.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 8.0, 32.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-40.0, 0.0, -22.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -10.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, -28.0, -30.0) },
-                },
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.100, 0.277, 0.000), rotDeg = Vector3.new(-4.0, 8.0, 14.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -8.0, -10.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 0.0, 28.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 12.0, -36.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -48.0, 16.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 10.0, -14.0) },
             },
-            {
-                kf = 4,
-                t = 0.72,
-                timeSec = 0.396,
-                label = "Turf Glide & Sweep Follow-Through",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.939, -0.240), rotDeg = Vector3.new(62.0, 28.0, -18.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, -22.0, 12.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 12.0, 24.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, -18.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 4.0, -4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -30.0, -32.0) },
-                },
+          },
+          {
+            kf = 3,
+            t = 0.65,
+            timeSec = 0.286,
+            label = "Crescent Wrap Follow-Through Across Body",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.060, 0.321, -0.040), rotDeg = Vector3.new(8.0, 28.0, 16.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -24.0, -12.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, 16.0, 12.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-48.0, -14.0, -28.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(62.0, -52.0, -18.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, 8.0, -16.0) },
             },
-            {
-                kf = 5,
-                t = 1.00,
-                timeSec = 0.550,
-                label = "Slide Exit & Brace Preparation (Hands off to A18)",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
-                },
+          },
+          {
+            kf = 4,
+            t = 1.00,
+            timeSec = 0.440,
+            label = "Balanced Recovery to Ready",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.151, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 2.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -4.0, -2.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, -4.0, 12.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, 4.0, -12.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, -8.0, 4.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 6.0, -4.0) },
             },
+          },
         },
-    },
-    ["A18"] = {
-        id = "A18",
-        name = "Slide Recovery (Hit & Miss Visual Variants)",
-        mode = "OneShot",
-        duration = 0.44,
-        blendIn = 0.00,
-        blendOut = 0.10,
-        holdPhase = nil,
-        contactPhase = nil,
-        referenceSpeed = 10.0,
+      },
+      ["trivela"] = {
+        name = "A15-trivela (Outside-Foot Reverse Curl)",
+        contactSurfaceDesc = "Lateral (outer +X) surface of Right Leg at (+0.50, -0.55, -0.15) via internal hip rotation ry = +38°",
         keyframes = {
-            {
-                kf = 1,
-                t = 0.00,
-                timeSec = 0.000,
-                label = "Shared Entry from A17 Slide Exit",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
-                },
+          {
+            kf = 1,
+            t = 0.00,
+            timeSec = 0.000,
+            label = "Release from A14 Hold (Internal Hip Twist Prep)",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.140, 0.169, 0.080), rotDeg = Vector3.new(-10.0, -32.0, -10.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 30.0, 8.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-38.0, -16.0, 36.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(54.0, 20.0, -44.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-52.0, -28.0, 24.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 14.0, 10.0) },
             },
-            {
-                kf = 2,
-                t = 0.35,
-                timeSec = 0.154,
-                label = "On-Ball Variant: Energetic Hip Pop & Chest Whip",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.149, 0.000), rotDeg = Vector3.new(10.0, 10.0, -8.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -8.0, 4.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 18.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, -6.0, 8.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-26.0, -8.0, -14.0) },
-                },
+          },
+          {
+            kf = 2,
+            t = 0.30,
+            timeSec = 0.132,
+            label = "Trivela Outside-Surface Slice Contact [Ball Contact]",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            contact = {
+              part = "Right Leg",
+              localPoint = Vector3.new(0.500, 0.161, -0.500),
+              worldPoint = Vector3.new(0.154, 1.439, -0.331),
+              ballCenter = Vector3.new(1.225, 1.250, -0.946),
+              surfaceDist = 1.250,
             },
-            {
-                kf = 3,
-                t = 0.70,
-                timeSec = 0.308,
-                label = "On-Ball Variant: Forward Drive Step Rise",
-                hrpRefY = 3.00,
-                obbMinY = 0.015,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.094, 0.000), rotDeg = Vector3.new(-16.0, 4.0, -2.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 2.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 0.0, 14.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -14.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -4.0, 5.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 4.0, -5.0) },
-                },
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.120, 0.200, 0.000), rotDeg = Vector3.new(-8.0, -12.0, -14.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 12.0, 10.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -8.0, 32.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 14.0, -34.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 38.0, -12.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 12.0, 14.0) },
             },
-            {
-                kf = 4,
-                t = 1.00,
-                timeSec = 0.440,
-                label = "Shared Exit: Athletic Ready Stance",
-                hrpRefY = 3.00,
-                obbMinY = 0.010,
-                joints = {
-                    ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                    ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                    ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                    ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                    ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                    ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                },
+          },
+          {
+            kf = 3,
+            t = 0.65,
+            timeSec = 0.286,
+            label = "OutwardWhip Slice Follow-Through",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.100, -0.065, -0.020), rotDeg = Vector3.new(6.0, 8.0, -18.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -8.0, 14.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, -12.0, 42.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 10.0, -24.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(58.0, 42.0, 26.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 10.0, 18.0) },
             },
+          },
+          {
+            kf = 4,
+            t = 1.00,
+            timeSec = 0.440,
+            label = "Balanced Recovery to Ready",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.134, 0.000), rotDeg = Vector3.new(-8.0, -4.0, -2.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 2.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 14.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -14.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 6.0, 6.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, 4.0, -4.0) },
+            },
+          },
         },
-        variants = {
-            ["hit"] = {
-                name = "A18-hit (On-Ball Clean Pop-Up Recovery)",
-                contactSurfaceDesc = "Energetic backward-to-forward hip whip using stopping impulse from ball tackle",
-                keyframes = {
-                    {
-                        kf = 1,
-                        t = 0.00,
-                        timeSec = 0.000,
-                        label = "Shared Entry from A17 Slide Exit",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
-                        },
-                    },
-                    {
-                        kf = 2,
-                        t = 0.35,
-                        timeSec = 0.154,
-                        label = "On-Ball Variant: Energetic Hip Pop & Chest Whip",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.149, 0.000), rotDeg = Vector3.new(10.0, 10.0, -8.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -8.0, 4.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 18.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, -14.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, -6.0, 8.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-26.0, -8.0, -14.0) },
-                        },
-                    },
-                    {
-                        kf = 3,
-                        t = 0.70,
-                        timeSec = 0.308,
-                        label = "On-Ball Variant: Forward Drive Step Rise",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.094, 0.000), rotDeg = Vector3.new(-16.0, 4.0, -2.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 2.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 0.0, 14.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -14.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -4.0, 5.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 4.0, -5.0) },
-                        },
-                    },
-                    {
-                        kf = 4,
-                        t = 1.00,
-                        timeSec = 0.440,
-                        label = "Shared Exit: Athletic Ready Stance",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                        },
-                    },
-                },
-            },
-            ["miss"] = {
-                name = "A18-miss (Whiff Roll-Over Push-Up Recovery)",
-                contactSurfaceDesc = "Rotational torso turn (rx=-18°, ry=+28°) and hand-push recovery carrying residual slide momentum",
-                keyframes = {
-                    {
-                        kf = 1,
-                        t = 0.00,
-                        timeSec = 0.000,
-                        label = "Shared Entry from A17 Slide Exit",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
-                        },
-                    },
-                    {
-                        kf = 2,
-                        t = 0.18,
-                        timeSec = 0.079,
-                        label = "Intermediate Hand-Brace Rise (Clearance Guard)",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.020, -0.150, -0.080), rotDeg = Vector3.new(10.0, 24.0, -15.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -18.0, 5.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, -10.0, 35.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(35.0, 12.0, -40.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -6.0, 8.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -8.0, -20.0) },
-                        },
-                    },
-                    {
-                        kf = 3,
-                        t = 0.35,
-                        timeSec = 0.154,
-                        label = "Miss/Whiff Variant: Side-Roll Hand Plant Brace",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.060, -0.049, -0.060), rotDeg = Vector3.new(-18.0, 28.0, -16.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -22.0, 10.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 12.0, 22.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 0.0, -28.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, -12.0, 14.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 8.0, -18.0) },
-                        },
-                    },
-                    {
-                        kf = 4,
-                        t = 0.70,
-                        timeSec = 0.308,
-                        label = "Miss/Whiff Variant: Heavy Push-Up & Turn Rise",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.015,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.030, -0.010, 0.000), rotDeg = Vector3.new(-22.0, 14.0, -6.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -14.0, 4.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 0.0, 18.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, 0.0, -18.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -6.0, 8.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 6.0, -8.0) },
-                        },
-                    },
-                    {
-                        kf = 5,
-                        t = 1.00,
-                        timeSec = 0.440,
-                        label = "Shared Exit: Athletic Ready Stance",
-                        hrpRefY = 3.00,
-                        obbMinY = 0.010,
-                        joints = {
-                            ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
-                            ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
-                            ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
-                            ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
-                            ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
-                            ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
-                        },
-                    },
-                },
-            },
-        },
+      },
     },
+  },
+  ["A16"] = {
+    id = "A16",
+    name = "Single 3D Pass (Parametric Ground & Lob Pass)",
+    mode = "OneShot",
+    duration = 0.36,
+    blendIn = 0.05,
+    blendOut = 0.08,
+    holdPhase = nil,
+    contactPhase = 0.32,
+    referenceSpeed = 0.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Compact Pass Chamber (Open Hip Push Prep)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.050, 0.123, 0.020), rotDeg = Vector3.new(-8.0, -14.0, 2.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 14.0, -2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -6.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 8.0, -22.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -36.0, 12.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -6.0) },
+        },
+      },
+      {
+        kf = 2,
+        t = 0.32,
+        timeSec = 0.115,
+        label = "Flat Inside-Foot Push Contact [Ground Pass]",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        contact = {
+          part = "Right Leg",
+          localPoint = Vector3.new(-0.500, -0.012, -0.219),
+          worldPoint = Vector3.new(0.520, 1.273, -0.893),
+          ballCenter = Vector3.new(-0.464, 1.250, -1.664),
+          surfaceDist = 1.250,
+        },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.040, 0.160, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 4.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -4.0, -3.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 16.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -20.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -42.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 4.0, -5.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.65,
+        timeSec = 0.234,
+        label = "Controlled Short Follow-Through (Abrupt Stop)",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(-0.030, 0.167, -0.020), rotDeg = Vector3.new(-4.0, 12.0, 5.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -12.0, -4.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 6.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -4.0, -18.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, -38.0, 2.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 4.0, -5.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.360,
+        label = "Instant Play Continuation Ready",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+        },
+      },
+    },
+    variants = {
+      ["ground"] = {
+        name = "A16-ground (Driven Ground Pass: elevation=0°, power=0.6)",
+        contactSurfaceDesc = "Medial inner surface (-0.50, -0.50, -0.10) at mid-ball height (Y ≈ 1.02 studs), Torso leaned forward -8°",
+        keyframes = {
+          {
+            kf = 1,
+            t = 0.00,
+            timeSec = 0.000,
+            label = "Compact Pass Chamber (Open Hip Push Prep)",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.050, 0.123, 0.020), rotDeg = Vector3.new(-8.0, -14.0, 2.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 14.0, -2.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -6.0, 18.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 8.0, -22.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -36.0, 12.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(12.0, 6.0, -6.0) },
+            },
+          },
+          {
+            kf = 2,
+            t = 0.32,
+            timeSec = 0.115,
+            label = "Flat Inside-Foot Push Contact [Ground Pass]",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            contact = {
+              part = "Right Leg",
+              localPoint = Vector3.new(-0.500, -0.012, -0.219),
+              worldPoint = Vector3.new(0.520, 1.273, -0.893),
+              ballCenter = Vector3.new(-0.464, 1.250, -1.664),
+              surfaceDist = 1.250,
+            },
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.040, 0.160, 0.000), rotDeg = Vector3.new(-8.0, 4.0, 4.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -4.0, -3.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 0.0, 16.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 6.0, -20.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -42.0, 8.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, 4.0, -5.0) },
+            },
+          },
+          {
+            kf = 3,
+            t = 0.65,
+            timeSec = 0.234,
+            label = "Controlled Short Follow-Through (Abrupt Stop)",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.030, 0.167, -0.020), rotDeg = Vector3.new(-4.0, 12.0, 5.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -12.0, -4.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, 6.0, 14.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -4.0, -18.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, -38.0, 2.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 4.0, -5.0) },
+            },
+          },
+          {
+            kf = 4,
+            t = 1.00,
+            timeSec = 0.360,
+            label = "Instant Play Continuation Ready",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+            },
+          },
+        },
+      },
+      ["lob"] = {
+        name = "A16-lob (Lofted / Chipped Pass: elevation=35°, power=0.85)",
+        contactSurfaceDesc = "Lower-medial front edge (-0.35, -0.85, -0.50) wedged under ball equator (Y ≈ 0.68 studs), Torso reclined +6°",
+        keyframes = {
+          {
+            kf = 1,
+            t = 0.00,
+            timeSec = 0.000,
+            label = "Lob Pass Chamber (Deeper Dip & Backswing)",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.060, 0.167, 0.040), rotDeg = Vector3.new(-4.0, -20.0, 4.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 18.0, -3.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -8.0, 22.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, 12.0, -28.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-42.0, -28.0, 14.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 8.0, -8.0) },
+            },
+          },
+          {
+            kf = 2,
+            t = 0.32,
+            timeSec = 0.115,
+            label = "Under-Ball Wedge Scoop Contact [Lob Pass]",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            contact = {
+              part = "Right Leg",
+              localPoint = Vector3.new(-0.500, -1.000, -0.500),
+              worldPoint = Vector3.new(0.610, 0.903, -1.972),
+              ballCenter = Vector3.new(0.724, 1.250, -3.167),
+              surfaceDist = 1.250,
+            },
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.050, 0.147, 0.020), rotDeg = Vector3.new(6.0, 6.0, 6.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -6.0, -4.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(4.0, 0.0, 20.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 8.0, -26.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -26.0, 8.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-10.0, 6.0, -6.0) },
+            },
+          },
+          {
+            kf = 3,
+            t = 0.65,
+            timeSec = 0.234,
+            label = "Upward Chip Lift Follow-Through",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(-0.040, 0.200, -0.020), rotDeg = Vector3.new(10.0, 18.0, 8.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-4.0, -16.0, -6.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 8.0, 16.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -6.0, -22.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(52.0, -24.0, -6.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-14.0, 6.0, -6.0) },
+            },
+          },
+          {
+            kf = 4,
+            t = 1.00,
+            timeSec = 0.360,
+            label = "Instant Play Continuation Ready",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+            },
+          },
+        },
+      },
+    },
+  },
+  ["A17"] = {
+    id = "A17",
+    name = "Slide Tackle",
+    mode = "OneShot",
+    duration = 0.55,
+    blendIn = 0.05,
+    blendOut = 0.00,
+    holdPhase = nil,
+    contactPhase = 0.38,
+    referenceSpeed = 28.0,
+    nextAnimOnComplete = "A18",
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Drop Entry & Hip Side-Collapse",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.108, 0.050), rotDeg = Vector3.new(24.0, 14.0, -10.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-16.0, -12.0, 6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 26.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, 0.0, -20.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(46.0, -8.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, -22.0) },
+        },
+      },
+      {
+        kf = 2,
+        t = 0.18,
+        timeSec = 0.099,
+        label = "Intermediate Support Drop (Clearance Guard)",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.250, -0.050), rotDeg = Vector3.new(42.0, 18.0, -14.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, -12.0, 6.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-25.0, 0.0, 42.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(35.0, 0.0, -42.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, -9.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(0.0, -22.0, -26.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.38,
+        timeSec = 0.209,
+        label = "Active Full-Extension Slide [Ball Contact]",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        contact = {
+          part = "Right Leg",
+          localPoint = Vector3.new(0.365, -1.000, -0.233),
+          worldPoint = Vector3.new(-0.047, 1.448, -3.262),
+          ballCenter = Vector3.new(-0.385, 1.250, -4.449),
+          surfaceDist = 1.250,
+        },
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -1.027, -0.180), rotDeg = Vector3.new(58.0, 22.0, -16.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-28.0, -18.0, 10.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 8.0, 32.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-40.0, 0.0, -22.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, -10.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, -28.0, -30.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 0.72,
+        timeSec = 0.396,
+        label = "Turf Glide & Sweep Follow-Through",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.939, -0.240), rotDeg = Vector3.new(62.0, 28.0, -18.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-30.0, -22.0, 12.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(42.0, 12.0, 24.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-36.0, 0.0, -18.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 4.0, -4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -30.0, -32.0) },
+        },
+      },
+      {
+        kf = 5,
+        t = 1.00,
+        timeSec = 0.550,
+        label = "Slide Exit & Brace Preparation (Hands off to A18)",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
+        },
+      },
+    },
+  },
+  ["A18"] = {
+    id = "A18",
+    name = "Slide Recovery (Hit & Miss Visual Variants)",
+    mode = "OneShot",
+    duration = 0.44,
+    blendIn = 0.00,
+    blendOut = 0.10,
+    holdPhase = nil,
+    contactPhase = nil,
+    referenceSpeed = 10.0,
+    keyframes = {
+      {
+        kf = 1,
+        t = 0.00,
+        timeSec = 0.000,
+        label = "Shared Entry from A17 Slide Exit",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
+        },
+      },
+      {
+        kf = 2,
+        t = 0.35,
+        timeSec = 0.154,
+        label = "On-Ball Variant: Energetic Hip Pop & Chest Whip",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.149, 0.000), rotDeg = Vector3.new(10.0, 10.0, -8.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -8.0, 4.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 18.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, -6.0, 8.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-26.0, -8.0, -14.0) },
+        },
+      },
+      {
+        kf = 3,
+        t = 0.70,
+        timeSec = 0.308,
+        label = "On-Ball Variant: Forward Drive Step Rise",
+        hrpRefY = 3.00,
+        obbMinY = 0.015,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.094, 0.000), rotDeg = Vector3.new(-16.0, 4.0, -2.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 2.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 0.0, 14.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -14.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -4.0, 5.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 4.0, -5.0) },
+        },
+      },
+      {
+        kf = 4,
+        t = 1.00,
+        timeSec = 0.440,
+        label = "Shared Exit: Athletic Ready Stance",
+        hrpRefY = 3.00,
+        obbMinY = 0.010,
+        joints = {
+          ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+          ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+          ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+          ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+          ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+          ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+        },
+      },
+    },
+    variants = {
+      ["hit"] = {
+        name = "A18-hit (On-Ball Clean Pop-Up Recovery)",
+        contactSurfaceDesc = "Energetic backward-to-forward hip whip using stopping impulse from ball tackle",
+        keyframes = {
+          {
+            kf = 1,
+            t = 0.00,
+            timeSec = 0.000,
+            label = "Shared Entry from A17 Slide Exit",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
+            },
+          },
+          {
+            kf = 2,
+            t = 0.35,
+            timeSec = 0.154,
+            label = "On-Ball Variant: Energetic Hip Pop & Chest Whip",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.149, 0.000), rotDeg = Vector3.new(10.0, 10.0, -8.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -8.0, 4.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(36.0, 0.0, 18.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, 0.0, -14.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(38.0, -6.0, 8.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-26.0, -8.0, -14.0) },
+            },
+          },
+          {
+            kf = 3,
+            t = 0.70,
+            timeSec = 0.308,
+            label = "On-Ball Variant: Forward Drive Step Rise",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.094, 0.000), rotDeg = Vector3.new(-16.0, 4.0, -2.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -4.0, 2.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-18.0, 0.0, 14.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(28.0, 0.0, -14.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, -4.0, 5.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-20.0, 4.0, -5.0) },
+            },
+          },
+          {
+            kf = 4,
+            t = 1.00,
+            timeSec = 0.440,
+            label = "Shared Exit: Athletic Ready Stance",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+            },
+          },
+        },
+      },
+      ["miss"] = {
+        name = "A18-miss (Whiff Roll-Over Push-Up Recovery)",
+        contactSurfaceDesc = "Rotational torso turn (rx=-18°, ry=+28°) and hand-push recovery carrying residual slide momentum",
+        keyframes = {
+          {
+            kf = 1,
+            t = 0.00,
+            timeSec = 0.000,
+            label = "Shared Entry from A17 Slide Exit",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, -0.327, -0.100), rotDeg = Vector3.new(46.0, 20.0, -14.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, -16.0, 8.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(22.0, 6.0, 20.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, 0.0, -16.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, 0.0, 4.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, -22.0, -24.0) },
+            },
+          },
+          {
+            kf = 2,
+            t = 0.18,
+            timeSec = 0.079,
+            label = "Intermediate Hand-Brace Rise (Clearance Guard)",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.020, -0.150, -0.080), rotDeg = Vector3.new(10.0, 24.0, -15.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -18.0, 5.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(20.0, -10.0, 35.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(35.0, 12.0, -40.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-8.0, -6.0, 8.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -8.0, -20.0) },
+            },
+          },
+          {
+            kf = 3,
+            t = 0.35,
+            timeSec = 0.154,
+            label = "Miss/Whiff Variant: Side-Roll Hand Plant Brace",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.060, -0.049, -0.060), rotDeg = Vector3.new(-18.0, 28.0, -16.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, -22.0, 10.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 12.0, 22.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(24.0, 0.0, -28.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-32.0, -12.0, 14.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(34.0, 8.0, -18.0) },
+            },
+          },
+          {
+            kf = 4,
+            t = 0.70,
+            timeSec = 0.308,
+            label = "Miss/Whiff Variant: Heavy Push-Up & Turn Rise",
+            hrpRefY = 3.00,
+            obbMinY = 0.015,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.030, -0.010, 0.000), rotDeg = Vector3.new(-22.0, 14.0, -6.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(18.0, -14.0, 4.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(16.0, 0.0, 18.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-22.0, 0.0, -18.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-24.0, -6.0, 8.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(26.0, 6.0, -8.0) },
+            },
+          },
+          {
+            kf = 5,
+            t = 1.00,
+            timeSec = 0.440,
+            label = "Shared Exit: Athletic Ready Stance",
+            hrpRefY = 3.00,
+            obbMinY = 0.010,
+            joints = {
+              ["RootJoint"] = { pos = Vector3.new(0.000, 0.140, 0.000), rotDeg = Vector3.new(-8.0, -4.0, 0.0) },
+              ["Neck"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(8.0, 4.0, 0.0) },
+              ["Right Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(10.0, -6.0, 12.0) },
+              ["Left Shoulder"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(14.0, 6.0, -12.0) },
+              ["Right Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(-6.0, -5.0, 4.0) },
+              ["Left Hip"] = { pos = Vector3.new(0.000, 0.000, 0.000), rotDeg = Vector3.new(6.0, 5.0, -4.0) },
+            },
+          },
+        },
+      },
+    },
+  },
 })
 
 return table.freeze(PlayerActionPoseConfigs)

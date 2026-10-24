@@ -1,5 +1,11 @@
 # Tasks — 00-bootstrap-and-rig
 
+**DOCS-ARCH-20261024 / AGYPLAN ASSIGNED:** new foundation DESIGN/SPEC ONLY per [HANDOFF extension](assets/HANDOFF.md); own commit group, no Phase2-file edits. Original rig runtimePAUSED/F18-F19/Review010 below are untouched, not resumed.
+- [x] D-ARCH-01: current preflight/protected baseline + two-source/current conflict and integration map; apply Owner U1–U13.
+- [x] D-ARCH-02: REWORK 002 COMPLETED (A-01..A-06: restored victim stamina loss with pending tuning, removed invented +0.25s stagger and retained Tier I +0.15s, restored source refund magnitudes 10/12/15/20%, removed Velvet 80% alt, single aggregate commit with uncertain result reconciliation, expanded paid trading policy coverage, unified canonical schema and dynamic conditional stat separation, stripped all IP assurances, fixed heading anchors and celebration timing alternatives).
+- [x] D-ARCH-03: REWORK 002 COMPLETED (Authored architecture-extension-fix-002.md, re-validated counts/arithmetic/links/anchors/own-doc edit scope, verified post-hashes; no code/app tests/Git operations).
+- [x] D-ARCH-04: own-pane outcome/HOWTO, wait Owner inspection and explicit SEND REPORT; one submitted-with-Enter report to verified Codex, NO monitoring.
+
 **Phase 1 | PAUSED_BY_OWNER | Turn OWNER (Stang) | Review 010 / Round 5 NOT DISPATCHED**
 Owner Stang · Planner/Reviewer Codex · Implementer AGY Teamwork-preview (Session: e86ac30e-006d-4338-9a90-5f5e3b002028, Run: run-phase00-agy-impl-01)
 Baseline main @ `2f5f76b1687fc573d0c35c1ceeaabdda3ec8eb7c`

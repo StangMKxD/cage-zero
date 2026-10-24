@@ -70,53 +70,19 @@ function DuelChoiceModal.IsVisible(): boolean
 end
 
 function DuelChoiceModal.OpenModal(
-	duelId: string,
-	role: Types.PlayerRole,
-	availableChoices: { Types.ChoiceAction },
-	lockedChoices: { [Types.ChoiceAction]: boolean },
-	timeLimit: number,
-	onSelectCallback: (Types.ChoiceAction) -> (),
-	isOutOfShootingZone: boolean?
+	_duelId: string,
+	_role: Types.PlayerRole,
+	_availableChoices: { Types.ChoiceAction },
+	_lockedChoices: { [Types.ChoiceAction]: boolean },
+	_timeLimit: number,
+	_onSelectCallback: (Types.ChoiceAction) -> (),
+	_isOutOfShootingZone: boolean?
 )
-	activeDuelId = duelId
-	activeRole = role
-	activeTimeLimit = timeLimit
-	activeSelectCallback = onSelectCallback
-	table.clear(choiceButtonStates)
-
-	for _, choice in ipairs(availableChoices) do
-		local isLocked = lockedChoices[choice] == true
-		local outOfZone = (choice == "SnapShot") and (isOutOfShootingZone == true)
-		if outOfZone then
-			isLocked = true
-		end
-
-		local reason: "MISTAKE" | "OUT_OF_SHOOTING_ZONE" | "NONE" = "NONE"
-		local badge = ""
-		local showPadlock = false
-
-		if outOfZone then
-			reason = "OUT_OF_SHOOTING_ZONE"
-			badge = "OUT OF SHOOTING ZONE"
-			showPadlock = true
-		elseif isLocked then
-			reason = "MISTAKE"
-			badge = "LOCKED (MISTAKE)"
-			showPadlock = true
-		end
-
-		choiceButtonStates[choice] = {
-			choice = choice,
-			isLocked = isLocked,
-			lockReason = reason,
-			badgeText = badge,
-			showRedPadlockIcon = showPadlock,
-		}
-	end
-
-	DuelChoiceModal.SetVisible(true)
-	UIManager.OpenOverlay("DuelChoiceModal")
+	-- Retired per Q22 / Spec 02: Choice Duel modal route disabled
+	DuelChoiceModal.SetVisible(false)
 end
+
+DuelChoiceModal.IsRetired = true
 
 function DuelChoiceModal.ClickChoice(choice: Types.ChoiceAction): boolean
 	local btnState = choiceButtonStates[choice]

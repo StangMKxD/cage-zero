@@ -1,5 +1,17 @@
 # 02-player-actions — บอล การเคลื่อนที่ และปุ่มตามทีม
 
+> **LATEST — Owner resume2026-10-24:** เริ่มงานทั้งหมดใน tasksT14 + Plan03HANDOFF§F/G แล้ว supersedes preview-onlyข้อความเก่าด้านล่าง. Sleanเพิ่มloftเล็กน้อยตามสรีระ/accepted contactorientationอย่างต่อเนื่องบนฐานaim3D ไม่fixed32/40/highlobหรือบังคับF0. codexlunaimplement/testตามscope,ไม่ปิดแผน/ไม่เปิดPlan04.
+
+> **ขอบเขตปัจจุบัน — previewก่อน:** เก็บงาน gameplay เดิมใน [tasks T-14.1–T-14.8](tasks.md) และ HANDOFF§21 ครบแล้ว แต่พัก implementation ไว้จน Owner ตรวจคลิป Motion Tools/ระบุจุดแก้และสั่งทำต่อ ตาม Plan03 HANDOFF§E. ไม่ถือว่างาน FakeShot/ปุ่มE/loft/ความเร็วPass/recoveryถูกยกเลิกหรือทำเสร็จ.
+
+> Owner playtest delta2026-10-23: [HANDOFF§21](assets/HANDOFF.md) authorizes E-only Pass/FakeShot, backward S lean FORWARD loft (supersedes backward Bicycle proposal), slower receivable passes, attack whiff recovery and Obsidian tool-authored rejected/new R6 poses. Preserve accepted Finesse/Trivela and fix012 selection latch; OPEN/assigned, not implemented or approved by this note.
+
+> **Owner latest Space context:** [HANDOFF§16](assets/HANDOFF.md)กำหนดผู้ครองบอลเองบนพื้นกดSpaceให้งัดบอลขึ้นตามmovementWASDโดยตัวยังอยู่พื้น;ปล่อยแล้วกดSpaceใหม่หลังballfreeจึงกระโดดตามปกติ. เปลี่ยนเฉพาะcontext/initialpoplaunch ไม่เปลี่ยนballintegrator/physicsที่Ownerบอกโอเค และไม่เปิดSombreroSkill03. Plan02ยังOPEN.
+
+> **Owner jump adaptation latest:** [HANDOFF§15](assets/HANDOFF.md)อนุญาตปรับjumpเดิมเป็นstate-based/singlelaunch+momentumและyawlock;ยังเล็งmouse3Dได้. หนึ่งvalidairmanualreleaseต่อflight กดได้ทั้งช่วงลอยแต่ใกล้apexได้ผลดีที่สุดแบบcontinuous/bounded. Styles/meter/SnakeJumpไม่เพิ่มในรอบนี้;คงaim-relativelean/controls/visualของ§14และPlan02OPEN.
+
+> **Owner tuning latest:** [HANDOFF§14](assets/HANDOFF.md)แทนฐานยิงF0ของ§12: airshotอิงaim3D/เป้าเล็งและเบี่ยงเล็กน้อยตามlean โดยcharacterยังล็อกyaw/ทิศบิน. แก้W/Sและsmoothing;ลดBloom/Haze/ballglowเฉพาะpresentationโดยไม่แตะgeometry/solver. คงLMBDirect/RMBairVolley/groundCurveและPlan02OPEN.
+
 > **Owner delta 2026-10-23 (latest):** Plan02ยังOPEN; [HANDOFF§12](assets/HANDOFF.md)กำหนดหนึ่งปุ่มต่อaction,groundLMBยิงตรง/RMBปั่น,airLMBยิงตรง/RMBVolleyแทนHeader/Bicyclefallback;A/ซ้ายเลือกFinesse,D/ขวาเลือกTrivela. เพิ่มairbodyleanแบบWASDโดยคงyaw/ทิศบินเดิมและให้Serverคำนวณผลต่อballtrajectory/spinจากlockedfacing+aimpitch+lean. นี่เป็นscopeเพิ่มที่Ownerสั่งรอบนี้ ไม่ใช่ผลผ่านหรือของที่มีในSandboxอยู่แล้ว.
 
 > **Owner visual delta 2026-10-22:** ใช้ Argon R6 Football Animation Pack เป็นต้นแบบรูปลักษณ์ใหม่ของ A01–A18 ตาม [HANDOFF §8](assets/HANDOFF.md#8-owner-delta--argon-r6-football-animation-pack--2026-10-22) และ [review-003](assets/review-003.md). แทนเฉพาะการบังคับรูปลักษณ์จาก Sandbox ที่ขัดกับแบบใหม่ คง R6 schema/gameplay/physics/keymap/Shift Lock เดิม; ง้างค้างไม่สับขา. ZIP เป็น reference ไม่ใช่โค้ดพร้อมติดตั้งหรือผลผ่าน Runtime; ส่ง fix-004 โดยไม่ปิด findings เดิมหรือขยาย scope จาก preview timings.
@@ -15,7 +27,12 @@
 - บอลจริง/การเลี้ยง/ครอง/ปล่อย/รับ/deflect และทีมที่ครองสำเร็จล่าสุดเป็นข้อมูลคนละส่วน BallServiceเป็นsingle writerของบอล
 - เดิน/Sprint/Dash/Stamina/Shift Lockคงไว้; กระโดดล็อกทิศเคลื่อนตัวก่อนขึ้น เปลี่ยนกลางอากาศไม่ได้ รองรับHeader/Volley/Blockตามcontactจริง
 - ยิงตรง/ยิงโค้งปุ่มแยก/Passแบบเดียวเล็ง3DและปรับแรงจากSandbox; ไม่มีปุ่ม/action LobPass แยก ให้พลิกแพลงวิถีจากPassปกติ ชาร์จแล้วยังเคลื่อนที่/เล่นกลางอากาศได้ตามเงื่อนไข โดยชาร์จแล้วเคลื่อนช้าลง
-- ทีมครองล่าสุดใช้ยิง/ส่ง/ยิงโค้ง; อีกทีมใช้SlideจากSandboxรอบนี้ ส่วนPoke/Shoulderทำภายหลังใน03 ทั้งทีมคงปุ่มบุกตอนบอลอิสระหลังยิง/ส่ง/ชิ่ง สลับเฉพาะเมื่ออีกทีมครองสำเร็จ
+- ทีมครองล่าสุดใช้ยิง/ส่ง/ยิงโค้ง; อีกทีมใช้SlideจากSandboxรอบนี้ ส่วนQuick Poke/Body Checkทำภายหลังใน03 ทั้งทีมคงปุ่มบุกตอนบอลอิสระหลังยิง/ส่ง/ชิ่ง สลับเฉพาะเมื่ออีกทีมครองสำเร็จ
+- **ผังปุ่มตามทีมครองบอล (TARGET vs AS-IS):**
+  - TARGET: ทีมบุกใช้ Shoot (LMB), Pass (E), Direct Curve Shot (RMB); ทีมรับใช้ Slide Tackle (LMB ใน 02), Quick Poke (E ใน 03), Body Check (RMB ใน 03); ปลดระวาง MMB
+  - Core charging E-FakeShot exception: ขณะชาร์จยิงบุก (LMB/RMB) การกด E จะยกเลิกการชาร์จพร้อมแตะบอลหลบตามทิศที่เล็งทันที
+  - AS-IS runtime ในโค้ดปัจจุบัน: ยังใช้ RMB Poke / MMB CagePress (เอกสารนี้อัปเดต Target เท่านั้น ไม่แก้โค้ด)
+- พารามิเตอร์ของ 02 เตรียมรองรับค่า Base Stats (13 Outfield Stats: Speed, Jump, Shot Power, Curve, Sliding, Strength, Dribbling, Stamina, Pass Velocity, Accel/Dash, Poke Reach, Recovery/Reflex, Block ในช่วง 0.90–1.15) และ Trait effects (Whipped Finesse, Trivela Master ที่ทุกคนเข้าถึงได้และหมุนสปินครั้งเดียว, Knuckle Emperor 85–95%, Wall-Breaker +0.15, Second Wind +25%, One-Touch Specialist, Acrobat +12%, Shadow Chaser +7%, Cage Guardian -25% stamina)
 - Phase1เล่นบอลจังหวะแรกได้ไม่ต้องจับครองก่อน แต่ต้องอยู่ในระยะสัมผัส/เงื่อนไขบอลจริง ปุ่มยิงของเพื่อนที่ไม่มีบอลไม่ทำให้ยิงจากระยะไกลได้
 - รับบอลพื้นที่รับไหวเข้าpossessionได้ ลูกแรง/สูงโดนตัวเด้งอิสระ ไม่มีI-frameหรือการซ่อนhitboxระหว่างDash/Skill
 - Staminaเป็นทรัพยากรร่วมให้03ใช้: ต้องจ่ายไหวก่อนออกท่าที่มีต้นทุน ล้ายังเดิน/ยิง/ส่ง/ยืนตัดบอลได้ แต่เลี้ยงแตะห่างขึ้น ไม่มีสุ่มบังคับเสียบอล
@@ -24,9 +41,9 @@
 ## Seam กับ03/04/05/06/08
 
 - 03เรียกผ่านบอล/possession/contactและทรัพยากรร่วม02 ไม่เขียนผู้ครองบอล/คูณmovement statsซ้ำ
-- 03เป็นเจ้าของSkill5ท่า/3ช่อง/Poke/Shoulderภายหลัง; รอบ02รับselective portของSlideผ่านresource/contactownerเดิม ไม่ทำSlideซ้ำใน03และไม่เปิดChoice/Feintเดิม
-- โกล04ใช้กติกาในเขตของตนต่อจากบอลนี้ ไม่เอากติกาผู้เล่นสนามไปแทนการรับมือของโกล
-- 05ตัดสินฟาวล์/ลูกนิ่งตามcontactsที่ตรวจได้; 06overrideค่าจูนเฉพาะtestsession; 08แสดงcontextและสถานะจากServer
+- 03เป็นเจ้าของSkill5ท่า/3ช่อง/Quick Poke/Body Checkภายหลัง (แทน Shoulder Charge เดิม); รอบ02รับselective portของSlideผ่านresource/contactownerเดิม ไม่ทำSlideซ้ำใน03และไม่เปิดChoice/Feintเดิม
+- โกล04ใช้กติกาในเขตของตนต่อจากบอลนี้ (รอเปิด 4 GK Stats หลัง 04) ไม่เอากติกาผู้เล่นสนามไปแทนการรับมือของโกล
+- 05ตัดสินฟาวล์/ลูกนิ่งตามcontactsที่ตรวจได้; 06overrideค่าจูนเฉพาะtestsession (13 Stats, 16 Traits, 5 Archetypes); 08แสดงcontextและสถานะจากServer
 - Network/Types migrationต้องระบุexactcontract/allowlistในHANDOFFของแผนก่อนแก้ ไม่เปลี่ยน12definitions/gettersของ00ระหว่างเก็บงาน00
 
 ## Acceptance
@@ -39,7 +56,7 @@
 
 ## Deferred
 
-[Phase2](../../phase-02-full-match-and-progression/plan.md)รับแอนิเมชันยิง/ส่งจังหวะแรกพร้อมเสียจังหวะเมื่อวืด ต้องเปิดimplementationplanก่อนทำ ไม่เป็นเกณฑ์Phase1; สุ่ม/Statsหลายตัว/ownership/ระบบตั้งค่าถาวรไม่อยู่02 งาน00ไม่ขยาย
+[Phase2](../../phase-02-full-match-and-progression/plan.md)รับแอนิเมชันยิง/ส่งจังหวะแรกพร้อมเสียจังหวะเมื่อวืด ต้องเปิดimplementationplanก่อนทำ ไม่เป็นเกณฑ์Phase1; สุ่ม/13 Outfield Stats/16 Innate Traits/5 Archetypes/ownership/ระบบตั้งค่าถาวรไม่อยู่02 ([03-player-gacha-and-stats](../../phase-02-full-match-and-progression/03-player-gacha-and-stats/plan.md)) งาน00ไม่ขยาย
 
 ## Owner delta — Sandbox adaptation ต่อจาก AGY fix-001 (2026-10-21)
 

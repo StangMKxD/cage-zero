@@ -19,6 +19,7 @@ local JumpModel = require(Shared:WaitForChild("JumpModel"))
 local Configs = Shared:WaitForChild("configs")
 local PlayerActionPoseConfigs = require(Configs:WaitForChild("PlayerActionPoseConfigs"))
 local JumpConfigs = require(Configs:WaitForChild("JumpConfigs"))
+local SkillMoveConfigs = require(Configs:WaitForChild("SkillMoveConfigs"))
 
 local CharacterFolder = script.Parent.Parent:WaitForChild("character")
 local R6AnimationController = require(CharacterFolder:WaitForChild("R6AnimationController"))
@@ -34,6 +35,13 @@ local chargeStartTime: number? = nil
 local currentIntentId: string? = nil
 local currentChargeAction: Types.ChargeActionType? = nil
 local currentChargeContext: Types.TeamActionContext? = nil
+local currentChargeCurveSide: Types.CurveSideIntent? = nil
+local currentChargeCurveStyle: ("Finesse" | "Trivela")? = nil
+local currentChargeKickFoot: ("Left" | "Right")? = nil
+local pendingShotIntentId: string? = nil
+local pendingShotAction: Types.KickActionType? = nil
+local pendingFakeShotIntentId: string? = nil
+local lastHandledActionOutcome: string? = nil
 local lastDashTime = -10.0
 local lastSlideTime = -10.0
 
@@ -47,23 +55,65 @@ local lastAirLeanSendTime = 0.0
 local lastSentLeanFwd = 0.0
 local lastSentLeanRgt = 0.0
 
-local function getCurveSideIntent(): Types.CurveSideIntent
-	if keyADown and not keyDDown then
-		return "Left"
-	elseif keyDDown and not keyADown then
-		return "Right"
+-- True EA FC 27 Touch-Based Dribble client simulation
+local clientDribblePos: Vector3? = nil
+local clientDribbleVel: Vector3 = Vector3.zero
+local clientLastTouchTime = 0.0
+local clientDribbleFootSign = 1
+local clientBallSpinRotation: CFrame = CFrame.identity
+local keyCtrlDown = false
+local keyQDown = false
+local keyZDown = false
+local clientDragBackEndTime = 0.0
+local clientIsCloseControl = false
+
+local function clearChargeSnapshot()
+	chargeStartTime = nil
+	currentChargeAction = nil
+	currentChargeContext = nil
+	currentIntentId = nil
+	currentChargeCurveSide = nil
+	currentChargeCurveStyle = nil
+	currentChargeKickFoot = nil
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	if char then
+		char:SetAttribute("IsCharging", false)
+		char:SetAttribute("ChargePower", 0)
 	end
+end
+
+local function isLocalPlayerPossessor(): boolean
+	local localPlayer = Players.LocalPlayer
+	if not localPlayer then
+		return false
+	end
+	local char = localPlayer.Character
+	if char and (char:GetAttribute("HasBall") == true or char:GetAttribute("IsPossessor") == true) then
+		return true
+	end
+	local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+	if ballPart and ballPart:GetAttribute("PossessorUserId") == localPlayer.UserId then
+		return true
+	end
+	return false
+end
+
+local function getCurveSideIntent(): Types.CurveSideIntent
 	local localPlayer = Players.LocalPlayer
 	local char = localPlayer and localPlayer.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if hum and hrp and hum.MoveDirection.Magnitude > 0.1 then
-		local localMove = hrp.CFrame:VectorToObjectSpace(hum.MoveDirection)
-		if localMove.X < -0.15 then
-			return "Left"
-		elseif localMove.X > 0.15 then
-			return "Right"
-		end
+	if hrp then
+		local moveVec = if hum and hum.MoveDirection.Magnitude > 0.08
+			then hum.MoveDirection
+			else Vector3.new(hrp.AssemblyLinearVelocity.X, 0, hrp.AssemblyLinearVelocity.Z)
+		return PlayerActionPoseConfigs.ResolveCurveSideFromMovement(hrp.CFrame, moveVec, keyADown, keyDDown)
+	end
+	if keyADown and not keyDDown then
+		return "Left"
+	elseif keyDDown and not keyADown then
+		return "Right"
 	end
 	return "Neutral"
 end
@@ -93,11 +143,59 @@ local landingLagUntil = 0.0
 local lockedFlightVelocity: Vector3? = nil
 local isAcrobaticInFlight = false
 
+local function applyCharacterBurst(hrp: BasePart, hum: Humanoid, dir: Vector3, burstSpeed: number, duration: number)
+	if not hrp or not hum or hum.Health <= 0 then
+		return
+	end
+	local cleanDir = Vector3.new(dir.X, 0, dir.Z)
+	cleanDir = if cleanDir.Magnitude > 0.01 then cleanDir.Unit else hrp.CFrame.LookVector
+	cleanDir = Vector3.new(cleanDir.X, 0, cleanDir.Z).Unit
+
+	local att = hrp:FindFirstChild("PlayerActionBurstAtt") :: Attachment?
+	if not att then
+		att = Instance.new("Attachment")
+		att.Name = "PlayerActionBurstAtt"
+		att.Parent = hrp
+	end
+	local lv = hrp:FindFirstChild("PlayerActionBurstLV") :: LinearVelocity?
+	if not lv then
+		lv = Instance.new("LinearVelocity")
+		lv.Name = "PlayerActionBurstLV"
+		lv.MaxForce = 200000
+		lv.Attachment0 = att
+		lv.RelativeTo = Enum.ActuatorRelativeTo.World
+		lv.Parent = hrp
+	end
+	lv.VectorVelocity = Vector3.new(cleanDir.X * burstSpeed, 0, cleanDir.Z * burstSpeed)
+
+	speedRestoreToken += 1
+	local myToken = speedRestoreToken
+	hum.WalkSpeed = burstSpeed
+	hrp.AssemblyLinearVelocity = Vector3.new(cleanDir.X * burstSpeed, hrp.AssemblyLinearVelocity.Y, cleanDir.Z * burstSpeed)
+
+	task.delay(duration, function()
+		if hrp then
+			local bLv = hrp:FindFirstChild("PlayerActionBurstLV")
+			if bLv then
+				bLv:Destroy()
+			end
+			local bAtt = hrp:FindFirstChild("PlayerActionBurstAtt")
+			if bAtt then
+				bAtt:Destroy()
+			end
+		end
+		if speedRestoreToken == myToken and hum and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
+			hum.WalkSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
+		end
+	end)
+end
+
 local charContextConn: RBXScriptConnection? = nil
 local charDiedConn: RBXScriptConnection? = nil
 local charStateConn: RBXScriptConnection? = nil
 local charActionStatusConn: RBXScriptConnection? = nil
 local charResolvedActionConn: RBXScriptConnection? = nil
+local charCagePressSplatConn: RBXScriptConnection? = nil
 
 local intentCounter = 0
 local function generateIntentId(prefix: string): string
@@ -115,6 +213,21 @@ local function getActionContextVersion(): number
 	local localPlayer = Players.LocalPlayer
 	local char = localPlayer and localPlayer.Character
 	return if char then (char:GetAttribute("ActionContextVersion") :: number?) or 1 else 1
+end
+
+local function sendDribbleControl(isClose: boolean, dragBack: boolean)
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	if remote then
+		remote:FireServer({
+			action = "SetDribbleControl",
+			isCloseControl = isClose,
+			requestDragBack = dragBack,
+			intentId = generateIntentId("dctl"),
+			characterGeneration = getCharacterGeneration(),
+			contextVersion = getActionContextVersion(),
+			phase = "start",
+		})
+	end
 end
 
 local function getAimDirection(): Vector3
@@ -198,6 +311,7 @@ end
 function InputController.RequestKick(actionType: Types.KickActionType, charge: number?, intentId: string?)
 	local aimDir = getAimDirection()
 	local resolvedIntentId = intentId or generateIntentId("kick")
+	pendingShotIntentId = resolvedIntentId
 
 	local localPlayer = Players.LocalPlayer
 	local char = localPlayer and localPlayer.Character
@@ -213,6 +327,7 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 			finalAction = "DirectShoot"
 		end
 	end
+	pendingShotAction = finalAction
 
 	local cAct: Types.ChargeActionType = if finalAction == "CurveShoot"
 		then "CurveShoot"
@@ -222,7 +337,21 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 		then "Volley"
 		else "DirectShoot"
 
-	local curveSide = getCurveSideIntent()
+	-- Owner Delta §22: Live curve selection sampled at release
+	local curveSide: Types.CurveSideIntent = getCurveSideIntent()
+	local releaseStyle: string? = nil
+	local releaseFoot: string? = nil
+	if finalAction == "CurveShoot" then
+		if hrp then
+			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position, curveSide)
+			releaseStyle = curveRes.style
+			releaseFoot = curveRes.foot
+		else
+			releaseStyle = if curveSide == "Right" then "Trivela" else "Finesse"
+			releaseFoot = "Right"
+		end
+	end
+	clearChargeSnapshot()
 
 	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
 	remote:FireServer({
@@ -242,21 +371,6 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 	R6ActionPoseController.SetCharging(false)
 
 	local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
-	local isPossessor = (char ~= nil and (char:GetAttribute("HasBall") == true or char:GetAttribute("IsPossessor") == true))
-	local isOutOfReach = false
-	if not isPossessor then
-		if ballPart and hrp then
-			local delta = ballPart.Position - hrp.Position
-			local horizDist = Vector3.new(delta.X, 0, delta.Z).Magnitude
-			local vertDist = math.abs(delta.Y)
-			local maxH = if isAir then (Constants.AERIAL_VOLLEY_REACH or 9.5) else (Constants.FIRST_TIME_KICK_REACH or 9.0)
-			local maxV = Constants.FIRST_TIME_VERT_REACH or 8.5
-			isOutOfReach = (horizDist > maxH) or (vertDist > maxV)
-		else
-			isOutOfReach = true
-		end
-	end
-
 	local visualAction = finalAction
 	local visualAnim = if visualAction == "Volley" then "volley"
 		elseif visualAction == "DirectShoot" then "kick"
@@ -271,53 +385,119 @@ function InputController.RequestKick(actionType: Types.KickActionType, charge: n
 		elseif visualAction == "Pass" or visualAction == "GroundPass" then 0.36
 		elseif visualAction == "LobPass" then 0.36
 		else 0.34
-	local kickCurveStyle: string? = nil
-	local kickFoot: string? = nil
-	if finalAction == "CurveShoot" then
-		if hrp then
-			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position, curveSide)
-			kickCurveStyle = curveRes.style
-			kickFoot = curveRes.foot
-		end
-	end
+	local kickCurveStyle: string? = releaseStyle
+	local kickFoot: string? = releaseFoot
 	R6ActionPoseController.TriggerAction(visualAction, duration, kickCurveStyle, nil, kickFoot)
+end
 
-	if isOutOfReach and not isAir then
-		speedRestoreToken += 1
-		local myToken = speedRestoreToken
-		if hum and hum.Health > 0 then
-			hum.WalkSpeed = Constants.WALK_SPEED * 0.45
-			task.delay(Constants.WHIFF_RECOVERY_SEC, function()
-				if speedRestoreToken == myToken and hum and hum.Health > 0 and not isAirborneLocked and not isSlidingClient then
-					hum.WalkSpeed = if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED
-				end
-			end)
+function InputController.RequestFakeShot()
+	local intentId = currentIntentId
+	local action = currentChargeAction
+	if not intentId or chargeStartTime == nil or (action ~= "DirectShoot" and action ~= "CurveShoot") then
+		return
+	end
+	if getLocalActionContext() ~= "Attacking" then
+		InputController.RequestCancelCharge()
+		return
+	end
+
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if isCharacterAirborne(char, hum, hrp) then
+		return
+	end
+
+	local aimDir = getAimDirection()
+	local exitDirection: Vector3
+	local sideSign = 1
+	if hrp then
+		local look = hrp.CFrame.LookVector
+		local forward = Vector3.new(look.X, 0, look.Z)
+		forward = if forward.Magnitude > 0.05 then forward.Unit else Vector3.new(0, 0, -1)
+		local right = Vector3.new(-forward.Z, 0, forward.X)
+		local moveVec = if hum and hum.MoveDirection.Magnitude > 0.08
+			then hum.MoveDirection
+			else Vector3.new(hrp.AssemblyLinearVelocity.X, 0, hrp.AssemblyLinearVelocity.Z)
+		local resolvedSide, sSign = PlayerActionPoseConfigs.ResolveFakeShotSideFromAim(
+			hrp.CFrame,
+			aimDir,
+			moveVec,
+			keyADown,
+			keyDDown
+		)
+		sideSign = sSign
+		-- Diagonal feint direction: forward + lateral cut
+		exitDirection = (forward * 0.55 + right * (sideSign * 0.85)).Unit
+	else
+		exitDirection = getMovementVector()
+	end
+
+	-- Immediate local visual ball cut for possessor (zero latency visual response)
+	if hrp and isLocalPlayerPossessor() then
+		local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+		if ballPart and ballPart:IsA("BasePart") then
+			local look = hrp.CFrame.LookVector
+			local flatFwd = Vector3.new(look.X, 0, look.Z)
+			flatFwd = if flatFwd.Magnitude > 0.05 then flatFwd.Unit else Vector3.new(0, 0, -1)
+			local rightVec = Vector3.new(-flatFwd.Z, 0, flatFwd.X)
+			local dribbleDist = math.abs(Constants.BALL_DRIBBLE_OFFSET_Z)
+			local lateralCutDist = Constants.FAKE_SHOT_BALL_CUT_OFFSET_STUDS or 2.8
+			local cutPos = hrp.Position + (flatFwd * dribbleDist) + (rightVec * (sideSign * lateralCutDist))
+			ballPart.CFrame = CFrame.new(Vector3.new(cutPos.X, Constants.BALL_RADIUS, cutPos.Z))
+		end
+
+		-- Character physically bursts forward-laterally toward the cut ("ตัวละครพุ่งตามไปครองบอล")
+		local burstSpeed = Constants.FAKE_SHOT_BURST_SPEED or 22.0
+		local burstDuration = Constants.FAKE_SHOT_BURST_DURATION_SEC or 0.22
+		if hum then
+			applyCharacterBurst(hrp, hum, exitDirection, burstSpeed, burstDuration)
 		end
 	end
+
+	pendingFakeShotIntentId = intentId
+	clearChargeSnapshot()
+	R6ActionPoseController.SetCharging(false)
+	setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+	R6ActionPoseController.TriggerFakeShot(exitDirection, Constants.FAKE_SHOT_DURATION_SEC)
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = "FakeShot",
+		intentId = intentId,
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "feint",
+		aimDirection = aimDir,
+		moveDirection = if hum and hum.MoveDirection.Magnitude > 0.05 then hum.MoveDirection else nil,
+		keyADown = keyADown,
+		keyDDown = keyDDown,
+	})
 end
 
 function InputController.RequestStartCharge(chargeAction: Types.ChargeActionType)
 	if chargeStartTime ~= nil then
 		return
 	end
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	if char then
+		local whiffRemaining = (char:GetAttribute("WhiffRecoveryRemaining") :: number?) or 0
+		local fakeShotRemaining = (char:GetAttribute("FakeShotRecoveryRemaining") :: number?) or 0
+		if fakeShotRemaining > 0 or (whiffRemaining > 0 and chargeAction ~= "Pass") then
+			return
+		end
+	end
 	local ctx = getLocalActionContext()
 	currentIntentId = generateIntentId("chg")
 	chargeStartTime = os.clock()
 	currentChargeAction = chargeAction
 	currentChargeContext = ctx
+	currentChargeCurveSide = nil
+	currentChargeCurveStyle = nil
+	currentChargeKickFoot = nil
 
-	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
-	remote:FireServer({
-		action = "StartCharge",
-		intentId = currentIntentId,
-		characterGeneration = getCharacterGeneration(),
-		contextVersion = getActionContextVersion(),
-		phase = "start",
-		chargeAction = chargeAction,
-	})
-
-	local localPlayer = Players.LocalPlayer
-	local char = localPlayer and localPlayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	local isAir = isCharacterAirborne(char, hum, hrp)
@@ -327,13 +507,30 @@ function InputController.RequestStartCharge(chargeAction: Types.ChargeActionType
 	if chargeAction == "CurveShoot" then
 		local aimDir = getAimDirection()
 		local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+		local curveSide = getCurveSideIntent()
+		currentChargeCurveSide = curveSide
 		if hrp then
-			local curveSide = getCurveSideIntent()
 			local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position, curveSide)
 			chargeCurveStyle = curveRes.style
 			chargeFoot = curveRes.foot
+		else
+			chargeCurveStyle = if curveSide == "Right" then "Trivela" else "Finesse"
+			chargeFoot = "Right"
 		end
+		currentChargeCurveStyle = chargeCurveStyle :: ("Finesse" | "Trivela")?
+		currentChargeKickFoot = chargeFoot :: ("Left" | "Right")?
 	end
+
+	local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
+	remote:FireServer({
+		action = "StartCharge",
+		intentId = currentIntentId,
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+		phase = "start",
+		chargeAction = chargeAction,
+		curveSideIntent = currentChargeCurveSide,
+	})
 
 	local visualChargeAct: string = chargeAction
 	if isAir and chargeAction == "DirectShoot" then
@@ -356,10 +553,7 @@ function InputController.RequestCancelCharge()
 			chargeAction = currentChargeAction,
 		})
 	end
-	chargeStartTime = nil
-	currentChargeAction = nil
-	currentChargeContext = nil
-	currentIntentId = nil
+	clearChargeSnapshot()
 	R6ActionPoseController.SetCharging(false)
 	setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
 end
@@ -501,10 +695,7 @@ function InputController.RequestSlide(chargeRatio: number?)
 		aimDirection = slideDir,
 		charge = charge,
 	})
-	chargeStartTime = nil
-	currentChargeAction = nil
-	currentChargeContext = nil
-	currentIntentId = nil
+	clearChargeSnapshot()
 	R6ActionPoseController.SetCharging(false)
 end
 
@@ -710,6 +901,239 @@ function InputController.RequestDash(overrideDir: Vector3?)
 	})
 end
 
+function InputController.RequestSkillMove(slotIndex: number)
+	if slotIndex ~= 1 and slotIndex ~= 2 and slotIndex ~= 3 then
+		return
+	end
+	if getLocalActionContext() ~= "Attacking" or chargeStartTime ~= nil or isSlidingClient then
+		return
+	end
+
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not char or not hrp or not hum or hum.Health <= 0 then
+		return
+	end
+	if isCharacterAirborne(char, hum, hrp) or isAirborneLocked or os.clock() < landingLagUntil then
+		return
+	end
+
+	-- Must be personal possessor of the ball
+	local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+	local possessorId = if ballPart then (ballPart:GetAttribute("PossessorUserId") :: number?) else nil
+	local isPossessor = (char:GetAttribute("IsPossessor") == true) or (localPlayer ~= nil and possessorId == localPlayer.UserId)
+	if not isPossessor then
+		return
+	end
+
+	local recRemaining = (char:GetAttribute("RecoveryRemaining") :: number?) or 0
+	if recRemaining > 0 then
+		return
+	end
+
+	local slotAttr = "SkillSlot" .. tostring(slotIndex)
+	local equippedSkillId = (char:GetAttribute(slotAttr) :: string?)
+	if not equippedSkillId or equippedSkillId == "" then
+		equippedSkillId = if slotIndex == 1
+			then SkillMoveConfigs.DEFAULT_LOADOUT.slot1
+			elseif slotIndex == 2 then SkillMoveConfigs.DEFAULT_LOADOUT.slot2
+			else SkillMoveConfigs.DEFAULT_LOADOUT.slot3
+	end
+
+	local skillDef = SkillMoveConfigs.GetSkill(equippedSkillId)
+	if not skillDef then
+		return
+	end
+
+	-- Skills have 0 cooldown and can be used continuously based purely on stamina per Owner directive
+	local curStam = (char:GetAttribute("Stamina") :: number?) or 1.0
+	if curStam < skillDef.staminaCost then
+		return
+	end
+
+	local moveDir = hum.MoveDirection
+	local flatMove = Vector3.new(moveDir.X, 0, moveDir.Z)
+	local dir: Vector3
+	if flatMove.Magnitude > 0.05 then
+		dir = flatMove.Unit
+	else
+		local look = hrp.CFrame.LookVector
+		local flatLook = Vector3.new(look.X, 0, look.Z)
+		dir = if flatLook.Magnitude > 0.05 then flatLook.Unit else Vector3.new(0, 0, -1)
+	end
+
+	-- Resolve side (Left vs Right) from A/D keys or movement vector
+	local sideSign = 1
+	if keyADown and not keyDDown then
+		sideSign = -1
+	elseif keyDDown and not keyADown then
+		sideSign = 1
+	elseif flatMove.Magnitude > 0.05 then
+		local rightDot = flatMove:Dot(hrp.CFrame.RightVector)
+		sideSign = if rightDot < -0.10 then -1 else 1
+	else
+		sideSign = skillDef.neutralSide or 1
+	end
+
+	local fwd = hrp.CFrame.LookVector
+	local flatFwd = Vector3.new(fwd.X, 0, fwd.Z).Unit
+	local rightVec = Vector3.new(-flatFwd.Z, 0, flatFwd.X)
+
+	-- Foot resolution: HeelChop uses opposite foot to cut behind support leg per Owner confirmed grilling!
+	local chosenFoot: "Left" | "Right"
+	if equippedSkillId == "HeelChop" then
+		-- A / Left: RIGHT foot hooks behind left support leg
+		-- D / Right: LEFT foot hooks behind right support leg
+		chosenFoot = if sideSign < 0 then "Right" else "Left"
+	else
+		chosenFoot = if sideSign < 0 then "Left" else "Right"
+	end
+
+	local effectiveDir = dir
+
+	if equippedSkillId == "HeavyKnockOn" then
+		-- 1★ Heavy Knock-On: knock ball far ahead (45.0 studs/s), short modest acceleration (22.0 studs/s for 0.18s) that does not reach the ball
+		effectiveDir = flatFwd
+		local knockSpeed = skillDef.playerVelocityBurst or 22.0
+		local knockDuration = skillDef.burstDurationSec or 0.18
+		local ballImpulse = skillDef.ballImpulseMagnitude or 45.0
+		if ballPart and ballPart:IsA("BasePart") then
+			ballPart.CFrame = CFrame.new(hrp.Position + flatFwd * 4.0 + Vector3.new(0, Constants.BALL_RADIUS, 0))
+			ballPart.AssemblyLinearVelocity = flatFwd * ballImpulse + Vector3.new(0, skillDef.ballImpulseVertical or 1.0, 0)
+		end
+		applyCharacterBurst(hrp, hum, flatFwd, knockSpeed, knockDuration)
+	elseif equippedSkillId == "HeelChop" then
+		-- 3★ Heel Chop: NO JUMP, sharp lateral cut beside body (A-left / D-right), body weight shifts near start with NO chase
+		local cutDir = (flatFwd * 0.10 + rightVec * (sideSign * 0.95)).Unit
+		effectiveDir = cutDir
+		if ballPart and ballPart:IsA("BasePart") then
+			ballPart.CFrame = CFrame.new(hrp.Position + cutDir * 3.2 + Vector3.new(0, Constants.BALL_RADIUS, 0))
+		end
+		-- NO chase burst: character remains grounded near origin
+	elseif equippedSkillId == "BodyFeint" then
+		-- 2★ Body Feint: shoulder sells false direction while ball stays near feet, then cuts opposite exit with short step
+		local cutDir = (flatFwd * 0.50 + rightVec * (sideSign * 0.85)).Unit
+		effectiveDir = cutDir
+		if ballPart and ballPart:IsA("BasePart") then
+			ballPart.CFrame = CFrame.new(hrp.Position + cutDir * 3.0 + Vector3.new(0, Constants.BALL_RADIUS, 0))
+		end
+		local feintSpeed = skillDef.playerVelocityBurst or 20.0
+		local feintDuration = skillDef.burstDurationSec or 0.22
+		applyCharacterBurst(hrp, hum, cutDir, feintSpeed, feintDuration)
+	elseif equippedSkillId == "OpenUpFakeShot" then
+		-- 1★ Open Up Fake Shot: readable shot windup feint, open hips, diagonal forward touch with short step
+		local cutDir = (flatFwd * 0.70 + rightVec * (sideSign * 0.70)).Unit
+		effectiveDir = cutDir
+		if ballPart and ballPart:IsA("BasePart") then
+			ballPart.CFrame = CFrame.new(hrp.Position + cutDir * 3.2 + Vector3.new(0, Constants.BALL_RADIUS, 0))
+		end
+		local openSpeed = skillDef.playerVelocityBurst or 20.0
+		local openDuration = skillDef.burstDurationSec or 0.22
+		applyCharacterBurst(hrp, hum, cutDir, openSpeed, openDuration)
+	elseif equippedSkillId == "Elastico" then
+		-- 5★ Elastico: continuous two contacts with same foot, body weight follows exit with short step
+		local cutDir = (flatFwd * 0.50 + rightVec * (sideSign * 0.85)).Unit
+		effectiveDir = cutDir
+		if ballPart and ballPart:IsA("BasePart") then
+			ballPart.CFrame = CFrame.new(hrp.Position + cutDir * 3.4 + Vector3.new(0, Constants.BALL_RADIUS, 0))
+		end
+		local elaSpeed = skillDef.playerVelocityBurst or 22.0
+		local elaDuration = skillDef.burstDurationSec or 0.22
+		applyCharacterBurst(hrp, hum, cutDir, elaSpeed, elaDuration)
+	elseif skillDef.directionPolicy == "LateralCut" then
+		local cutDir = (flatFwd * 0.55 + rightVec * (sideSign * 0.85)).Unit
+		effectiveDir = cutDir
+		if ballPart and ballPart:IsA("BasePart") then
+			ballPart.CFrame = CFrame.new(hrp.Position + cutDir * 3.5 + Vector3.new(0, Constants.BALL_RADIUS, 0))
+		end
+		if (skillDef.playerVelocityBurst or 0) > 0 then
+			applyCharacterBurst(hrp, hum, cutDir, skillDef.playerVelocityBurst, skillDef.burstDurationSec or 0.20)
+		end
+	end
+
+	R6ActionPoseController.TriggerSkillMove(equippedSkillId, skillDef.totalDurationSec, effectiveDir, chosenFoot)
+
+	local remote = Network.GetRemoteEvent(Network.Names.SkillMoveRequest)
+	remote:FireServer({
+		slotIndex = slotIndex,
+		skillId = equippedSkillId,
+		direction = effectiveDir,
+		side = sideSign,
+		intentId = generateIntentId("skl"),
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+	})
+end
+
+function InputController.RequestTackle(tackleType: "Poke" | "CagePress")
+	if getLocalActionContext() ~= "Defending" or chargeStartTime ~= nil or isSlidingClient then
+		return
+	end
+
+	local localPlayer = Players.LocalPlayer
+	local char = localPlayer and localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if not char or not hrp or not hum or hum.Health <= 0 then
+		return
+	end
+	if isCharacterAirborne(char, hum, hrp) or isAirborneLocked or os.clock() < landingLagUntil then
+		return
+	end
+
+	local recRemaining = (char:GetAttribute("RecoveryRemaining") :: number?) or 0
+	local commonRec = (char:GetAttribute("CommonSkillRecoveryRemaining") :: number?) or 0
+	if recRemaining > 0 or commonRec > 0 then
+		return
+	end
+
+	local defSpec = SkillMoveConfigs.GetDefenseAction(tackleType)
+	if not defSpec then
+		return
+	end
+
+	local cdAttr = if tackleType == "Poke" then "PokeCooldownRemaining" else "CagePressCooldownRemaining"
+	local cdRemaining = (char:GetAttribute(cdAttr) :: number?) or 0
+	if cdRemaining > 0 then
+		return
+	end
+
+	local curStam = (char:GetAttribute("Stamina") :: number?) or 1.0
+	if curStam < defSpec.staminaCost then
+		return
+	end
+
+	local moveDir = hum.MoveDirection
+	local flatMove = Vector3.new(moveDir.X, 0, moveDir.Z)
+	local dir: Vector3
+	if flatMove.Magnitude > 0.05 then
+		dir = flatMove.Unit
+	else
+		local aim = getAimDirection()
+		local flatAim = Vector3.new(aim.X, 0, aim.Z)
+		if flatAim.Magnitude > 0.05 then
+			dir = flatAim.Unit
+		else
+			local look = hrp.CFrame.LookVector
+			local flatLook = Vector3.new(look.X, 0, look.Z)
+			dir = if flatLook.Magnitude > 0.05 then flatLook.Unit else Vector3.new(0, 0, -1)
+		end
+	end
+
+	R6ActionPoseController.TriggerTackle(tackleType, defSpec.activeDurationSec)
+
+	local remote = Network.GetRemoteEvent(Network.Names.TackleActionRequest)
+	remote:FireServer({
+		tackleType = tackleType,
+		direction = dir,
+		intentId = generateIntentId("tkl"),
+		characterGeneration = getCharacterGeneration(),
+		contextVersion = getActionContextVersion(),
+	})
+end
+
 local function commitJumpDirection(char: Model)
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -771,22 +1195,6 @@ local function commitJumpDirection(char: Model)
 		aimDirection = if isMoving then commitDir else Vector3.zero,
 	})
 	R6AnimationController.PlayAction("jump")
-end
-
-local function isLocalPlayerPossessor(): boolean
-	local localPlayer = Players.LocalPlayer
-	if not localPlayer then
-		return false
-	end
-	local char = localPlayer.Character
-	if char and (char:GetAttribute("HasBall") == true or char:GetAttribute("IsPossessor") == true) then
-		return true
-	end
-	local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
-	if ballPart and ballPart:GetAttribute("PossessorUserId") == localPlayer.UserId then
-		return true
-	end
-	return false
 end
 
 function InputController.RequestBallPop()
@@ -912,12 +1320,17 @@ function InputController.Init()
 			charResolvedActionConn:Disconnect()
 			charResolvedActionConn = nil
 		end
+		if charCagePressSplatConn then
+			charCagePressSplatConn:Disconnect()
+			charCagePressSplatConn = nil
+		end
 
 		isSprinting = false
-		chargeStartTime = nil
-		currentChargeAction = nil
-		currentChargeContext = nil
-		currentIntentId = nil
+		clearChargeSnapshot()
+		pendingShotIntentId = nil
+		pendingShotAction = nil
+		pendingFakeShotIntentId = nil
+		lastHandledActionOutcome = nil
 		currentSlideIntentId = nil
 		isAirborneLocked = false
 		isSlidingClient = false
@@ -944,15 +1357,16 @@ function InputController.Init()
 
 			charStateConn = hum.StateChanged:Connect(function(_oldState, newState)
 				if newState == Enum.HumanoidStateType.Landed then
+					local hadFlight = currentFlightState ~= "Grounded" or isAirborneLocked
 					if isSpacebarHeld then
 						jumpConsumedUntilRelease = true
 					else
 						jumpConsumedUntilRelease = false
 					end
-					if isAcrobaticInFlight then
-						isAcrobaticInFlight = false
-						R6ActionPoseController.TriggerAirborneRecovery(0.32)
+					if hadFlight then
+						R6ActionPoseController.TriggerLandingRecovery(Constants.LANDING_RECOVERY_SEC)
 					end
+					isAcrobaticInFlight = false
 					if currentFlightState ~= "Grounded" then
 						landingLagUntil = os.clock() + JumpConfigs.LANDING_LAG_SEC
 						currentFlightState = "Grounded"
@@ -1006,36 +1420,94 @@ function InputController.Init()
 			local function onActionOutcomeReconciled()
 				local status = char:GetAttribute("LastActionStatus")
 				local actionIntent = char:GetAttribute("LastActionIntentId")
+				local actionSequence = (char:GetAttribute("ActionSequence") :: number?) or 0
+				local actionReason = char:GetAttribute("LastActionReason")
+				local outcomeKey = string.format("%d|%s|%s|%s", actionSequence, tostring(actionIntent), tostring(status), tostring(actionReason))
+				if outcomeKey == lastHandledActionOutcome then
+					return
+				end
+				lastHandledActionOutcome = outcomeKey
 				if status == "Accepted" then
 					local resolvedAction = char:GetAttribute("LastResolvedAction") :: string?
 					local resolvedFoot = char:GetAttribute("ResolvedKickFoot") :: string?
 					local resolvedStyle = char:GetAttribute("ResolvedCurveStyle") :: string?
+					local isPredictedShot = actionIntent == pendingShotIntentId
+					if isPredictedShot then
+						pendingShotIntentId = nil
+					end
 
 					if resolvedAction and resolvedAction ~= "" then
 						isAcrobaticInFlight = false
-						if resolvedAction == "Header" then
+						if resolvedAction == "FakeShot" then
+							if actionIntent ~= pendingFakeShotIntentId then
+								local direction = char:GetAttribute("FakeShotDirection")
+								R6ActionPoseController.TriggerFakeShot(if typeof(direction) == "Vector3" then direction else nil, Constants.FAKE_SHOT_DURATION_SEC)
+							end
+							if actionIntent == pendingFakeShotIntentId then
+								pendingFakeShotIntentId = nil
+							end
+						elseif resolvedAction == "Header" and not (isPredictedShot and pendingShotAction == "Header") then
 							R6AnimationController.PlayAction("header")
 							R6ActionPoseController.TriggerAction("Header", 0.35, nil, nil, resolvedFoot)
-						elseif resolvedAction == "Volley" then
+						elseif resolvedAction == "Volley" and not (isPredictedShot and pendingShotAction == "Volley") then
 							R6AnimationController.PlayAction("volley")
 							R6ActionPoseController.TriggerAction("Volley", 0.44, nil, nil, resolvedFoot)
-						elseif resolvedAction == "CurveShoot" then
+						elseif resolvedAction == "CurveShoot" and not isPredictedShot then
 							R6AnimationController.PlayAction("kick")
 							R6ActionPoseController.TriggerAction("CurveShoot", 0.30, resolvedStyle, nil, resolvedFoot)
-						elseif resolvedAction == "DirectShoot" then
+						elseif resolvedAction == "DirectShoot" and not isPredictedShot then
 							R6AnimationController.PlayAction("kick")
 							R6ActionPoseController.TriggerAction("DirectShoot", 0.34, nil, nil, resolvedFoot)
-						elseif resolvedAction == "Pass" then
+						elseif resolvedAction == "Pass" and not isPredictedShot then
 							R6ActionPoseController.TriggerAction("Pass", 0.36, nil, nil, resolvedFoot)
 						end
 					end
-				elseif status == "Rejected" and currentSlideIntentId ~= nil and (actionIntent == currentSlideIntentId or not actionIntent) then
-					cancelSlidePrediction()
+					if isPredictedShot then
+						pendingShotAction = nil
+					end
+				elseif status == "Rejected" then
+					if currentIntentId ~= nil and (actionIntent == currentIntentId or not actionIntent) then
+						clearChargeSnapshot()
+						R6ActionPoseController.SetCharging(false)
+						setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+					end
+					if currentSlideIntentId ~= nil and (actionIntent == currentSlideIntentId or not actionIntent) then
+						cancelSlidePrediction()
+					end
+					if actionIntent == pendingShotIntentId then
+						local reason = char:GetAttribute("LastActionReason")
+						local recoveryAction = char:GetAttribute("WhiffRecoveryAction")
+						local duration = (char:GetAttribute("WhiffRecoveryRemaining") :: number?) or 0
+						if reason == "OutOfReach" and duration > 0 then
+							if recoveryAction == "AirWhiff" then
+								R6ActionPoseController.TriggerAirWhiff(duration)
+							else
+								R6ActionPoseController.TriggerWhiff(recoveryAction == "CurveShootWhiff", duration)
+							end
+						end
+						pendingShotIntentId = nil
+						pendingShotAction = nil
+					end
+					if actionIntent == pendingFakeShotIntentId then
+						R6ActionPoseController.RejectAction()
+						pendingFakeShotIntentId = nil
+					end
 				end
 			end
 
-			charActionStatusConn = char:GetAttributeChangedSignal("LastActionStatus"):Connect(onActionOutcomeReconciled)
-			charResolvedActionConn = char:GetAttributeChangedSignal("LastResolvedAction"):Connect(onActionOutcomeReconciled)
+			local function scheduleActionOutcomeReconciliation()
+				task.defer(onActionOutcomeReconciled)
+			end
+			charActionStatusConn = char:GetAttributeChangedSignal("LastActionStatus"):Connect(scheduleActionOutcomeReconciliation)
+			charResolvedActionConn = char:GetAttributeChangedSignal("LastResolvedAction"):Connect(scheduleActionOutcomeReconciliation)
+			local lastSplatSequence = char:GetAttribute("CagePressWallSplatSequence") or 0
+			charCagePressSplatConn = char:GetAttributeChangedSignal("CagePressWallSplatSequence"):Connect(function()
+				local sequence = char:GetAttribute("CagePressWallSplatSequence")
+				if type(sequence) == "number" and sequence > lastSplatSequence then
+					lastSplatSequence = sequence
+					R6ActionPoseController.TriggerAction("CagePressWallSplat", Constants.CAGE_PRESS_WALL_STUN_SEC)
+				end
+			end)
 		end
 
 		charContextConn = char:GetAttributeChangedSignal("ActionContext"):Connect(function()
@@ -1075,7 +1547,8 @@ function InputController.Init()
 	end)
 
 	-- RenderStepped maintains smooth orientation lock, handles slide expiration, physical flight lifecycle, and air lean
-	RunService.RenderStepped:Connect(function()
+	RunService.RenderStepped:Connect(function(stepDt: number)
+		local dt = if stepDt and stepDt > 0 then stepDt else 0.016
 		local now = os.clock()
 		local char = localPlayer and localPlayer.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -1083,6 +1556,270 @@ function InputController.Init()
 
 		if isSlidingClient and now >= slideEndTimeClient then
 			InputController.EndSlide()
+		end
+
+		-- Smooth local dribble positioning for local possessor (zero latency, EA FC 27 touch-based dribbling)
+		local isSkillBusyClient = (char and ((char:GetAttribute("ActiveSkillMove") ~= nil) or (char:GetAttribute("PendingSkillMove") ~= nil) or (((char:GetAttribute("SkillEndTime") :: number?) or 0) > now)))
+		if hrp and isLocalPlayerPossessor() and not isAirborneLocked and currentFlightState == "Grounded" and not isSkillBusyClient then
+			local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+			if ballPart and ballPart:IsA("BasePart") then
+				local look = hrp.CFrame.LookVector
+				local flatFwd = Vector3.new(look.X, 0, look.Z)
+				flatFwd = if flatFwd.Magnitude > 0.05 then flatFwd.Unit else Vector3.new(0, 0, -1)
+				local rightVec = Vector3.new(-flatFwd.Z, 0, flatFwd.X)
+
+				local horizVel = Vector3.new(hrp.AssemblyLinearVelocity.X, 0, hrp.AssemblyLinearVelocity.Z)
+				local speed = horizVel.Magnitude
+
+				-- State Checks:
+				local isDraggingBack = (now < clientDragBackEndTime)
+				local isClose = (clientIsCloseControl or (char and char:GetAttribute("IsCloseControl") == true))
+				local moveDir = if hum and hum.MoveDirection.Magnitude > 0.05
+					then hum.MoveDirection.Unit
+					else (if speed > 0.8 then horizVel.Unit else flatFwd)
+				local backwardDot = moveDir:Dot(flatFwd)
+
+				if not isDraggingBack and speed > 1.0 and not isSprinting and backwardDot < -0.55 and (isClose or keySDown or (char and char:GetAttribute("RequestDragBack") == true)) then
+					isDraggingBack = true
+					clientDragBackEndTime = now + 0.25
+					clientDribbleVel = Vector3.zero
+				end
+
+				if not clientDribblePos then
+					clientDribblePos = ballPart.Position
+				end
+
+				if isDraggingBack then
+					-- STATE 4: DragBack (0.25s controlled backward pull to plant foot and turn)
+					local dragTarget = hrp.Position - (flatFwd * 0.8)
+					local targetPos = Vector3.new(dragTarget.X, Constants.BALL_RADIUS, dragTarget.Z)
+					clientDribblePos = clientDribblePos:Lerp(targetPos, math.clamp(dt * 14.0, 0, 1))
+					clientDribbleVel = Vector3.zero
+					if (clientDragBackEndTime - now) < 0.03 then
+						clientDribbleVel = moveDir * (speed * 1.15 + 1.5)
+					end
+				elseif chargeStartTime ~= nil then
+					-- Charging: hold ball cleanly at foot without dribble tap
+					local restPos = hrp.Position + (flatFwd * 1.8) + (rightVec * 0.35)
+					local targetPos = Vector3.new(restPos.X, Constants.BALL_RADIUS, restPos.Z)
+					clientDribblePos = clientDribblePos:Lerp(targetPos, math.clamp(dt * 12.0, 0, 1))
+					clientDribbleVel = Vector3.zero
+					clientLastTouchTime = 0
+				elseif speed <= 0.8 and (not hum or hum.MoveDirection.Magnitude <= 0.05) then
+					-- STATE 1: IdleWithBall
+					clientDribbleVel = Vector3.zero
+					clientLastTouchTime = 0
+					local restPos = hrp.Position + (flatFwd * 1.9) + (rightVec * 0.35)
+					local targetPos = Vector3.new(restPos.X, Constants.BALL_RADIUS, restPos.Z)
+					clientDribblePos = clientDribblePos:Lerp(targetPos, math.clamp(dt * 12.0, 0, 1))
+				elseif isClose then
+					-- STATE 3: CloseControl & BallRoll (Hold Ctrl or Q)
+					local cadence = 0.14
+					local leadDist = 1.8
+					local relPos = clientDribblePos - hrp.Position
+					local fwdDist = relPos.X * flatFwd.X + relPos.Z * flatFwd.Z
+
+					local latDot = moveDir:Dot(rightVec)
+					local touchDir = moveDir
+					if math.abs(latDot) > 0.6 then
+						touchDir = rightVec * math.sign(latDot)
+					end
+
+					local isTouch = (clientLastTouchTime == 0) or (now - clientLastTouchTime >= cadence) or (fwdDist <= 1.4)
+					if isTouch then
+						clientLastTouchTime = now
+						local closeSpeed = math.max(speed * 1.05, 9.0)
+						local idealTarget = hrp.Position + (touchDir * leadDist)
+						local toTarget = idealTarget - clientDribblePos
+						local toDir = if toTarget.Magnitude > 0.05 then toTarget.Unit else touchDir
+						clientDribbleVel = toDir * closeSpeed
+						if fwdDist < 1.3 then
+							clientDribblePos = Vector3.new(
+								hrp.Position.X + (flatFwd.X * 1.5),
+								Constants.BALL_RADIUS,
+								hrp.Position.Z + (flatFwd.Z * 1.5)
+							)
+						end
+					end
+
+					local turfFriction = 3.8
+					clientDribbleVel = clientDribbleVel * math.clamp(1.0 - dt * turfFriction, 0, 1)
+					clientDribblePos = clientDribblePos + clientDribbleVel * dt
+
+					-- Soft Elastic Pull
+					local curRel = clientDribblePos - hrp.Position
+					local curFwd = curRel.X * flatFwd.X + curRel.Z * flatFwd.Z
+					local curRight = curRel.X * rightVec.X + curRel.Z * rightVec.Z
+					if curFwd > 2.4 then
+						clientDribbleVel = clientDribbleVel * math.exp(-dt * 8.0)
+						local excess = curFwd - 2.4
+						clientDribblePos = clientDribblePos - (flatFwd * (excess * math.clamp(dt * 10.0, 0, 1)))
+					elseif curFwd < 1.2 then
+						clientDribblePos = Vector3.new(hrp.Position.X + flatFwd.X * 1.4 + rightVec.X * curRight, Constants.BALL_RADIUS, hrp.Position.Z + flatFwd.Z * 1.4 + rightVec.Z * curRight)
+						clientLastTouchTime = 0
+					end
+					if math.abs(curRight) > 2.0 then
+						local excess = math.abs(curRight) - 2.0
+						local sign = math.sign(curRight)
+						clientDribblePos = clientDribblePos - (rightVec * (sign * excess * math.clamp(dt * 10.0, 0, 1)))
+					end
+				elseif speed > 22.0 or isSprinting then
+					-- STATE 5: SprintKnock (Shift held)
+					local cadence = 0.48
+					local leadDist = 6.0
+					local relPos = clientDribblePos - hrp.Position
+					local fwdDist = relPos.X * flatFwd.X + relPos.Z * flatFwd.Z
+
+					local isTouch = (clientLastTouchTime == 0) or (now - clientLastTouchTime >= cadence) or (fwdDist <= 1.8)
+					if isTouch then
+						clientLastTouchTime = now
+						local touchDir = moveDir
+						local touchSpeed = speed * 1.30 + 3.0
+						local idealTarget = hrp.Position + (touchDir * leadDist)
+						local toTarget = idealTarget - clientDribblePos
+						local toDir = if toTarget.Magnitude > 0.05 then toTarget.Unit else touchDir
+						clientDribbleVel = toDir * touchSpeed
+						if fwdDist < 1.6 then
+							clientDribblePos = Vector3.new(
+								hrp.Position.X + (flatFwd.X * 1.8),
+								Constants.BALL_RADIUS,
+								hrp.Position.Z + (flatFwd.Z * 1.8)
+							)
+						end
+					end
+
+					local turfFriction = 2.4
+					clientDribbleVel = clientDribbleVel * math.clamp(1.0 - dt * turfFriction, 0, 1)
+					clientDribblePos = clientDribblePos + clientDribbleVel * dt
+
+					-- Soft Elastic Pull
+					local curRel = clientDribblePos - hrp.Position
+					local curFwd = curRel.X * flatFwd.X + curRel.Z * flatFwd.Z
+					local curRight = curRel.X * rightVec.X + curRel.Z * rightVec.Z
+					if curFwd > 6.8 then
+						clientDribbleVel = clientDribbleVel * math.exp(-dt * 8.0)
+						local excess = curFwd - 6.8
+						clientDribblePos = clientDribblePos - (flatFwd * (excess * math.clamp(dt * 10.0, 0, 1)))
+					elseif curFwd < 1.5 then
+						clientDribblePos = Vector3.new(hrp.Position.X + flatFwd.X * 1.7 + rightVec.X * curRight, Constants.BALL_RADIUS, hrp.Position.Z + flatFwd.Z * 1.7 + rightVec.Z * curRight)
+						clientLastTouchTime = 0
+					end
+					if math.abs(curRight) > 2.8 then
+						local excess = math.abs(curRight) - 2.8
+						local sign = math.sign(curRight)
+						clientDribblePos = clientDribblePos - (rightVec * (sign * excess * math.clamp(dt * 10.0, 0, 1)))
+					end
+				else
+					-- STATE 2: NormalDribble (Left Stick Dribble in FC 27)
+					local cadence = 0.32
+					local leadDist = 3.2
+					local relPos = clientDribblePos - hrp.Position
+					local fwdDist = relPos.X * flatFwd.X + relPos.Z * flatFwd.Z
+
+					local isTouch = (clientLastTouchTime == 0) or (now - clientLastTouchTime >= cadence) or (fwdDist <= 1.8)
+					if isTouch then
+						clientLastTouchTime = now
+						clientDribbleFootSign = -clientDribbleFootSign
+						local footOffset = rightVec * (clientDribbleFootSign * 0.25)
+						local idealTarget = hrp.Position + (moveDir * leadDist) + footOffset
+
+						local touchSpeed = speed * 1.15 + 1.5
+						local toTarget = idealTarget - clientDribblePos
+						local toDir = if toTarget.Magnitude > 0.05 then toTarget.Unit else moveDir
+						clientDribbleVel = toDir * touchSpeed
+
+						if fwdDist < 1.6 then
+							clientDribblePos = Vector3.new(
+								hrp.Position.X + flatFwd.X * 1.8 + footOffset.X,
+								Constants.BALL_RADIUS,
+								hrp.Position.Z + flatFwd.Z * 1.8 + footOffset.Z
+							)
+						end
+					end
+
+					local turfFriction = 2.6
+					clientDribbleVel = clientDribbleVel * math.clamp(1.0 - dt * turfFriction, 0, 1)
+					clientDribblePos = clientDribblePos + clientDribbleVel * dt
+
+					-- Soft Elastic Pull
+					local curRel = clientDribblePos - hrp.Position
+					local curFwd = curRel.X * flatFwd.X + curRel.Z * flatFwd.Z
+					local curRight = curRel.X * rightVec.X + curRel.Z * rightVec.Z
+					if curFwd > 4.5 then
+						clientDribbleVel = clientDribbleVel * math.exp(-dt * 8.0)
+						local excess = curFwd - 4.5
+						clientDribblePos = clientDribblePos - (flatFwd * (excess * math.clamp(dt * 10.0, 0, 1)))
+					elseif curFwd < 1.5 then
+						clientDribblePos = Vector3.new(hrp.Position.X + flatFwd.X * 1.7 + rightVec.X * curRight, Constants.BALL_RADIUS, hrp.Position.Z + flatFwd.Z * 1.7 + rightVec.Z * curRight)
+						clientLastTouchTime = 0
+					end
+					if math.abs(curRight) > 2.5 then
+						local excess = math.abs(curRight) - 2.5
+						local sign = math.sign(curRight)
+						clientDribblePos = clientDribblePos - (rightVec * (sign * excess * math.clamp(dt * 10.0, 0, 1)))
+					end
+				end
+
+				clientDribblePos = Vector3.new(clientDribblePos.X, Constants.BALL_RADIUS, clientDribblePos.Z)
+
+				-- Visual Ball Rolling Spin:
+				local hVel = Vector3.new(clientDribbleVel.X, 0, clientDribbleVel.Z)
+				local rollSpd = hVel.Magnitude
+				if rollSpd > 0.1 then
+					local velUnit = hVel.Unit
+					local rotAxis = Vector3.new(0, 1, 0):Cross(velUnit)
+					if rotAxis.Magnitude > 0.01 then
+						local rotAngle = (rollSpd / Constants.BALL_RADIUS) * dt
+						clientBallSpinRotation = CFrame.fromAxisAngle(rotAxis.Unit, rotAngle) * clientBallSpinRotation
+					end
+				end
+
+				ballPart.CFrame = CFrame.new(clientDribblePos) * clientBallSpinRotation
+			end
+		else
+			clientDribblePos = nil
+			clientDribbleVel = Vector3.zero
+			clientLastTouchTime = 0
+		end
+
+		-- Live charge power & gauge update (Pass fills faster than Shoot)
+		if chargeStartTime ~= nil and char then
+			local elapsed = now - chargeStartTime
+			local minP = Constants.CHARGE_MIN_POWER or 0.20
+			local maxP = Constants.CHARGE_MAX_POWER or 1.00
+			local isPass = (currentChargeAction == "Pass" or currentChargeAction == "GroundPass")
+			local maxT = if isPass
+				then (Constants.CHARGE_TIME_MAX_PASS or 0.45)
+				else (Constants.CHARGE_TIME_MAX_SHOOT or Constants.CHARGE_TIME_MAX or 0.90)
+			local localCharge = if elapsed < 0.10
+				then minP
+				else math.clamp(minP + (elapsed / maxT) * (maxP - minP), minP, maxP)
+			char:SetAttribute("ChargePower", math.round(localCharge * 100) / 100)
+			char:SetAttribute("IsCharging", true)
+			char:SetAttribute("ChargeAction", currentChargeAction)
+		end
+
+		-- Live curve style update during ground RMB Curve charge (Owner Delta §22)
+		if chargeStartTime ~= nil and currentChargeAction == "CurveShoot" and not isCharacterAirborne(char, hum, hrp) then
+			local liveSide = getCurveSideIntent()
+			if liveSide ~= currentChargeCurveSide then
+				currentChargeCurveSide = liveSide
+				local aimDir = getAimDirection()
+				local ballPart = Workspace:FindFirstChild(Constants.BALL_PART_NAME)
+				local liveStyle: string
+				local liveFoot: string
+				if hrp then
+					local curveRes = PlayerActionPoseConfigs.ResolveCurveShot(hrp.CFrame, aimDir, ballPart and ballPart.Position, liveSide)
+					liveStyle = curveRes.style
+					liveFoot = curveRes.foot
+				else
+					liveStyle = if liveSide == "Right" then "Trivela" else "Finesse"
+					liveFoot = "Right"
+				end
+				currentChargeCurveStyle = liveStyle :: ("Finesse" | "Trivela")?
+				currentChargeKickFoot = liveFoot :: ("Left" | "Right")?
+				R6ActionPoseController.SetCharging(true, "CurveShoot", liveStyle, liveFoot)
+			end
 		end
 
 		-- Air Lean update while airborne (Owner Delta §12.5)
@@ -1147,6 +1884,7 @@ function InputController.Init()
 				end
 
 				if currentFlightState == "Landed" then
+					R6ActionPoseController.TriggerLandingRecovery(Constants.LANDING_RECOVERY_SEC)
 					landingLagUntil = now + JumpConfigs.LANDING_LAG_SEC
 					currentFlightState = "Grounded"
 					isAirborneLocked = false
@@ -1157,10 +1895,7 @@ function InputController.Init()
 					if not isSlidingClient and not CameraShiftLockController.IsEnabled() then
 						hum.AutoRotate = true
 					end
-					if isAcrobaticInFlight then
-						isAcrobaticInFlight = false
-						R6ActionPoseController.TriggerAirborneRecovery(0.32)
-					end
+					isAcrobaticInFlight = false
 				end
 			else
 				isAirborneLocked = false
@@ -1187,16 +1922,55 @@ function InputController.Init()
 			keyWDown = true
 		elseif input.KeyCode == Enum.KeyCode.S then
 			keySDown = true
+			if isLocalPlayerPossessor() and (keyCtrlDown or keyQDown or clientIsCloseControl) then
+				local char = localPlayer and localPlayer.Character
+				if char then char:SetAttribute("RequestDragBack", true) end
+				clientDragBackEndTime = os.clock() + 0.25
+				sendDribbleControl(clientIsCloseControl, true)
+			end
 		elseif input.KeyCode == Enum.KeyCode.A then
 			keyADown = true
 		elseif input.KeyCode == Enum.KeyCode.D then
 			keyDDown = true
 		end
 
-		if input.KeyCode == Enum.KeyCode.LeftShift then
+		if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.LeftAlt then
+			keyCtrlDown = true
+			if isLocalPlayerPossessor() then
+				clientIsCloseControl = true
+				clientLastTouchTime = 0
+				local char = localPlayer and localPlayer.Character
+				if char then char:SetAttribute("IsCloseControl", true) end
+				sendDribbleControl(true, false)
+				setLocalWalkSpeed(10.0)
+			end
+		elseif input.KeyCode == Enum.KeyCode.LeftShift then
 			InputController.RequestSprint(true)
 		elseif input.KeyCode == Enum.KeyCode.Q then
-			InputController.RequestDash()
+			keyQDown = true
+			if isLocalPlayerPossessor() then
+				clientIsCloseControl = true
+				clientLastTouchTime = 0
+				local char = localPlayer and localPlayer.Character
+				if char then char:SetAttribute("IsCloseControl", true) end
+				sendDribbleControl(true, false)
+				setLocalWalkSpeed(10.0)
+			else
+				InputController.RequestDash()
+			end
+		elseif input.KeyCode == Enum.KeyCode.E then
+			if ctx == "Attacking" then
+				if currentChargeAction == "DirectShoot" or currentChargeAction == "CurveShoot" then
+					local char = localPlayer and localPlayer.Character
+					local hum = char and char:FindFirstChildOfClass("Humanoid")
+					local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+					if not isCharacterAirborne(char, hum, hrp) then
+						InputController.RequestFakeShot()
+					end
+				elseif chargeStartTime == nil then
+					InputController.RequestStartCharge("Pass")
+				end
+			end
 		elseif input.KeyCode == Enum.KeyCode.Space then
 			isSpacebarHeld = true
 			if not jumpConsumedUntilRelease then
@@ -1209,8 +1983,8 @@ function InputController.Init()
 				InputController.RequestStartCharge("Slide")
 			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
-			if ctx == "Attacking" then
-				InputController.RequestStartCharge("Pass")
+			if ctx == "Defending" then
+				InputController.RequestTackle("CagePress")
 			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			if ctx == "Attacking" then
@@ -1223,8 +1997,27 @@ function InputController.Init()
 				else
 					InputController.RequestStartCharge("CurveShoot")
 				end
+			elseif ctx == "Defending" then
+				InputController.RequestTackle("Poke")
+			end
+		elseif input.KeyCode == Enum.KeyCode.Z then
+			if ctx == "Attacking" then
+				InputController.RequestSkillMove(1)
 			end
 		elseif input.KeyCode == Enum.KeyCode.X then
+			if ctx == "Attacking" then
+				InputController.RequestSkillMove(2)
+			end
+		elseif input.KeyCode == Enum.KeyCode.C then
+			if ctx == "Attacking" then
+				InputController.RequestSkillMove(3)
+			end
+		elseif input.KeyCode == Enum.KeyCode.R then
+			if chargeStartTime ~= nil then
+				clearChargeSnapshot()
+				R6ActionPoseController.SetCharging(false)
+				setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+			end
 			local remote = Network.GetRemoteEvent(Network.Names.BallActionRequest)
 			remote:FireServer({
 				action = "ResetBall",
@@ -1233,8 +2026,6 @@ function InputController.Init()
 				contextVersion = getActionContextVersion(),
 				phase = "start",
 			})
-		elseif input.KeyCode == Enum.KeyCode.H then
-			TrainingHUD.ToggleCodex()
 		end
 	end)
 
@@ -1250,26 +2041,65 @@ function InputController.Init()
 			keyDDown = false
 		end
 
+		if input.KeyCode == Enum.KeyCode.LeftControl or input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.LeftAlt then
+			keyCtrlDown = false
+			if isLocalPlayerPossessor() and not keyQDown then
+				clientIsCloseControl = false
+				local char = localPlayer and localPlayer.Character
+				if char then char:SetAttribute("IsCloseControl", false) end
+				sendDribbleControl(false, false)
+				setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+			end
+		elseif input.KeyCode == Enum.KeyCode.Q then
+			keyQDown = false
+			if isLocalPlayerPossessor() and not keyCtrlDown then
+				clientIsCloseControl = false
+				local char = localPlayer and localPlayer.Character
+				if char then char:SetAttribute("IsCloseControl", false) end
+				sendDribbleControl(false, false)
+				setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+			end
+		elseif input.KeyCode == Enum.KeyCode.Z then
+			keyZDown = false
+		end
+
 		if input.KeyCode == Enum.KeyCode.LeftShift then
 			InputController.RequestSprint(false)
+		elseif input.KeyCode == Enum.KeyCode.E then
+			if chargeStartTime ~= nil and currentChargeAction == "Pass" then
+				local ctx = getLocalActionContext()
+				if ctx ~= "Attacking" then
+					InputController.RequestCancelCharge()
+				else
+					local elapsed = os.clock() - chargeStartTime
+					local minP = Constants.CHARGE_MIN_POWER or 0.20
+					local maxP = Constants.CHARGE_MAX_POWER or 1.00
+					local maxT = Constants.CHARGE_TIME_MAX_PASS or 0.45
+					local finalCharge = if elapsed < 0.10
+						then minP
+						else math.clamp(minP + (elapsed / maxT) * (maxP - minP), minP, maxP)
+					local prevIntentId = currentIntentId
+					setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
+					InputController.RequestKick("Pass", finalCharge, prevIntentId)
+				end
+			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
 			if chargeStartTime ~= nil then
 				local ctx = getLocalActionContext()
 				local now = os.clock()
 				local elapsed = now - chargeStartTime
-				local finalCharge = if elapsed < 0.12
-					then Constants.CHARGE_MIN_POWER
-					else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+				local minP = Constants.CHARGE_MIN_POWER or 0.20
+				local maxP = Constants.CHARGE_MAX_POWER or 1.00
+				local maxT = Constants.CHARGE_TIME_MAX_SHOOT or Constants.CHARGE_TIME_MAX or 0.90
+				local finalCharge = if elapsed < 0.10
+					then minP
+					else math.clamp(minP + (elapsed / maxT) * (maxP - minP), minP, maxP)
 
 				if currentChargeAction == "DirectShoot" then
 					if ctx ~= "Attacking" then
 						InputController.RequestCancelCharge()
 					else
 						local prevIntentId = currentIntentId
-						chargeStartTime = nil
-						currentChargeAction = nil
-						currentChargeContext = nil
-						currentIntentId = nil
 						setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
 						InputController.RequestKick("DirectShoot", finalCharge, prevIntentId)
 					end
@@ -1281,26 +2111,6 @@ function InputController.Init()
 					end
 				end
 			end
-		elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
-			if chargeStartTime ~= nil and currentChargeAction == "Pass" then
-				local ctx = getLocalActionContext()
-				if ctx ~= "Attacking" then
-					InputController.RequestCancelCharge()
-				else
-					local now = os.clock()
-					local elapsed = now - chargeStartTime
-					local finalCharge = if elapsed < 0.12
-						then Constants.CHARGE_MIN_POWER
-						else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
-					local prevIntentId = currentIntentId
-					chargeStartTime = nil
-					currentChargeAction = nil
-					currentChargeContext = nil
-					currentIntentId = nil
-					setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
-					InputController.RequestKick("Pass", finalCharge, prevIntentId)
-				end
-			end
 		elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
 			if chargeStartTime ~= nil and (currentChargeAction == "CurveShoot" or currentChargeAction == "Volley") then
 				local ctx = getLocalActionContext()
@@ -1309,9 +2119,12 @@ function InputController.Init()
 				else
 					local now = os.clock()
 					local elapsed = now - chargeStartTime
-					local finalCharge = if elapsed < 0.12
-						then Constants.CHARGE_MIN_POWER
-						else math.clamp(Constants.CHARGE_MIN_POWER + (elapsed / Constants.CHARGE_TIME_MAX) * (Constants.CHARGE_MAX_POWER - Constants.CHARGE_MIN_POWER), Constants.CHARGE_MIN_POWER, Constants.CHARGE_MAX_POWER)
+					local minP = Constants.CHARGE_MIN_POWER or 0.20
+					local maxP = Constants.CHARGE_MAX_POWER or 1.00
+					local maxT = Constants.CHARGE_TIME_MAX_SHOOT or Constants.CHARGE_TIME_MAX or 0.90
+					local finalCharge = if elapsed < 0.10
+						then minP
+						else math.clamp(minP + (elapsed / maxT) * (maxP - minP), minP, maxP)
 					local prevIntentId = currentIntentId
 					local char = localPlayer and localPlayer.Character
 					local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -1319,10 +2132,6 @@ function InputController.Init()
 					local isAir = isCharacterAirborne(char, hum, hrp)
 					local kickAct: Types.KickActionType = if isAir then "Volley" else "CurveShoot"
 
-					chargeStartTime = nil
-					currentChargeAction = nil
-					currentChargeContext = nil
-					currentIntentId = nil
 					setLocalWalkSpeed(if isSprinting then Constants.SPRINT_SPEED else Constants.WALK_SPEED)
 					InputController.RequestKick(kickAct, finalCharge, prevIntentId)
 				end
@@ -1376,6 +2185,24 @@ end
 
 function InputController.GetAimDirection(): Vector3
 	return getAimDirection()
+end
+
+function InputController.GetChargeSnapshot(): {
+	isCharging: boolean,
+	intentId: string?,
+	chargeAction: Types.ChargeActionType?,
+	curveSide: Types.CurveSideIntent?,
+	curveStyle: ("Finesse" | "Trivela")?,
+	kickFoot: ("Left" | "Right")?,
+}
+	return {
+		isCharging = chargeStartTime ~= nil,
+		intentId = currentIntentId,
+		chargeAction = currentChargeAction,
+		curveSide = currentChargeCurveSide,
+		curveStyle = currentChargeCurveStyle,
+		kickFoot = currentChargeKickFoot,
+	}
 end
 
 return table.freeze(InputController)
