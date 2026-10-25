@@ -9,6 +9,21 @@
 
 ---
 
+## Active Follow-Up Task — RF02-LEGACY-ANIM-CLEANUP (Legacy Animation Removal)
+
+- **Execution Contract:** [`legacy-animation-removal-HANDOFF.md`](../assets/legacy-animation-removal-HANDOFF.md) & [`review-021.md`](../assets/review-021.md)
+- **Status:** **READY_FOR_REVIEW (Implementer claim; pending independent Codex review & local commit)**
+- **Report:** [`legacy-animation-removal-report-001.md`](../assets/legacy-animation-removal-report-001.md)
+- **Manifest:** [`legacy-animation-removal-manifest.md`](../assets/legacy-animation-removal-manifest.md)
+- **Scope & Engine Delivery:**
+  - Full recoverable before-state backup stored at `C:/Users/Stang/cage-zero-cleanup-backups/legacy-anim-cleanup-20261025-2115/` ([`BACKUP_METADATA.json`](file:///C:/Users/Stang/cage-zero-cleanup-backups/legacy-anim-cleanup-20261025-2115/BACKUP_METADATA.json)).
+  - Exact 6 repo files deleted (R01–R06: `R6AnimationController.luau`, `RigAnimationConfigs.luau`, `R6FootballPoseData.luau`, `R6FootballPosePlayer.luau`, `animation-library.json`, `animation-library.delta-agycage.json`). *(Note: Removed raw assets remain retrievable from Git ref `9fbce58eb90ed6b7e6a39b00a5744455ee639811`).*
+  - Exact 4 Studio targets deleted in `Cage-Zero` (`PlaceId = 137721422246269`): `R6AnimationController`, `RigAnimationConfigs`, `PlayerActionPoseConfigs`, and `ServerStorage.MotionToolsRigs.R6_Rig.Animate` (including 9 child Animation instances).
+  - Preserved boundaries: `R6_Rig` Model body/Humanoid/Animator, orphan test modules (`Tier1_PlayerActions`, `TestRunner`), `CageZeroStandardR6Rig`, active R15 preview rig (`Workspace.PreviewRigs.PreviewRig_R15_Boy_Height30`), and Argon's new R15 motion assets (`release-first/assets/animations/idle-r15/`) strictly intact.
+  - Zero modifications to protected `src/` runtime scripts. Studio confirmed in `Edit` mode. No Git staging, committing, or pushing by Flash.
+
+---
+
 ## Active Follow-Up Task — RF02-CAMERA-OFF (Temporary Normal Camera)
 
 - **Execution Contract:** [`camera-normal-temporary-HANDOFF.md`](../assets/camera-normal-temporary-HANDOFF.md)

@@ -1,5 +1,14 @@
 # RF-02: Core Football & R15 Foundation — Tasks
 
+## Active Legacy Animation Removal Task — RF02-LEGACY-ANIM-CLEANUP
+
+> Controller review021 locks exact 6 repo files + 4 Studio targets for legacy R6 animation cleanup after explicit Argon STUDIO_RELEASED and confirmed independence of new R15 Idle assets. [Review021](../assets/review-021.md).
+
+- [x] LA-01: Full recoverable before-state backup of 6 repo files and 4 Studio targets (including full JSON subtree serialization with 9 child Animation IDs) in `C:/Users/Stang/cage-zero-cleanup-backups/legacy-anim-cleanup-20261025-2115/` ([`BACKUP_METADATA.json`](file:///C:/Users/Stang/cage-zero-cleanup-backups/legacy-anim-cleanup-20261025-2115/BACKUP_METADATA.json)).
+- [x] LA-02: Delete exact 6 repo files (R01–R06: `R6AnimationController.luau`, `RigAnimationConfigs.luau`, `R6FootballPoseData.luau`, `R6FootballPosePlayer.luau`, `animation-library.json`, `animation-library.delta-agycage.json`) after pre-hashes matched 100%. *(Raw files retrievable from commit `9fbce58eb90ed6b7e6a39b00a5744455ee639811`).*
+- [x] LA-03: Delete exact 4 Studio DataModel targets (`R6AnimationController`, `RigAnimationConfigs`, `PlayerActionPoseConfigs`, `ServerStorage.MotionToolsRigs.R6_Rig.Animate` subtree with 9 old Animations) while preserving `R6_Rig` Model, Humanoid, Animator, orphan test scripts, `CageZeroStandardR6Rig`, active R15 preview rig (`PreviewRig_R15_Boy_Height30`), and Argon's `idle-r15/` assets.
+- [x] LA-04: Verify post-deletion DataModel state and protected source hashes (5 core runtime scripts unchanged from `9fbce58`); deliver [legacy-animation-removal-report-001.md](../assets/legacy-animation-removal-report-001.md); READY_FOR_REVIEW dispatched to Codex w2:p43; STOP enforced before Git actions.
+
 ## Checkpoint and temporary camera task
 
 > Controller review020 verifies frozen2-file camera-off source and current Studio Server-template parity for scoped local checkpoint. Advanced camera remains afterIdle. Current Studio observed Play; preview writer must establish safe Edit release. [Review020](../assets/review-020.md).
