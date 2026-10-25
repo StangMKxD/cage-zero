@@ -1,17 +1,18 @@
 # Spec 03 — การ์ดนักเตะหลาย Tier, Custom Rig, Skill Moves และฟรีคิก FC27
 
-> ผู้ใช้ยืนยัน Custom R6 ตลอด Phase 1 เมื่อ 2026-10-20 และให้ Codex ปรับแผน/architecture; เป็น accepted design ไม่ใช่ implementation approval ส่วน Phase 2 ยังไม่กำหนดการเปลี่ยน rig [แผน 00](../plan/phase-01-gameplay-demo/00-bootstrap-and-rig/plan.md) / [Architecture](../design/architecture-and-network.md#5-phase-1-runtime--custom-r6)
+> **Owner Directive 2026-10-25 (Release-First Target Rig — Player Avatar R15 Equal Size):** คำสั่ง Owner ยกเลิก legacy 02/03 (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) เพื่อเริ่ม [Release-First Track](../plan/phase-01-gameplay-demo/release-first/plan.md) บน **Player Avatar R15 (Normalized to Same Body Dimensions)** (ผู้เล่นใช้ Avatar ตนเองแต่ถูก Normalize ขนาดและมิติ Collision/Contact geometry ให้มีขนาดเท่ากันทั้งหมด แทนที่ game-owned Custom Blocky R15 เดิม; ขนาดร่างกายไม่เปลี่ยนตาม Stats/Cards; รักษารูปลักษณ์ผู้เล่นแต่บังคับขนาดร่างกายเท่ากันทั้งหมด); โครงสร้าง R6 ด้านล่างคงไว้เป็นประวัติศาสตร์อ้างอิงของ legacy 00/01/02
 
-## 1. โครงกระดูกมาตรฐานเดียว (Single Standard Custom Rig)
-- **ห้ามโหลดโมเดลอวาตารผู้เล่นจาก Roblox มาลงสนามเด็ดขาด**
-- Phase 1 ใช้ Custom R6 มาตรฐานเดียว: 6 visible parts + HumanoidRootPart และ 6 Motor6Ds ไม่ใช่เปลี่ยน Enum ของ skeleton R15; เกมกำหนด PrimaryPart=HumanoidRootPart
-- ใช้ R6 standard locomotion ผ่าน Animator และเก็บ config/source ใน repo; ไม่ใช้ R15 clips หรือ animation pack ส่วนตัว
-- scale จาก base sizes/joints และ ground clearance ของ R6 ไม่คัดสูตร HipHeight ของ R15; แผน 00 ไม่เพิ่ม stats/กาชา
-- ปรับค่า `HeightScale` และ `WidthScale` ตามข้อมูลการ์ดนักเตะต้นแบบเป็น Easter Egg โดยเชื่อมโยงกับ 5 Character Archetypes ของเกม:
-  - นักเตะอิงเมสซี่ (`Leon`): `HeightScale = 0.92` → ต้นแบบสาย **Cage Playmaker** (เพดานสกิล 5★)
-  - นักเตะอิงเนย์มาร์ (`Ney`): `HeightScale = 0.98` → ต้นแบบสาย **Speedster Striker** (เพดานสกิล 4★)
-  - นักเตะอิงโรนัลโด้ (`Ronan`): `HeightScale = 1.03` → ต้นแบบสาย **Power Target** (เพดานสกิล 3★) และ **Sweeper Destroyer** (เพดานสกิล 3★)
-  - นักเตะอิงฮาแลนด์/ฟานไดจ์ค (`Vandik`): `HeightScale = 1.08` → ต้นแบบสาย **Iron Stopper** (เพดานสกิล 2★)
+## 1. โครงกระดูกเป้าหมาย (Release-First Target Rig vs Historical Reference)
+- **Target ใหม่ (Release-First Track):** ใช้ **Player Avatar R15 (Normalized to Same Body Dimensions)** โดยรักษารูปลักษณ์และอัตลักษณ์ Avatar ของผู้เล่นแต่ละคน แต่ระบบจะทำการ Normalization สเกลและมิติกายภาพจริงของร่างกาย (Collision Box, Height, Width, Depth, HipHeight) ให้มีขนาดเท่ากันทุกคนเพื่อความยุติธรรมในสนาม
+  - *ข้อพิจารณาทางเทคนิคเรื่อง Body Packages:* ตัวเลข Scale numbers ใน HumanoidDescription เท่ากันไม่ได้รับประกันขนาดจริงของ arbitrary body packages (เช่น RTHRO, Chibi, Layered Clothing); แผน RF-02 ต้องกำหนด Seam ด้าน Normalization, Attachment points, Bounding Box, และการกรอง Accessory ที่บดบังทัศนวิสัย
+- **Stats/Cards ไม่เปลี่ยนขนาดร่างกาย (No Physical Size Variation from Cards):** สถิติตัวละคร 13 ค่าหรือการ์ดนักเตะจะ **ไม่เปลี่ยนแปลงขนาดทางกายภาพของร่างกาย** ใน Target ใหม่นี้; การปรับแต่ง `HeightScale` / `WidthScale` ตาม Archetype ในอดีต (เช่น 0.92, 1.08) คงไว้เป็นเพียงประวัติศาสตร์อ้างอิง (Historical Reference) ไม่นำมาปรับสเกลขนาดตัวในสนาม
+- **Historical Baseline (Legacy 00/01/02):** เดิมใช้ Custom R6 (6 visible parts + HumanoidRootPart) เก็บไว้เป็นประวัติศาสตร์อ้างอิง ไม่ใช้เป็น target ในการรันงานใหม่
+- scale จาก base sizes/joints และ ground clearance ปรับตาม R15; แผน RF-02 จัดการ Attachment จุดสัมผัสบอล (LeftFootSocket, RightFootSocket, BallDribbleAttachment)
+- **Historical Archetype Scale Presets (ประวัติศาสตร์อ้างอิงด้านตัวคูณ ไม่ใช่ขนาดร่างกายจริง):**
+  - นักเตะอิงเมสซี่ (`Leon`): อ้างอิงสไตล์ **Cage Playmaker** (เพดานสกิล 5★)
+  - นักเตะอิงเนย์มาร์ (`Ney`): อ้างอิงสไตล์ **Speedster Striker** (เพดานสกิล 4★)
+  - นักเตะอิงโรนัลโด้ (`Ronan`): อ้างอิงสไตล์ **Power Target** (เพดานสกิล 3★) และ **Sweeper Destroyer** (เพดานสกิล 3★)
+  - นักเตะอิงฮาแลนด์/ฟานไดจ์ค (`Vandik`): อ้างอิงสไตล์ **Iron Stopper** (เพดานสกิล 2★)
 
 ## 2. ดาว Skill Move และตัวเริ่มต้น — Q22 & DOCS-20261024 Target Specs
 

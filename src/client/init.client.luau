@@ -1,7 +1,7 @@
 --!strict
 -- src/client/init.client.luau
--- MODULE 00: 00-bootstrap-and-rig
--- Client Bootstrapper initializing Network and R6AnimationController (Custom R6)
+-- Client Bootstrapper: Network.Init -> R15AnimationController.Init -> CameraShiftLockController & InputController
+-- R6AnimationController preserved as inert reference; R6 controller does not compete.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -25,31 +25,28 @@ remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
 assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before Network.Init")
 Network.Init(remaining)
 
--- 2. Wait for character folder and R6AnimationController within remaining budget
+-- 2. Wait for character folder and R15AnimationController within remaining budget
 remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
 assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before waiting for character folder")
 local CharacterFolder = script:WaitForChild("character", remaining) :: Folder?
 assert(CharacterFolder ~= nil, "[Client.Init] character folder timed out in script")
 
 remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
-assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before waiting for R6AnimationController")
-local ControllerModule = CharacterFolder:WaitForChild("R6AnimationController", remaining) :: ModuleScript?
-assert(ControllerModule ~= nil, "[Client.Init] R6AnimationController module timed out in character folder")
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before waiting for R15AnimationController")
+local ControllerModule = CharacterFolder:WaitForChild("R15AnimationController", remaining) :: ModuleScript?
+assert(ControllerModule ~= nil, "[Client.Init] R15AnimationController module timed out in character folder")
 
-local R6AnimationController = require(ControllerModule)
+local R15AnimationController = require(ControllerModule)
 
--- 3. Initialize R6 Animation Controller & Action Pose Controller within remaining budget
+-- 3. Initialize R15 Animation Controller within remaining budget
+-- R6AnimationController preserved as inert reference; does not run concurrently.
 remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
-assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before R6AnimationController.Init")
-R6AnimationController.Init(remaining)
+assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before R15AnimationController.Init")
+R15AnimationController.Init(remaining)
 
-local ActionPoseModule = CharacterFolder:FindFirstChild("R6ActionPoseController")
-if ActionPoseModule and ActionPoseModule:IsA("ModuleScript") then
-	local R6ActionPoseController = require(ActionPoseModule)
-	R6ActionPoseController.Init()
-end
+-- Option A Cleanup: R6ActionPoseController excised
 
--- 4. Initialize CameraShiftLockController, InputController & TrainingHUD (Module 02)
+-- 4. Initialize CameraShiftLockController & InputController
 remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
 if remaining > 0 then
 	local ControllersFolder = script:FindFirstChild("controllers")
@@ -66,10 +63,6 @@ if remaining > 0 then
 			InputController.Init()
 		end
 
-		local HudModule = ControllersFolder:FindFirstChild("TrainingHUD")
-		if HudModule and HudModule:IsA("ModuleScript") then
-			local TrainingHUD = require(HudModule)
-			TrainingHUD.Init()
-		end
+		-- Option A Cleanup: TrainingHUD is inert reference material; not initialized
 	end
 end

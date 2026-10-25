@@ -35,83 +35,12 @@ local isReady = false
 local lastError: string? = nil
 local currentEvaluateLocomotion: ((speed: number) -> ())? = nil
 
--- Lazy action pose controller resolution & charging dual-guard
-local actionPoseController: any = nil
-
-local function getActionPoseController(): any?
-	if actionPoseController ~= nil then
-		return actionPoseController
-	end
-
-	local parent = script.Parent
-	if parent then
-		local mod = parent:FindFirstChild("R6ActionPoseController")
-		if mod and mod:IsA("ModuleScript") then
-			local ok, res = pcall(require, mod)
-			if ok and res then
-				actionPoseController = res
-				return actionPoseController
-			end
-		end
-	end
-
-	local starterPlayer = game:GetService("StarterPlayer")
-	local spScripts = starterPlayer:FindFirstChild("StarterPlayerScripts")
-	if spScripts then
-		local client = spScripts:FindFirstChild("Client")
-		if client then
-			local charFolder = client:FindFirstChild("character")
-			if charFolder then
-				local mod = charFolder:FindFirstChild("R6ActionPoseController")
-				if mod and mod:IsA("ModuleScript") then
-					local ok, res = pcall(require, mod)
-					if ok and res then
-						actionPoseController = res
-						return actionPoseController
-					end
-				end
-			end
-		end
-	end
-
-	return nil
-end
-
-local function isCharacterCharging(char: Model?): boolean
-	if not char then
-		return false
-	end
-	if char:GetAttribute("IsCharging") == true then
-		return true
-	end
-	local apc = getActionPoseController()
-	if apc and type(apc.IsCharging) == "function" then
-		local ok, result = pcall(apc.IsCharging)
-		if ok and result == true then
-			return true
-		end
-	end
+-- Option A Cleanup: R6ActionPoseController excised; custom charging & procedural poses are inactive
+local function isCharacterCharging(_char: Model?): boolean
 	return false
 end
 
-local function isProceduralCustomPoseActive(char: Model?): boolean
-	if not char then
-		return false
-	end
-	if char:GetAttribute("IsCustomPoseActive") == true
-		or char:GetAttribute("IsCustomLocomotionActive") == true
-		or char:GetAttribute("IsSliding") == true
-		or char:GetAttribute("IsDashing") == true
-	then
-		return true
-	end
-	local apc = getActionPoseController()
-	if apc and type(apc.IsCustomPoseActive) == "function" then
-		local ok, result = pcall(apc.IsCustomPoseActive)
-		if ok and result == true then
-			return true
-		end
-	end
+local function isProceduralCustomPoseActive(_char: Model?): boolean
 	return false
 end
 
@@ -736,7 +665,7 @@ function R6AnimationController.PlayAction(actionName: string, customFade: number
 	end
 
 	if mapped == "pass" then
-		-- Pass is an authentic low inside-foot push driven authoritatively by R6ActionPoseController (A16).
+		-- Pass animation handled by baseline locomotion.
 		-- Stop any high-kick animation track so it does not distort the inside-foot pass.
 		if activeTracks["kick"] and activeTracks["kick"].IsPlaying then
 			activeTracks["kick"]:Stop(0.05)

@@ -1,18 +1,56 @@
 # Master Test Cases & TDD Acceptance Criteria (`docs/tdd/master-test-cases.md`)
 
-เกณฑ์ปัจจุบันอ้าง Phase 1 plan และ accepted decisions; ผู้ใช้ยืนยัน R6 ตลอด Phase 1 เมื่อ 2026-10-20 Q22ยืนยันฟุตบอลต่อเนื่อง/SkillMovesแทนChoiceแล้วเมื่อ2026-10-20; เกณฑ์ใหม่ด้านล่างเป็นPlanned/NOT RUN แยกจากhistoricalbaseline
+เกณฑ์ปัจจุบันปรับปรุงตามคำสั่ง **Owner Override 2026-10-25**: ยกเลิก legacy 02/03 (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) เพื่อเดินหน้า [Release-First Track](../plan/phase-01-gameplay-demo/release-first/plan.md) บน **Player Avatar R15 (Normalized to Same Body Dimensions)** (`RF-02` ถึง `RF-07`) มุ่งสู่ Public Alpha; เกณฑ์ใหม่ด้านล่างเป็น Planned/NOT RUN แยกจาก historical baseline ชัดเจน
 
 ## กฎเหล็กทั่วไปที่ต้องตรวจทุก Module (Global Invariants)
 - `[INV-01]` ลงมือตาม phase/dependency และ HANDOFF ที่ Owner อนุมัติ implementation; Codex ตรวจหลักฐานอิสระ ไม่ใช้ APPROVED เก่าข้าม gate
-- `[INV-02]` ไม่ใช้ avatar/animation pack ส่วนตัว; Phase 1 ใช้ Single Custom R6 ตลอด phase ส่วน Phase 2 ยังไม่กำหนดการเปลี่ยน rig
+- `[INV-02]` สำหรับ **Release-First Track (`RF-02`..`RF-07`) ใช้ Player Avatar R15 (Normalized to Same Body Dimensions)** ผู้เล่นใช้โมเดล Avatar ของตนเองแต่ถูก Normalization ให้ขนาดมิติร่างกายและ Collision/Contact geometry เท่ากันทั้งหมด (Scale numbers เท่ากันไม่รับประกันขนาดจริงของ arbitrary body packages จึงต้องมีระบบ Normalization; ขนาดไม่เปลี่ยนตาม Stats/Cards); R6 เดิมคงไว้เป็น historical reference
 - `[INV-03]` ห้ามมีระบบรองเท้าสตั๊ด (No Boots/Cleats System) มีเฉพาะชุด `Battle Threads` (คอสเมติกเท่านั้น ไม่มี Trait slots และไม่มีหิน Trait ใน Target)
 - `[INV-04]` ห้ามให้ `Mutated Gear` เพิ่มสเตตัสในสนาม (เพิ่มเฉพาะราคาขาย, VFX, และตัวคูณ Cash/EXP หลังจบแมตช์)
-- `[INV-05]` Skill Moves/ท่าเข้าสกัดตรวจcost/CD/recoveryบนServer; 16 Innate Traits เป็นคุณสมบัติติดตัวละครเท่านั้น (ผันแปร 0, 1, 2, ... รายการ); Trait ตรวจสอบเงื่อนไขบน Server ไม่คืนผลชนะ Choice จาก baseline
-- `[INV-06]` บอลสัมผัสได้ตลอดทุกDash/Skill ไม่มีI-frame/Choice trigger/สโลว์เปิดดวล/คัตซีนล็อกคู่/timedParry
-- `[INV-07]` ปุ่มตามทีมที่ครองสำเร็จล่าสุดแยกจากactualholder; block/wall/ceilingไม่เปลี่ยนteamcontext ยิง/ส่งต้องมีballreachจริง
-- `[INV-08]` เป้าหมายสกิล 7 ท่าไม่ซ้ำ (1★..5★) ติดตั้ง 3 ช่อง (โดยมี 5 แอนิเมชันเดิมอยู่ระหว่างการปรับแก้ตาม HANDOFF §Q รอการตรวจรับ) ตัวเริ่มต้นเพดานสกิล 5 ดาว ไม่เท่ากับ Tier/Stats; ไม่มีคัตซีนแพ้ชนะหรือสตั้นผลดวล
+- `[INV-05]` Skill Moves/ท่าเข้าสกัดตรวจ cost/CD/recovery บน Server; 16 Innate Traits เป็นคุณสมบัติติดตัวละครเท่านั้น (ผันแปร 0, 1, 2, ... รายการ); Trait ตรวจสอบเงื่อนไขบน Server ไม่คืนผลชนะ Choice จาก baseline
+- `[INV-06]` บอลสัมผัสได้ตลอดทุก Dash/Skill ไม่มี I-frame/Choice trigger/สโลว์เปิดดวล/คัตซีนล็อกคู่/timedParry
+- `[INV-07]` ปุ่มตามทีมที่ครองสำเร็จล่าสุดแยกจาก actual holder; block/wall/ceiling ไม่เปลี่ยน team context ยิง/ส่งต้องมี ball reach จริง; ไม่มี ball teleport หรือ auto-catch (ยกเว้นข้อยกเว้นการรับบอลกลางอากาศที่สัมผัสบอลจริงและผ่านเกณฑ์ความเร็วสัมพัทธ์ตาม Owner Decision; ห้ามการวาร์ปบอลจากระยะไกล)
+- `[INV-08]` Phase 1 Release-First ใช้ 3 Launch Skills บน R15 (Heavy Knock-On, Open Up Fake Shot, Body Feint) ติดตั้ง 3 ช่อง; อีก 4 ท่า (Heel Chop, Sombrero Flick, Lane Change, Elastico) เก็บเป็น catalog reference สำหรับ Phase 2
 - `[INV-09]` หน้าจอ UI ทั้งหมดต้องควบคุมผ่าน `UIManager.luau` ตัวเดียว ห้ามเปิดหน้าต่างซ้อนทับกัน
 - `[INV-10]` การคำนวณสำคัญทั้งหมดต้องเป็น `Server-Authoritative 100%`
+
+---
+
+## เกณฑ์ตรวจรับ Release-First Track (Planned / NOT RUN)
+
+### RF-02: Core Football & R15 Foundation
+- **[TC-RF02-01] R15 Rig & Normalization Integrity:** Player Avatar R15 ถูกโหลดและ Normalize ขนาดร่างกายให้มีมิติ/ความสูงเท่ากันตามเกณฑ์มาตรฐาน, Motor6D joint hierarchy ถูกต้อง, ค่า HipHeight มาตรฐาน, Attachments สัมผัสบอลครบ และไม่มี collision จาก accessories
+- **[TC-RF02-02] Ball Contact, Anti-Teleport & Aerial Reception:** ลูกบอลสัมผัสเท้าด้วย Raycast/Hitbox จริง; บอลไม่ teleport เข้าเท้าจากระยะไกล; ข้อยกเว้นเฉพาะการรับบอลกลางอากาศ (Assisted Aerial Reception) ที่อนุญาตให้ครองบอลและเข้าสู่ Brief Airborne Hold ได้เมื่อชน Hitbox จริงและ relative approach speed อยู่ในเกณฑ์ (หากความเร็วสัมพัทธ์สูงเกินจะสะท้อนเป็น Loose Ball)
+- **[TC-RF02-03] Passing & Shooting:** ส่งบอลแบบ Manual 3D ตามแรงชาร์จ, ปุ่มขอบอลส่งสัญญาณ Marker เท่านั้น (No auto-pass), ยิงตรงและยิงโค้งแยกปุ่ม
+- **[TC-RF02-04] Jump, Air Lean, Brief Hold & Whiff:** Directional Jump ล็อกทิศกลางอากาศ; เมื่อรับบอลกลางอากาศสำเร็จเข้าสู่ Brief Airborne Hold ชั่วครู่เพื่อเล็ง/ง้างยิงก่อนร่วงลงปกติ (ไม่มี I-frame บอลแย่งได้ตลอด); เตะวืดติด Whiff Penalty
+- **[TC-RF02-05] Basic Defense & Target Controls:** ปุ่มควบคุมตรงตามมติ Owner Q6 (LMB: Shoot/Slide, E: Pass/Poke, RMB: Curve/ForwardBodyCheck, MMB: Retired); Slide Tackle พุ่งสกัดต่ำ (พลาดรอลุก), Quick Poke สะกิดบอลระยะประชิด (ไม่มี per-move cooldowns); โกลเซฟได้จากการสัมผัสบอลจริงเท่านั้น ไม่มีการเซฟอัตโนมัติจากการพุ่งถูกทิศทาง
+- **[TC-RF02-06] Profile & Config:** PlayerProfile schema บันทึก DataStore ถูกต้อง, BalanceConfig ควบคุมตัวแปรสมดุลจากส่วนกลาง
+
+### RF-03: R15 Skill Moves & Defense
+- **[TC-RF03-01] 3 Launch Skills:** Heavy Knock-On, Open Up Fake Shot, Body Feint ทำงานบน R15 ตรง Contact Frame
+- **[TC-RF03-02] Counterplay & No I-frame:** ผู้เล่นที่ทำ Skill Move สามารถถูก Slide หรือ Poke แย่งบอลได้กลางท่า
+- **[TC-RF03-03] Slots & Stamina:** ติดตั้งได้ 3 ช่อง และใช้ Stamina ตาม BalanceConfig
+- **[TC-RF03-04] Owner Visual UAT:** ผ่านการตรวจรับทางสายตาจาก Owner รายท่า
+
+### RF-04: Cage Slingshot
+- **[TC-RF04-01] Wall Run:** วิ่งไต่ผนัง Stadium A 4 ด้านได้ราบรื่น ใช้ Stamina ต่อเนื่อง
+- **[TC-RF04-02] Wall Launch:** ดีดตัวออกจากกำแพงด้วยความเร็ว 1.7x Sprint, Windup 0.20s, Landing Recovery 0.20s
+- **[TC-RF04-03] Wall Launch Aerial Reception & Rebound Prediction:** ดีดตัวออกจากกำแพงเข้าชน Hitbox บอลกลางอากาศเพื่อรับบอลครอง (Relative approach speed gated); แสดงเส้นทางวิถีบอลชิ่งผนัง/เพดานและจุดตกล่วงหน้าให้ทุกคนเห็นแบบเรียลไทม์
+
+### RF-05: Character Gacha, Stats & Traits
+- **[TC-RF05-01] 3 Characters & 13 Stats:** ตัวละคร 3 ตัวมีความแตกต่างของสถิติ 13 ค่า (0.90..1.15) ส่งผลต่อ gameplay จริง
+- **[TC-RF05-02] 3–4 Active Traits:** Traits ติดตัวละครทำงานถูกต้องตามเงื่อนไข
+- **[TC-RF05-03] Cash Gacha Persistence:** สุ่มตัวละครด้วย Earned Cash ฝั่ง Server บันทึก DataStore สำเร็จ ไม่เบิ้ล
+
+### RF-06: Match, HUD & Economy
+- **[TC-RF06-01] Casual 2v2 Flow:** แมตช์ 4 ผู้เล่นเริ่ม แข่ง ยิงประตู นับคะแนน และจบการแข่งขันสมบูรณ์
+- **[TC-RF06-02] Concise HUD & Trajectory Guides:** Stamina bar, 3 Skill slots, Scoreboard, Timer ตอบสนองทันที; เส้นวิถีโค้งและจุดตกบอลลอยฟ้าแสดงให้ทุกคนเห็น; Prerelease Aim Preview แสดงเฉพาะคนง้างยิง
+- **[TC-RF06-03] 1 Cosmetic Shop & Reward:** ได้รับ Cash หลังจบแมตช์ ซื้อ Cosmetic 1 รายการและสวมใส่ได้
+
+### RF-07: Publish Gate
+- **[TC-RF07-01] ProcessReceipt Idempotency:** รับชำระเงิน Robux 1 รายการแบบ Idempotent ป้องกันของเบิ้ล
+- **[TC-RF07-02] Multiplayer 4-Player UAT:** เล่นจริง 4 คน ไม่พบบอลหาย บอลวาร์ป หรือบั๊กหลุดเฟรม
+- **[TC-RF07-03] Owner Sign-off:** Owner ตรวจรับและกด Publish สู่ Public Alpha ด้วยตนเอง
 
 ---
 

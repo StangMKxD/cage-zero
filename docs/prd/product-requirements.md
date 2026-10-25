@@ -1,26 +1,26 @@
 # Product Requirements — Cage Zero
 
-Owner Stang; Planner/Reviewer Codex. **Decision Accepted / Delivery Planned** — ผู้ใช้ยืนยัน Q22 “ตรงตามนี้ ปรับแผนและเอกสารได้ (แนะนำ)” เมื่อ2026-10-20 หลังQ1–Q21 อนุญาตเอกสาร/architecture/spec/TDDเท่านั้น ข้อความนี้เป็นapprovalรอบQ22เดิม; Owner2026-10-21อนุญาต02selectiveSandboxadaptationตามplan/HANDOFFล่าสุด ส่วน03ที่เหลือและแผนอื่นยังรอgate งาน00ยึดสัญญาเดิม
+Owner Stang; Planner/Reviewer Codex. **Owner Override 2026-10-25 (Release-First Target):** คำสั่ง Owner ยกเลิก legacy 02/03 (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) และเริ่มต้น [Release-First Track](../plan/phase-01-gameplay-demo/release-first/plan.md) บน **Player Avatar R15 (Normalized to Same Body Dimensions)** (แทนที่ Custom Blocky R15 เดิม; รักษาอัตลักษณ์ผู้เล่นแต่บังคับขนาดร่างกายเท่ากันทั้งหมด; ขนาดไม่เปลี่ยนตาม Stats/Cards) มุ่งสู่ Public Alpha พร้อม Cage Slingshot, 3 Active Skills, 3 ตัวละคร, 13 Outfield Stats, 3-4 Active Traits, Cash Gacha และ Casual 2v2 โดยคงประวัติศาสตร์เดิมไว้ครบถ้วน
 
 ## เป้าหมาย
 
-ฟุตบอลสตรีทกรง3Dแบบต่อเนื่อง เน้นทักษะการเคลื่อนที่ อ่านบอล เลือกจังหวะชิ่ง/ท่าเลี้ยง/เข้าสกัด และเปิดช่องตอบโต้ที่ยุติธรรม Phase1เป็นGameplay Demoพร้อมฉากซ้อม ไม่ต้องมีวงจรแมตช์เต็ม
+ฟุตบอลสตรีทกรง 3D แบบต่อเนื่อง เน้นทักษะการเคลื่อนที่ อ่านบอล เลือกจังหวะชิ่ง/ท่าเลี้ยง/เข้าสกัด และเปิดช่องตอบโต้ที่ยุติธรรม Phase 1 Release-First มุ่งสู่ Public Alpha พร้อมแมตช์ Casual 2v2 และระบบเศรษฐกิจขั้นต่ำที่ปลอดภัย
 
-## ขอบเขต Phase1
+## ขอบเขต Phase 1 Release-First (Active Target)
 
 | ด้าน | ข้อกำหนด |
 | --- | --- |
-| Rig/ตัวทดสอบ | Custom R6/หน้าอนิเมะ ไม่ใช่avatarหรือanimation packผู้เล่น; ตัวพื้นฐาน1ตัว Skill Move5ดาว ไม่เปลี่ยน4scale fixturesและDefault Cardของ00 |
-| สนาม | Aกล่อง4ผนัง Bปาด4มุม8ผนัง CฐานB+ขอบroof45°; base rebounds5รายการ markerไกด์ไม่auto-aim ไม่มีwinnerก่อนทดลอง |
-| การเคลื่อนที่ | เดิน/Sprint/Dash/Stamina/Shift Lock; Directional Jumpล็อกทิศเคลื่อนตัวกลางอากาศ |
-| การเล่นบอล | ยิงตรง/ยิงโค้งปุ่มแยก และPassแบบเดียวเล็ง3D/ปรับแรงจากSandbox ไม่มีLobPass/ปุ่มส่งโด่งแยก; Header/Volley/Blockและยิงส่งจังหวะแรกตามcontact |
-| ปุ่มสลับ | ทีมครองล่าสุดใช้ยิง/ส่ง/ยิงโค้ง ทั้งทีมคงโหมดบุกตอนบอลอิสระ เปลี่ยนฝั่งเมื่ออีกทีมครองสำเร็จ; ฝ่ายรับเริ่มSlideใน02ก่อน; Poke/Shoulderทำภายหลังใน03 |
-| บอล/ปะทะ | hitboxจริงตลอด ไม่มีI-frame; บอลพื้นที่รับไหวแย่งเข้าครองได้ ลูกแรง/สูงบล็อกแล้วเด้งอิสระ; ชนคู่แข่งช้าลง เพื่อนผ่านตัวกันได้ |
-| เกมรับ | รอบ02ดึงSlideจากSandbox พลาดรอลุก; Pokeสั้น/ไวและShoulderด้านข้างยังอยู่03ภายหลัง ไม่ได้ลบจากPhase1 |
-| Skill Moves | เป้าหมาย 7 ท่าไม่ซ้ำ (1★ Heavy Knock-On, 1★ Open Up Fake Shot, 2★ Body Feint, 3★ Heel Chop, 4★ Sombrero Flick, 4★ Lane Change, 5★ Elastico; โดย Drag Back & Turn 2★ และ La Croqueta 3★ เป็นท่าประวัติศาสตร์ที่ปลดระวาง; 5 แอนิเมชันเดิมอยู่ระหว่างปรับแก้รอตรวจรับ visual) เลือกใส่ 3 ช่อง กดช่อง+ทิศตอนเริ่ม มี R6 ท่าร่างอ่านจังหวะได้ |
-| ข้อจำกัดท่า | ดาวจำกัดสิทธิ์ใช้ท่า ไม่การันตีผล; Staminaไม่พอใช้ท่าที่มีต้นทุนไม่ได้; คูลดาวน์แยก+ช่วงจบท่าร่วม; เปลี่ยนชุดก่อนรอบ/หยุดหรือรีเซ็ตซ้อม |
-| Recovery | พลาดแล้วช้าลงและล็อกSkill/Dash/เข้าสกัดซ้ำ ยังเล่นบอลพื้นฐานเมื่อท่าเอื้อ สไลด์รอลุก; แอนิเมชันและลงโทษยิงส่งจังหวะแรกวืดเลื่อนไปPhase2 |
-| ระบบรอบสนาม | โกลคน/AI ฟาวล์และลูกนิ่งFC27 Training/Debugค่าจูน/Dummy อีเวนต์6ชนิด HUD และUAT ตามแผนเจ้าของ |
+| Rig / ตัวละคร | **Player Avatar R15 (Normalized to Same Body Dimensions)** (ผู้เล่นใช้ Avatar ของตนเองแต่ถูก Normalized ขนาดร่างกายและมิติ Collision/Contact geometry ให้เท่ากันทั้งหมด; Scale numbers เท่ากันไม่รับประกันขนาดจริงของ arbitrary body packages จึงต้องมีระบบ Normalization; ขนาดร่างกายไม่เปลี่ยนตาม Stats/Cards; R6 เดิมเก็บไว้เป็นประวัติศาสตร์อ้างอิง) |
+| สนาม & อัตลักษณ์ | **Stadium A (4 ผนังเรียบ + เพดาน)** พร้อมอัตลักษณ์ **Cage Slingshot**: Full Wall Run ไต่กำแพง และ Wall Launch ดีดตัวความเร็วสูงกลางอากาศเพื่อยิง/บล็อก |
+| การเคลื่อนที่ | เดิน/Sprint/Dash/Stamina/Shift Lock; Directional Jump ล็อกทิศทางกลางอากาศพร้อม Air Lean และ Apex Hang-feel |
+| การเล่นบอล | ส่งบอล Manual 3D ตามแรงชาร์จ, ปุ่มขอบอล (Request-Ball) ส่งเฉพาะสัญญาณ Marker **ไม่ auto-pass**, ยิงตรงและยิงโค้งแยกปุ่มชัดเจน, Header/Volley กลางอากาศ |
+| การปะทะ/บอล | ลูกบอลฟิสิกส์จริง ไม่มี teleport เข้าเท้า และไม่มี auto-catch (ยกเว้นข้อยกเว้นการรับบอลกลางอากาศที่สัมผัสบอลจริงและผ่านเกณฑ์ความเร็วสัมพัทธ์ตาม Owner Decision; ห้ามการวาร์ปบอลจากระยะไกล); บอลมี Hitbox ตลอดเวลา ไม่มี I-frame |
+| เกมรับ | Slide Tackle (LMB) พุ่งสกัดต่ำ (พลาดมี Recovery รอลุก) และ Quick Poke (E) สะกิดบอลระยะประชิด; Forward Body Check (RMB ตามมติ Owner Q6; MMB ปลดระวาง) สถานะ Launch Inclusion vs Deferral เป็น **PENDING Owner Decision** (Semantics: พุ่งปะทะด้านหน้า, Strength check, Loose Ball, No Auto-Possession, No I-frame, Recovery Delay) |
+| Skill Moves | **3 Launch Skills บน R15**: Heavy Knock-On (1★), Open Up Fake Shot (1★), Body Feint (2★) ติดตั้งได้ 3 ช่อง มี Stamina cost และ Recovery window; อีก 4 ท่า (Heel Chop, Sombrero Flick, Lane Change, Elastico) เก็บเป็น catalog สำหรับ Phase 2 |
+| ตัวละคร & สถิติ | ตัวละครต้นแบบ 3 ตัว (ไม่มีอาชีพบังคับ), 13 Outfield Base Stats (PAC, SHO, PAS, DRI, DEF, PHY และย่อย ขอบเขต 0.90–1.15), และ 3–4 Active Traits (จาก Framework 16 รายการ) |
+| เศรษฐกิจ & Progression | **Earned Cash Gacha** (สุ่มตัวละครด้วยเงินในเกมเท่านั้น ห้ามใช้ Robux สุ่ม), ร้านค้า Cosmetic 1 รายการ, และบันทึก PlayerProfile แบบ Server Authoritative |
+| แมตช์ & HUD | แมตช์ **Casual 2v2** จบครบวงจร (Kickoff, Goals, Timer 3 นาที, End match), Concise HUD (Stamina, Skill 3 ช่อง, Scoreboard, Timer, Request-ball marker) |
+| Publish Gate | สินค้า Robux ผลลัพธ์แน่นอน 1 รายการ (Optional), ProcessReceipt แบบ Idempotent, Multiplayer UAT 4 คน, Owner เป็นผู้กด Publish |
 
 ## ข้อกำหนดที่คงไว้และสิ่งที่ถูกแทน
 

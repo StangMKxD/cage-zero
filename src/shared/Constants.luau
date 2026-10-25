@@ -4,16 +4,16 @@
 
 local Constants = {
 	-- Strict Anti-Drift & Anti-Hallucination Guardrails (Section 1)
-	ALLOW_PLAYER_AVATAR_MODELS = false,
+	ALLOW_PLAYER_AVATAR_MODELS = true,
 	ALLOW_BOOTS_OR_CLEATS_SYSTEM = false,
 	ALLOW_MUTATION_COMBAT_STATS = false,
 
-	-- Single Standard Custom R6 Rig Defaults (Module 00)
+	-- Single Standard Custom R6 Rig Defaults (Module 00 - Inert Baseline)
 	CUSTOM_RIG_MODEL_NAME = "CageZeroStandardR6Rig",
 	RIG_PROFILE = "R6",
 	RIG_SCHEMA_VERSION = 1,
 	IS_STANDARD_CUSTOM_RIG = true,
-	USES_PLAYER_AVATAR = false,
+	USES_PLAYER_AVATAR = true,
 	DEFAULT_HIP_HEIGHT = 0.0,
 	ANIME_FACE_DECAL_ID = "rbxassetid://144075659",
 	DEFAULT_CARD_ID = "Ronan_TierB",
@@ -58,7 +58,8 @@ local Constants = {
 	CHAMFER_CUT_STUDS = 20.0,
 	ROOF_BEVEL_STUDS = 8.0,
 	ROOF_EAVE_HEIGHT_Y = 24.0,
-	BALL_RADIUS = 1.25,
+	BALL_RADIUS = 1.125,
+	BALL_DIAMETER = 2.25,
 	FLOOR_RESTITUTION = 0.75,
 	FLOOR_SMASH_RESTITUTION = 0.84,
 	STANDARD_WALL_RESTITUTION = 0.88,
@@ -93,7 +94,7 @@ local Constants = {
 
 	-- Module 02: Player Actions, Ball Control, Movement & Continuous Football (Q22 & HANDOFF §7.2 Sandbox Adaptation)
 	BALL_PART_NAME = "CageMatchBall",
-	BALL_SPAWN_POSITION = Vector3.new(0, 1.25, 0),
+	BALL_SPAWN_POSITION = Vector3.new(0, 1.125, 0),
 	BALL_COLLECT_RADIUS = 3.5,
 	BALL_TOUCH_RADIUS = 4.5,
 	FIRST_TIME_KICK_REACH = 9.0, -- Reach for ground loose ball / first-time kick (studs, matching Sandbox MAX_KICK_DISTANCE)

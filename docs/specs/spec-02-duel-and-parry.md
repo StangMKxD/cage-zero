@@ -1,5 +1,7 @@
 # Spec 02 — ฟุตบอลต่อเนื่อง, Skill Moves และเกมรับ
 
+> **Owner Directive 2026-10-25 (Release-First on Player Avatar R15 Equal Size):** แผน legacy 02 และ 03 เดิมถูกยกเลิก (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) และแทนที่ด้วย Release-First Track บน **Player Avatar R15 (Normalized to Same Body Dimensions)** (แทนที่ Custom Blocky R15 เดิม; รักษาอัตลักษณ์ผู้เล่นแต่บังคับขนาดร่างกายเท่ากันทั้งหมด; ขนาดไม่เปลี่ยนตาม Stats/Cards): [RF-02 Core Football & R15 Foundation](../plan/phase-01-gameplay-demo/release-first/RF-02/plan.md) และ [RF-03 R15 Skill Moves & Defense](../plan/phase-01-gameplay-demo/release-first/RF-03/plan.md). ท่าเปิดตัว Alpha มี 3 ท่าบน R15 คือ Heavy Knock-On (1★), Open Up Fake Shot (1★), Body Feint (2★) ติดตั้ง 3 ช่อง; อีก 4 ท่า (Heel Chop, Sombrero Flick, Lane Change, Elastico) เก็บเป็น catalog อ้างอิงสำหรับ Phase 2; บอลมี Hitbox กายภาพตลอดเวลา ไม่มี I-frame, ไม่มี ball teleportation และไม่มี auto-catch (ยกเว้นข้อยกเว้นการรับบอลกลางอากาศที่สัมผัสบอลจริงและผ่านเกณฑ์ความเร็วสัมพัทธ์ตาม Owner Decision; ห้ามการวาร์ปบอลจากระยะไกล); ปุ่มควบคุมเกมรับ/รุกตรงตามมติ Owner Q6 (LMB Shoot/Slide, E Pass/Poke, RMB Curve/ForwardBodyCheck [Pending Launch], MMB retired)
+
 ### Latest Owner delta — core FakeShot aim-side ball touch (2026-10-24)
 
 - Grounded attacking LMB/RMB charge + E retains core FakeShot cancel/terminalization behavior, but a valid controlled-ball contact must visibly touch/cut the ball left/right from the AIM side at activation; stationary/cosmetic-only FakeShot is superseded.
@@ -22,6 +24,8 @@ Decision Accepted / Delivery Planned; Stang ยืนยัน Q1–Q22 เม�
 
 - เก็บเดิน/Sprint/Dash/Stamina/Shift Lock ยิงตรง/Passแบบเดียวเล็ง3DและปรับแรงตามSandbox ไม่มีLobPass/ปุ่มส่งโด่งแยก; ยิงโค้งเป็นปุ่มออกลูกโดยตรง แยกจากยิงปกติ ไม่ใช่ modifier ที่ต้องกดคู่ยิง/ส่ง
 - Directional Jump เลือกทิศเคลื่อนตัวก่อนกระโดดและเปลี่ยนทิศกลางอากาศไม่ได้; Header/Volley/บล็อกกลางอากาศใช้ระบบบอลตามแผน02 ไม่มีผลชนะทางอัตโนมัติ
+- **Assisted Aerial Control & Brief Airborne Hold (Owner Decision 2026-10-25):** ข้อยกเว้นชัดเจนต่อข้อห้าม auto-catch เดิมสำหรับการเล่นกลางอากาศ: ผู้เล่นที่กระโดด (Jump) หรือ Wall Launch ที่เข้าสัมผัส Hitbox ของบอลจริงในอากาศ โดยมีความเร็วสัมพัทธ์ (Relative approach speed) อยู่ในเกณฑ์ที่กำหนด จะสามารถจับครองบอลกลางอากาศและเข้าสู่สถานะลอยค้างเล็งชั่วครู่ (Brief airborne hold) เพื่อเล็ง 3D และง้างยิงได้ก่อนกลับสู่การร่วงลงปกติ (หากความเร็วสัมพัทธ์สูงเกินเกณฑ์บอลจะกระดอนออกเป็น Loose Ball; ห้ามการวาร์ปบอลจากระยะไกล; บอลยังคงมี Hitbox แย่งได้ตลอดเวลา ไม่มี I-frame และไม่มี gameplay cooldown)
+- **Goalkeeper Physical Contact Counterplay:** ผู้รักษาประตูต้องเข้าถึงตำแหน่งและมี Physical Contact กับบอลจริงในระยะที่ถูกต้อง การพุ่งถูกทิศทางเพียงอย่างเดียวไม่การันตีการเซฟประตู (No correct-direction guaranteed save)
 - Skill Move 3ช่องแทนปุ่ม Feint เดิม ใช้ปุ่มช่อง+ทิศทางตอนเริ่มท่า ไม่มีคอมโบกดปุ่มเพิ่มเติมตามดาว
 - Choice Duel/หน้าจอเลือกชอยส์/ตารางชนะทาง/สโลว์เปิดดวล/คัตซีนล็อกคู่/สตั้นผู้แพ้จากผลดวลถูกตัดตามQ22 ไม่เปลี่ยนชื่อแล้วเปิดกลไกเดิม
 - บอลมี hitbox และถูกแย่งได้ตลอด ไม่มี I-frame ใน Dash/สกิล/การปะทะ ไม่มี timed Parry

@@ -1,10 +1,14 @@
 # Roadmap — ใช้แผนภายใน Phase โดยตรง
 
-**Phase 1: 00 AUTHORIZED / READY_FOR_AGY; 01–09 PLANNING/PENDING | Phase 2: DEFERRED**
+**Phase 1: Release-First Track (`RF-02`..`RF-07`) PROPOSED / DOCUMENTATION_SYNCED (Restart on Player Avatar R15 Equal Size); Legacy 02/03 CANCELLED_BY_OWNER; 00/01 OPEN; Phase 2: DEFERRED**
 
 ## โครงสร้างและลำดับ
-- [Phase 1 — Gameplay Demo](phase-01-gameplay-demo/plan.md): 00 bootstrap/Rig -> 01 สนาม/บอล -> 02 player actions -> 03 Skill Moves/เกมรับ -> 04 โกล -> 05 ลูกนิ่ง -> 06 สนามซ้อม -> 07 อีเวนต์ -> 08 gameplay UI -> 09 UAT
+- **[Release-First Track (Active Target)](phase-01-gameplay-demo/release-first/plan.md):** [RF-02 Core Football & R15 Foundation](phase-01-gameplay-demo/release-first/RF-02/plan.md) -> [RF-03 R15 Skill Moves & Defense](phase-01-gameplay-demo/release-first/RF-03/plan.md) -> [RF-04 Cage Slingshot](phase-01-gameplay-demo/release-first/RF-04/plan.md) -> [RF-05 Gacha, Stats & Traits](phase-01-gameplay-demo/release-first/RF-05/plan.md) -> [RF-06 Match, HUD & Economy](phase-01-gameplay-demo/release-first/RF-06/plan.md) -> [RF-07 Publish Gate](phase-01-gameplay-demo/release-first/RF-07/plan.md) -> **Public Alpha**
+- [Phase 1 — Gameplay Demo (Historical Structure)](phase-01-gameplay-demo/plan.md): 00 bootstrap/Rig -> 01 สนาม/บอล -> legacy 02/03 (ยกเลิกแล้ว) -> 04–09 (เลื่อน/รวมใน RF track)
 - [Phase 2 — Full Game](phase-02-full-match-and-progression/plan.md): 00 แมตช์ -> 01 ตัดสินเสมอ -> 02 transactions -> 03 สุ่มนักเตะ/stats -> 04 สุ่มสกิล/collection/เศรษฐกิจ -> 05 สุ่มเอฟเฟค -> 06 ตลาด -> 07 meta UI -> 08 integration/UAT
+
+## Owner Override 2026-10-25 — R15 Restart & Release-First Track
+คำสั่ง Owner 2026-10-25 ยกเลิก legacy Plan 02 (`02-player-actions`) และ 03 (`03-dribble-duel`) เดิม (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) เพื่อเปลี่ยน Rig Target เป็น **Player Avatar R15 (Normalized to Same Body Dimensions)** (แทนที่ Custom Blocky R15 เดิม; รักษาอัตลักษณ์ผู้เล่นแต่บังคับขนาดร่างกายเท่ากันทั้งหมด; ขนาดไม่เปลี่ยนตาม Stats/Cards) และเดินหน้าแผนงาน 6 แผนของ Release-First Track มุ่งสู่ Public Alpha โดยเก็บรักษา source code, assets, reviews, และ unresolved findings เดิมไว้เป็นประวัติศาสตร์ครบถ้วน ไม่ใช่การยกเลิก Phase 2 ทั้งหมด
 
 โฟลเดอร์แผนย้ายอยู่ใต้ phase จริงแล้ว ใช้ชื่อ phase + ชื่อแผนเป็นที่อยู่เดียว ไม่มีรหัส feature อีกชุดเพื่อ map ไปยังโฟลเดอร์แผนแบน ๆ เดิม และไม่มีการทำหลายแผนพร้อมกันจากการจัดโครงนี้
 

@@ -1,5 +1,7 @@
 # Spec 05 — Gameplay UI, Skill Loadout และหน้าระบบ Phase2
 
+> **Owner Directive 2026-10-25 (Release-First Concise HUD):** สำหรับ [Release-First Track](../plan/phase-01-gameplay-demo/release-first/plan.md) มุ่งสู่ Public Alpha จะใช้ **Concise HUD** ใน [RF-06](../plan/phase-01-gameplay-demo/release-first/RF-06/plan.md) (หลอด Stamina, สกิล 3 ช่อง, Scoreboard, Timer, Request-Ball marker) สำหรับแมตช์ Casual 2v2 โดยยังไม่เปิด Full Meta UI Shell ของ Phase 2
+
 Decision Accepted / Delivery Planned จากQ22 — 2026-10-20; [UI routing](../design/ui-state-and-routing.md) / [Spec02](spec-02-duel-and-parry.md)
 
 ## Phase1 / 08-gameplay-ui

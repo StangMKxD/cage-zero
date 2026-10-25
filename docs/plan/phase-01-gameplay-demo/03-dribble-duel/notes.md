@@ -1,3 +1,6 @@
+> **OWNER OVERRIDE 2026-10-25 — CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART**
+> ยกเลิกแผน R6 นี้และ task queue เดิม เริ่มแผนใหม่ RF-02/RF-03 บน Custom Blocky R15 ตาม [Owner directive](../release-first/assets/owner-r15-restart.md). เนื้อหาด้านล่างเก็บเป็นประวัติ ไม่ใช่อำนาจ resume/implement ต่อ และไม่ใช่ผล APPROVED/PASS/CLOSED. เก็บโค้ด/แอนิเมชัน/หลักฐานเดิม; รอบนี้แก้เฉพาะเอกสาร ไม่มีสิทธิ์ runtime/Git/publish.
+
 ## Current accepted design — 2026-10-20
 
 Q22อนุมัติเอกสารตามQ1–Q21; ใช้ [Spec02](../../../specs/spec-02-duel-and-parry.md) และplan/tasksปัจจุบันเป็นเจ้าของscope implementationยังPENDING ไม่ขยายงาน00 และไม่เปลี่ยนรายงานhistoricalเป็นผลผ่านของระบบใหม่

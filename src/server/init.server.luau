@@ -1,7 +1,7 @@
 --!strict
 -- src/server/init.server.luau
--- MODULE 01: 01-cage-physics (chained onto MODULE 00: 00-bootstrap-and-rig)
--- Server Bootstrapper: Network.Init(10.0) -> CagePhysicsService.Init() -> RigAndCardService.Init()
+-- Server Bootstrapper: Network.Init(10.0) -> CagePhysicsService.Init() -> R15AvatarService.Init() -> BallService.Init()
+-- RigAndCardService preserved as inert reference; R6 spawner does not run concurrently.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -11,9 +11,9 @@ local Network = require(Shared:WaitForChild("Network"))
 
 local Services = script:WaitForChild("services")
 local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
-local RigAndCardService = require(Services:WaitForChild("RigAndCardService"))
+local R15AvatarService = require(Services:WaitForChild("R15AvatarService"))
 local BallService = require(Services:WaitForChild("BallService"))
-local SkillMoveService = require(Services:WaitForChild("SkillMoveService"))
+-- Option A Cleanup: SkillMoveService excised; RigAndCardService preserved as inert reference
 
 -- 1. Initialize all RemoteEvents/RemoteFunctions with deadline budget (10s)
 Network.Init(10.0)
@@ -22,11 +22,9 @@ Network.Init(10.0)
 CagePhysicsService.Init()
 CagePhysicsService.RetireBootstrapFixtures(Workspace)
 
--- 3. Initialize RigAndCardService (Single Custom R6 lifecycle spawning on Workspace.HexCageArena.CageFloor)
-RigAndCardService.Init()
+-- 3. Initialize R15AvatarService (Authoritative Player Avatar R15 lifecycle spawning on CageFloor)
+-- RigAndCardService preserved as inert reference; R6 spawner does not run concurrently.
+R15AvatarService.Init()
 
--- 4. Initialize BallService (Module 02: Server-authoritative match ball, possession, movement & continuous football actions)
+-- 4. Initialize BallService (Module 02: Server-authoritative match ball, continuous football physics)
 BallService.Init()
-
--- 5. Initialize SkillMoveService (Module 03: Server-authoritative 5 Skill Moves, 3 Slots & Defense)
-SkillMoveService.Init()

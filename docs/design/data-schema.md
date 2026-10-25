@@ -103,9 +103,35 @@ export type MutationData = {
 }
 ```
 
-### 1.6 Target Player Profile Data
+### 1.6 Target Player Profile Data (Phase 1 Release-First & Long-term)
 
 ```luau
+-- โครงสร้างตัวละครรายสำเนา (Per-Copy Character Instance) เพื่อรองรับการเก็บตัวซ้ำได้ครบถ้วน
+export type CharacterInstance = {
+    instanceId: string,                  -- รหัสจำเพาะของแต่ละสำเนา (UUID/Unique ID)
+    characterId: string,                 -- รหัสแม่แบบตัวละคร (เช่น Ronan_TierB)
+    acquiredAt: number,                  -- เวลาที่ได้รับ (Unix timestamp)
+}
+
+-- โครงสร้างรากฐานสำหรับ Phase 1 Release-First (RF-02 / RF-05 / RF-06 / RF-07)
+export type ReleaseFirstPlayerProfile = {
+    schemaVersion: number,
+    cash: number,
+    ownedCharacters: { CharacterInstance }, -- เก็บเป็นรายสำเนาเพื่อคงสิทธิ์ความเป็นเจ้าของ (Duplicate Outcome Policy: PENDING การตัดสินใจของ Owner)
+    selectedCharacterId: string,          -- ตัวละครที่เลือกใช้งาน (อ้างอิง instanceId หรือ characterId ตาม policy)
+    ownedCosmetics: { string },           -- ไอเทมตกแต่งที่ครอบครอง (เช่น สกินบอล/เสื้อ)
+    entitlements: { [string]: boolean },   -- สิทธิ์พิเศษถาวร
+    processedPurchaseIds: { [string]: boolean }, -- Idempotency tracking สำหรับ ProcessReceipt
+    profileRevision: number,              -- Concurrency / Optimistic lock tracking
+}
+
+-- หลักการธุรกรรมเศรษฐกิจที่มั่นคง (Durable Economic Invariants):
+-- 1. Same Committed Debit + Grant + Request Result: การหัก Cash และการมอบตัวละครต้องสำเร็จในธุรกรรมเชิงตรรกะเดียวกันบน Server
+-- 2. Uncertain Outcomes Reconciled: ผลลัพธ์ที่ไม่แน่ชัดเมื่อเน็ตหลุด/Server crash ต้องถูกตรวจสอบและปรับยอดให้ตรงความจริงเมื่อ Reconnect
+-- 3. Retry Not Rerolled: การส่งคำขอเดิมซ้ำต้องคืนผลลัพธ์เดิม ไม่สุ่มผลใหม่
+-- 4. Request Reuse Cannot Grant Twice: ตรวจจับ unique request ID ป้องกันการให้ของซ้ำซ้อน
+
+-- โครงสร้างระยะยาวสำหรับ Phase 2
 export type PlayerProfileData = {
     userId: number,
     cash: number,

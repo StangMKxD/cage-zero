@@ -1,6 +1,6 @@
 # Architecture & Network Contract — Cage Zero
 
-> Current scope: [Phase 1](../plan/phase-01-gameplay-demo/plan.md) ใช้ R6; 00 OPEN / PAUSED_BY_OWNER, 01 OPEN / PENDING_TECHNICAL_REVIEW; Owner2026-10-21ให้AGYต่อยอด02จากfix-001ด้วยselectiveSandboxportตามHANDOFF02 ส่วน03ที่เหลือ–09และPhase2ยังรอgate ไม่อนุญาตcommit/push/merge/deployหรือปิดแผนจากscopeนี้
+> **Owner Directive 2026-10-25 (Release-First Target):** คำสั่ง Owner ยกเลิก legacy 02/03 (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) และเริ่มต้น [Release-First Track](../plan/phase-01-gameplay-demo/release-first/plan.md) บน **Player Avatar R15 (Normalized to Same Body Dimensions)** (แทนที่ Custom Blocky R15 เดิม; รักษาอัตลักษณ์ผู้เล่นแต่บังคับขนาดร่างกายเท่ากันทั้งหมด; ขนาดไม่เปลี่ยนตาม Stats/Cards) (`RF-02` ถึง `RF-07`) มุ่งสู่ Public Alpha; แผน 00/01 ยังเปิด; Phase 2 ยังเลื่อน; ข้อค้าง A-01..A-06 คงสถานะเดิม ไม่นับเป็นผ่าน; รอบนี้เป็นการจัดทำเอกสารเท่านั้น (Documentation Only) ไม่มีการแก้โค้ด/Studio/ทดสอบแอป/Git commit/push/merge/deploy ใด ๆ
 
 ## 0. Source baseline และ Studio MCP
 - Historical source baseline `6d0f273dc174f0c1460e9ed8ce98e5aa4261b182` มีหลายโมดูลอยู่แล้ว; รอบปัจจุบันใช้main617f523+workingtree/source lockในHANDOFF02 การมีโค้ดหรือสถานะAPPROVEDเดิมไม่ใช่หลักฐานรับรองงานปัจจุบัน
@@ -13,9 +13,22 @@
 
 ## 1. เจ้าของระบบใน target architecture
 - Server: rig lifecycle/config และผล gameplay/validation ของบอล/Skill Moves/เกมรับ/โกล/ลูกนิ่ง; ไม่เริ่ม MatchService/economy เพื่อให้ Phase 1 ฝึกได้
-- Client: native input/กล้อง/visual และ R6 animation playback ไม่ตัดสินการครองบอล/ผลcontact/รางวัลเอง
+- Client: native input/กล้อง/visual และ R15 animation playback ไม่ตัดสินการครองบอล/ผลcontact/รางวัลเอง
 - Shared: constants/types/config/network definitions; ระบบเก่าใน source ไม่ใช่ target feature ที่อนุมัติทั้งหมด
 - avatar locomotion ใช้ native client controls/replication; server เป็นเจ้าของ rig/config และตรวจ gameplay ในแผน 02 ไม่บังคับ server network ownership ทุกตัวเพียงเพื่อให้ตรงคำว่า authoritative
+
+### 1.1 Assisted Aerial Control & Trajectory Guidance Architecture (Owner Decision 2026-10-25)
+- **Server Authority on Aerial Reception:**
+  - เซิร์ฟเวอร์เป็นผู้ตัดสินและตรวจสอบการสัมผัสบอลจริง (Hitbox contact) ควบคู่กับความเร็วสัมพัทธ์ในการเข้าหาบอล (Relative approach speed limit; สูตรประมาณการความเร็ว เช่น 3D magnitude $|v_{player} - v_{ball}|$ เทียบกับ radial closing component เป็น PROPOSED implementation choice / technical contract pending)
+  - หากเข้าเงื่อนไข: เซิร์ฟเวอร์มอบสิทธิ์การครองบอลกลางอากาศ (Airborne possession) และเริ่มสถานะลอยค้างเล็งชั่วครู่ (Brief airborne hold; กลไกการหยุดตัวในอากาศและการคืนแรงส่งเป็น PROPOSED technical contract pending)
+  - หากความเร็วสัมพัทธ์สูงเกินเกณฑ์: เซิร์ฟเวอร์คำนวณแรงสะท้อนเป็น Loose Ball / Deflection ไม่มีการครองบอล
+  - **ห้ามการวาร์ปบอล:** ห้าม Client ส่ง remote บังคับดูดหรือเทเลพอร์ตบอลเข้าตัวจากระยะไกลโดยเด็ดขาด
+- **Client Prediction & Visual Trajectory Guidance:**
+  - การพยากรณ์วิถีโค้งและจุดตกของบอล (รวมถึงการชิ่งผนัง/เพดาน 4 ด้าน) คำนวณเพื่อแสดงผลทางสายตา (Visual Guidance) บน Client ทุกคนตามข้อมูลสถานะบอลล่าสุดจาก Server
+  - Prerelease Aim Preview: แสดงวิถีเล็งล่วงหน้าเฉพาะหน้าจอของผู้เล่นที่กำลังง้างยิง (Shooter-only preview)
+  - เส้นวิถีและจุดตกเป็นเพียงไกด์นำสายตา ไม่ใช่แรงฟิสิกส์ล่วงหน้าและไม่รับประกันผลลัพธ์ในอนาคต หากบอลถูกสกัด ปะทะ หรือทิศทางเปลี่ยน เส้นแสดงผลจะถูกคำนวณใหม่หรือล้างทิ้งทันที
+- **Goalkeeper Physical Contact Verification:**
+  - เซิร์ฟเวอร์ตัดสินการเซฟประตูจากตำแหน่ง เวลา และการสัมผัสบอลจริง (Physical reach & contact) ในระยะที่ถูกต้องเท่านั้น การพุ่งถูกทิศทางเพียงอย่างเดียวไม่การันตีการเซฟประตู (No correct-direction guaranteed save)
 
 ## 2. สัญญา Network ใน baseline (`src/shared/Network.luau`)
 ตารางนี้เป็น contract เดิมที่ยังอยู่ใน source ไม่ใช่ contract ใหม่ที่ผ่านการออกแบบครบหลัง grill โดยเฉพาะ Parry/Duel/Choice ที่ถูกแทนตามQ22; แผนที่เลือกลงมือต้องตรวจ/แก้ contract ให้ตรง decisions ก่อน ห้าม reuse endpoint เดิมผิดความหมายหรือเพิ่มเองโดยไม่ระบุในแผน:

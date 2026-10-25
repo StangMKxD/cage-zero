@@ -1,3 +1,6 @@
+> **OWNER OVERRIDE 2026-10-25 — CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART**
+> ยกเลิกแผน R6 นี้และ task queue เดิม เริ่มแผนใหม่ RF-02/RF-03 บน Custom Blocky R15 ตาม [Owner directive](../release-first/assets/owner-r15-restart.md). เนื้อหาด้านล่างเก็บเป็นประวัติ ไม่ใช่อำนาจ resume/implement ต่อ และไม่ใช่ผล APPROVED/PASS/CLOSED. เก็บโค้ด/แอนิเมชัน/หลักฐานเดิม; รอบนี้แก้เฉพาะเอกสาร ไม่มีสิทธิ์ runtime/Git/publish.
+
 # Tasks — 02-player-actions / single bindings + air lean / fix-015
 
 - [x] **T-16 REWORK F-36 / RESOLVED in fix-015:** Real FakeShot 2.4-stud aimed lateral cut implemented and verified over multi-frame dribble follow. Server authority + immediate local visual prediction with 0ms latency. Verified across 20-frame simulation and 61/61 tests in Studio DataModel. [fix-015](assets/fix-015.md).

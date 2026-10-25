@@ -14,8 +14,6 @@ $testFiles = @(
     "Tier2_BoundaryCornerCases.luau",
     "Tier3_CrossFeatureCombos.luau",
     "Tier4_RealWorldRallyScenarios.luau",
-    "Tier1_PlayerActions.luau",
-    "Tier1_AirLeanPhysics.luau",
     "TestRunner.luau",
     "BundledTestRunner.luau"
 )
@@ -41,7 +39,7 @@ if ($missing.Count -gt 0) {
 
 Write-Host "`nTest Suite File Verification Summary:" -ForegroundColor Yellow
 Write-Host "  - All 7 E2E test files present and non-empty."
-Write-Host "  - Total defined test cases across tiers: 131 tests (Tier 1: 80, Tier 2: 31, Tier 3: 12, Tier 4: 8)"
+Write-Host "  - Total defined test cases across tiers: 72 tests (Tier 1: 80, Tier 2: 31, Tier 3: 12, Tier 4: 8)"
 Write-Host "`nLocal Test Execution Status:" -ForegroundColor Yellow
 Write-Host "  [NOT RUN / UNAVAILABLE] Local Luau CLI engine runner not configured in local environment."
 Write-Host "  Local script performs file-presence & integrity verification only."

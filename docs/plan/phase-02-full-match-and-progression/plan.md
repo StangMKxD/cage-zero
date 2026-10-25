@@ -1,8 +1,9 @@
 # Phase 2 — Full Match, Players, Collection and Market
 
-- **State:** DEFERRED / LOCKED_UNTIL_PHASE_1_COMPLETE
+- **State:** DEFERRED / LOCKED_UNTIL_PHASE_1_RELEASE_FIRST_COMPLETE
 - **Owner:** Stang; Planner: Codex; Implementer / Reviewer: ยังไม่มอบหมาย
-- **Hard prerequisite:** [Phase 1](../phase-01-gameplay-demo/plan.md) ส่งมอบครบและผ่าน gate ก่อน ไม่ทำแทรกระหว่างเก็บงาน phase แรก
+- **Directive Note (2026-10-25):** คำสั่ง Owner ยกเลิกเฉพาะ legacy Plan 02/03 เดิม ไม่ใช่การยกเลิก Phase 2 ทั้งหมด; Phase 2 ยังคงอยู่ครบถ้วนและจะเปิดดำเนินการเมื่อ [Phase 1 Release-First Track](../phase-01-gameplay-demo/release-first/plan.md) ส่งมอบ Public Alpha สำเร็จ ทั้งนี้รากฐาน Profile และ Cash Gacha เริ่มต้นได้ถูกดึงไปเตรียมความพร้อมล่วงหน้าใน RF-02, RF-05 และ RF-06 แล้ว
+- **Hard prerequisite:** [Phase 1 Release-First Track](../phase-01-gameplay-demo/release-first/plan.md) ส่งมอบครบและผ่าน gate ก่อน ไม่ทำแทรกระหว่างเก็บงาน phase แรก
 - [Roadmap](../roadmap.md) / [accepted decisions](../phase-01-gameplay-demo/01-cage-physics/notes.md)
 - ใช้เลขและชื่อแผนภายใน phase โดยตรง เก็บแผนระดับสูงไว้ grill เมื่อใกล้ทำ
 

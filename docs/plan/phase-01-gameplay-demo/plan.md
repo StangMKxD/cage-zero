@@ -1,24 +1,34 @@
-# Phase 1 — Gameplay Demo
+# Phase 1 — Gameplay Demo & Release-First Track
 
-- **State:** PHASE_1 / 02_CHANGES_REQUESTED_OWNER_VISUAL; Owner2026-10-21ให้02selectiveportตามHANDOFFล่าสุด 00/01ยังเปิดและพัก 03ส่วนที่เหลือ–09ยังรอgate
-- **Owner:** Stang; Controller/Reviewer: Codex; Implementerของactive02: AGY Teamwork-preview; แผนอื่นตามสัญญาของตน
-- **Baseline:** main @ `617f523bb2529a2ec40bfb1107de5f6a32a208ae` + working tree ตามHANDOFF02
-- ใช้ชื่อโฟลเดอร์แผนด้านล่างโดยตรง ไม่มีชุดรหัส feature แยกจากเลขแผน
-- [Roadmap](../roadmap.md) / [ข้อสรุปกติกา](01-cage-physics/notes.md) / [Phase 2](../phase-02-full-match-and-progression/plan.md)
+- **State:** RELEASE_FIRST_PROPOSED / R15_RESTART; คำสั่ง Owner 2026-10-25 ยกเลิก legacy 02/03 (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) เพื่อเดินหน้า [Release-First Track](release-first/plan.md) บน **Player Avatar R15 (Normalized to Same Body Dimensions)** (`RF-02` ถึง `RF-07`) มุ่งสู่ Public Alpha (แทนที่ Custom Blocky R15 เดิม; รักษารูปลักษณ์ผู้เล่นแต่บังคับขนาดร่างกายเท่ากันทั้งหมด; ขนาดไม่เปลี่ยนตาม Stats/Cards); 00/01 ยังเปิด; Phase 2 เลื่อน
+- **Owner:** Stang; Controller/Reviewer: Codex; Implementer: agyplan w2:p49 (Docs only ในรอบนี้)
+- **Baseline:** main @ `617f523bb2529a2ec40bfb1107de5f6a32a208ae` + working tree ตาม HANDOFF
+- [Roadmap](../roadmap.md) / [Release-First Master Plan](release-first/plan.md) / [ข้อสรุปกติกา](01-cage-physics/notes.md) / [Phase 2](../phase-02-full-match-and-progression/plan.md)
 
-## แผนใน phase — ทำทีละแผนตามลำดับ
-| Plan | ขอบเขต | Delivery |
+## Release-First Track (Active Target — Restart on Player Avatar R15 Equal Size)
+
+| Plan | Scope | Target Delivery |
 | --- | --- | --- |
-| [00-bootstrap-and-rig](00-bootstrap-and-rig/plan.md) | Bootstrap และ Custom R6 | OPEN / PAUSED_BY_OWNER |
-| [01-cage-physics](01-cage-physics/plan.md) | กรง3D A/B/C และฟิสิกส์บอล | OPEN / PENDING_TECHNICAL_REVIEW; localcheckpoint617f523 |
-| [02-player-actions](02-player-actions/plan.md) | บอล/movement/teaminputs/first-time + selectiveSandbox/Slide/เกจ | CHANGES_REQUESTED / OWNER_VISUAL_REJECTED; fix-003manualตามHANDOFF§7 |
-| [03 — Skill Moves/เกมรับ](03-dribble-duel/plan.md) | เป้าหมาย 7 ท่าไม่ซ้ำ/3ช่อง (5 แอนิเมชันอยู่ระหว่างปรับแก้รอตรวจรับ) Quick Poke/Body CheckภายหลังและreuseSlideจาก02 | SCOPE_CONFIRMED; implementationที่เหลือPENDING |
-| [04-goalkeepers](04-goalkeepers/plan.md) | ผู้รักษาประตูคนและ AI | ยังไม่เริ่ม |
-| [05-fouls-and-set-pieces](05-fouls-and-set-pieces/plan.md) | ฟาวล์ ฟรีคิก และจุดโทษ FC27 | ยังไม่เริ่ม |
-| [06-training-ground](06-training-ground/plan.md) | สนามซ้อม Debugจูนค่าการเล่น (13 Stats, 16 Traits, 5 Presets) และเสก/จัดDummy | ยังไม่เริ่ม |
-| [07-dynamic-field-events](07-dynamic-field-events/plan.md) | อีเวนต์สนาม6แบบ | ยังไม่เริ่ม |
-| [08-gameplay-ui](08-gameplay-ui/plan.md) | UI กล้อง และ feedback ของ Demo | ยังไม่เริ่ม |
-| [09-uat](09-uat/plan.md) | UAT — Gameplay Demo | ยังไม่เริ่ม |
+| [RF-02 Core Football & R15 Foundation](release-first/RF-02/plan.md) | Player Avatar R15 Normalized, Ball/Contact, Pass/Shoot/Volley/Whiff, Slide/Poke, Profile & Config | PROPOSED / DOCS_SYNCED |
+| [RF-03 R15 Skill Moves & Defense](release-first/RF-03/plan.md) | 3 Launch Skills (Heavy Knock-On, Open Up Fake Shot, Body Feint), 3 Slots, Stamina/Recovery, Counterplay | PROPOSED / DOCS_SYNCED |
+| [RF-04 Cage Slingshot](release-first/RF-04/plan.md) | Stadium A 4 Walls/Ceiling, Wall Run, Wall Launch, Aerial Intercept/Volley | PROPOSED / DOCS_SYNCED |
+| [RF-05 Gacha, Stats & Traits](release-first/RF-05/plan.md) | 3 ตัวละครต้นแบบ, 13 Outfield Stats, 3–4 Active Traits, Cash Gacha | PROPOSED / DOCS_SYNCED |
+| [RF-06 Match, HUD & Economy](release-first/RF-06/plan.md) | Casual 2v2, Concise HUD, 1 Cosmetic Shop, Match Reward Commit | PROPOSED / DOCS_SYNCED |
+| [RF-07 Publish Gate](release-first/RF-07/plan.md) | Robux Definite Outcome Product, Multi-client UAT, ProcessReceipt, Owner Publish | PROPOSED / DOCS_SYNCED |
+
+## โครงสร้างเดิม (Legacy Plans & Historical Status)
+| Plan | ขอบเขต | Delivery / สถานะปัจจุบัน |
+| --- | --- | --- |
+| [00-bootstrap-and-rig](00-bootstrap-and-rig/plan.md) | Bootstrap และ Custom R6 | OPEN / PAUSED_BY_OWNER (เก็บ Upgrade/Monetization specs) |
+| [01-cage-physics](01-cage-physics/plan.md) | กรง3D A/B/C และฟิสิกส์บอล | OPEN / PENDING_TECHNICAL_REVIEW; บอลฟิสิกส์คงค่าเดิม |
+| [02-player-actions](02-player-actions/plan.md) | บอล/movement/teaminputs/first-time + selectiveSandbox/Slide/เกจ | **CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART** (แทนที่ด้วย RF-02) |
+| [03 — Skill Moves/เกมรับ](03-dribble-duel/plan.md) | เป้าหมาย 7 ท่าไม่ซ้ำ/3ช่อง (5 แอนิเมชันเดิม) | **CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART** (แทนที่ด้วย RF-03) |
+| [04-goalkeepers](04-goalkeepers/plan.md) | ผู้รักษาประตูคนและ AI | เลื่อนไป Phase 2 (Casual 2v2 ไม่บังคับ GK AI) |
+| [05-fouls-and-set-pieces](05-fouls-and-set-pieces/plan.md) | ฟาวล์ ฟรีคิก และจุดโทษ FC27 | เลื่อนไป Phase 2 (ใช้เกมเพลย์ต่อเนื่องใน Alpha) |
+| [06-training-ground](06-training-ground/plan.md) | สนามซ้อม Debugจูนค่าการเล่น (13 Stats, 16 Traits, 5 Presets) และเสก/จัดDummy | รวมเฉพาะ Debug/Config ใน RF-02/RF-05; โหมดซ้อมเต็มเลื่อน |
+| [07-dynamic-field-events](07-dynamic-field-events/plan.md) | อีเวนต์สนาม6แบบ | Wall Rebound รวมใน RF-04; อีเวนต์เต็มเลื่อน |
+| [08-gameplay-ui](08-gameplay-ui/plan.md) | UI กล้อง และ feedback ของ Demo | รวม Concise HUD ใน RF-06; Full UI เลื่อน |
+| [09-uat](09-uat/plan.md) | UAT — Gameplay Demo | รวมเข้ากับ Multi-client UAT ใน RF-07 |
 
 ## Dependency และขอบเขต
 - 00 เตรียม Custom R6/root/spawn contract ก่อน implementation ของ 01; 01 สนามรวม bumper/ramp/back zone และเขตอ้างอิงประตู; 02 รวม movement/บอล/กลางอากาศที่ผู้ใช้เลือกครบ
