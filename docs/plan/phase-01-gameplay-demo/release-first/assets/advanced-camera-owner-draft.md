@@ -1,5 +1,7 @@
 # Owner camera direction — queued AFTER Idle
 
+> **Idle dependency:** Owner accepted RF02_Idle_Ready_R15_v01 preview; canonical clip animates Head and UpperTorso (see review023). Orbit/view input alone must not overwrite Idle pose joints. If future look-at-ball/aim requires head/chest rotation, specify blend/mask/priority and smooth return to accepted Idle. Character/world heading is controlled separately from clip RootPose; do not conflate camera yaw with forced body yaw. This is a planning seam,not new camera implementation permission.
+
 2026-10-25 · Source: Owner describes Illegal Soccer-like viewing/movement and answers camera questions. This is design context, not implementation authorization for advanced camera now.
 
 ## Accepted intent

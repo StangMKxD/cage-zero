@@ -1,5 +1,11 @@
 # RF02-IDLE-DRAFT — Motion Tools connection & one R15 Idle draft
 
+> **Owner acceptance recorded:** Stang personally confirms ผมเช็คแล้ว idleผ่านแล้ว. RF02_Idle_Ready_R15_v01 preview is accepted. [Review023](review-023.md) verifies canonical saved9frame sequence/recipe structure. Preserve the accepted clip; Argon stops and receives no new pose prompts. Local checkpoint permitted after review; no active-player integration or published animation ID is implied. Camera planning must respect animated Head/UpperTorso channels.
+
+> **LATEST Owner communication override — 2026-10-25:** Owner says do not send further prompts to Argon; Owner will inspect the Idle preview first, then explicitly request one review report after acceptance. For this Idle assignment, show outcome/HOW TO PREVIEW or blockers in Argon's own pane and wait; no automatic READY callbacks or repeated Controller pings. This supersedes older automatic push-report clauses below for Argon's Idle work only. Codex must not prompt/poll Argon just to obtain status. Do not infer preview completion or Owner visual acceptance from foundation readiness. Flash's separate cleanup release barrier remains; no permission to delete before valid release/independence evidence.
+
+> **OWNER RELEASE — 2026-10-25:** Owner says พร้อม idle ต่อแล้ว เชื่อมและทำมาเลย ขอดู preview ก่อนนำมาใช้จริง. Controller verified Cage-Zero Studio instance ab5aa575-5e53-41b6-b1ab-e2c8bc7c29c0 is Edit-only; foundation/camera-off committed at9fbce58eb90ed6b7e6a39b00a5744455ee639811. Flash is stopped. Argonw2:p48 now has sole bounded preview-edit ownership on Workspace.PreviewRigs.PreviewRig_R15_Boy_Height30. Prior waiting-for-Owner-Stop/COMMIT_DONE/Flash-release barriers are satisfied. Verify actual target/rig before edits; reuse one existing draft,connect actual Motion Tools,preview first. No active-player Idle integration,source edits,asset upload,publish or other animations. Frame the preview for Owner and report how to play/view it;STOP for feedback after one draft.
+
 2026-10-25 · Owner explicitly requests agycageim/4Argon to connect Motion Tools and prepare Idle. Controller Codex w2:p43; Argon w2:p48; Flash w2:p49 owns ROBLOX Boy height+30% work. Normal prompt, bounded one-draft job, no extra agents.
 
 ## Scope / credit limit
