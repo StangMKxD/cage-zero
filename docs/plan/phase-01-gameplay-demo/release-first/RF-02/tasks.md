@@ -1,5 +1,14 @@
 # RF-02: Core Football & R15 Foundation — Tasks
 
+## Checkpoint and temporary camera task
+
+> Controller review020 verifies frozen2-file camera-off source and current Studio Server-template parity for scoped local checkpoint. Advanced camera remains afterIdle. Current Studio observed Play; preview writer must establish safe Edit release. [Review020](../assets/review-020.md).
+
+Foundation local commit **5ccb53d69568144c4b43458e84d06029d7937557** (review019;no push;Idle draft excluded). No fullRF02 closure.
+- [x] CO-01: Flash disable old custom ShiftLock init in 2 client files (`init.client.luau`, `InputController.luau`), normal camera temporarily active; [contract](../assets/camera-normal-temporary-HANDOFF.md); [camera-normal-temporary-report-001.md](../assets/camera-normal-temporary-report-001.md).
+- [x] CO-02: Narrow sync (100% byte parity), Play smoke passed (CameraType.Custom, MouseBehavior.Default), readback verified, report delivered, SOURCE_FROZEN; independent review before optional local follow-up commit; height/ball fixed.
+- [ ] Future afterIdle: advanced center-reticle/view/movement/shot-facing camera; [Owner draft](../assets/advanced-camera-owner-draft.md),not implemented now.
+
 > **Controller review019:** RF-F21/22/23 verified for frozen pre-Idle foundation checkpoint; Owner authorizes local commit,no push. Height accepted; basic gameplay/Idle and advanced camera not included. [Review](../assets/review-019.md). Do not infer fullRF02 closure from implementer checkboxes below.
 
 ## Active Owner assignment — RF02-R15-BASE

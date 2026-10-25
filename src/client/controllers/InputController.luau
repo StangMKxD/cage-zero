@@ -6,7 +6,7 @@
 local Players = game:GetService("Players")
 
 local CharacterFolder = script.Parent.Parent:WaitForChild("character")
-local CameraShiftLockController = require(script.Parent:WaitForChild("CameraShiftLockController"))
+-- CameraShiftLockController preserved as inert reference; disabled temporarily per Owner choice (normal camera)
 
 local isInitialized = false
 local InputController = {}
@@ -46,8 +46,7 @@ function InputController.Init()
 	end
 	localPlayer.CharacterAdded:Connect(bindChar)
 
-	-- Initialize camera ShiftLock controller (owns native LeftAlt binding; no new keybindings)
-	CameraShiftLockController.Init()
+	-- CameraShiftLockController preserved as inert reference; not initialized (normal camera temporarily)
 end
 
 return table.freeze(InputController)

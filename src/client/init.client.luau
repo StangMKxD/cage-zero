@@ -46,16 +46,12 @@ R15AnimationController.Init(remaining)
 
 -- Option A Cleanup: R6ActionPoseController excised
 
--- 4. Initialize CameraShiftLockController & InputController
+-- 4. Initialize InputController (CameraShiftLockController disabled temporarily per Owner choice; normal Roblox camera)
 remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
 if remaining > 0 then
 	local ControllersFolder = script:FindFirstChild("controllers")
 	if ControllersFolder and ControllersFolder:IsA("Folder") then
-		local ShiftLockModule = ControllersFolder:FindFirstChild("CameraShiftLockController")
-		if ShiftLockModule and ShiftLockModule:IsA("ModuleScript") then
-			local CameraShiftLockController = require(ShiftLockModule)
-			CameraShiftLockController.Init()
-		end
+		-- CameraShiftLockController preserved as inert reference; not initialized (normal camera temporarily)
 
 		local InputCtrlModule = ControllersFolder:FindFirstChild("InputController")
 		if InputCtrlModule and InputCtrlModule:IsA("ModuleScript") then

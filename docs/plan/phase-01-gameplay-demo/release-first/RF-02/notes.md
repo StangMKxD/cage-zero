@@ -9,6 +9,22 @@
 
 ---
 
+## Active Follow-Up Task — RF02-CAMERA-OFF (Temporary Normal Camera)
+
+- **Execution Contract:** [`camera-normal-temporary-HANDOFF.md`](../assets/camera-normal-temporary-HANDOFF.md)
+- **Status:** **SOURCE_FROZEN_AWAITING_REVIEW_AND_LOCAL_COMMIT (Implementer claim; pending independent Codex review & local commit)**
+- **Report:** [`camera-normal-temporary-report-001.md`](../assets/camera-normal-temporary-report-001.md)
+- **Scope & Engine Delivery:**
+  - Owner Q3 Decision: Disabled legacy custom `CameraShiftLockController` initialization in `src/client/init.client.luau` and `src/client/controllers/InputController.luau`.
+  - Legacy `CameraShiftLockController.luau` preserved as an inert reference.
+  - Studio Edit readback parity verified (100% byte & SHA256 match).
+  - Play smoke test verified: `CameraType = Enum.CameraType.Custom`, `CameraSubject = Humanoid`, `MouseBehavior = Default` (normal free cursor), `shiftLockActive = false`.
+  - Height (~6.708 studs), ROBLOX Boy package, and ball (radius 1.125 / diameter 2.25) intact. 0 Lua errors.
+  - Advanced center-reticle / free-look camera design safely queued for post-Idle in [`advanced-camera-owner-draft.md`](../assets/advanced-camera-owner-draft.md).
+  - **SOURCE FROZEN:** No Git stage, commit, or push by Flash.
+
+---
+
 ## Active Owner Milestone — RF02-R15-BASE (Player Avatar R15, ROBLOX Boy +30% Height, & Smaller Ball)
 
 - **Execution Contract:** [`r15-player-and-ball-HANDOFF.md`](../assets/r15-player-and-ball-HANDOFF.md) & [`review-018.md`](../assets/review-018.md)
