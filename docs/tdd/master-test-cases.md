@@ -1,3 +1,5 @@
+> **CURRENT TARGET 2026-10-26 — Street Football:** [authoritative Phase1 plan](../plan/phase-01-gameplay-demo/release-first/plan.md) supersedes conflicting target/delivery statements below (retained as historical/reference). Phase1: R15/core ball + kick/slide/poke/block/normal body-check, separate CombatHP/stun/I-frame, gauge+ground/air Orbs, **RF04 walls BEFORE six Supers**, one-use timed armed Super/manual aim/no homing/no guaranteed goal, capped gauge-rate-only per-copy earnedCash upgrade,2v2/tiedGoldenGoal. Remove foul/free kick/cards/penalties/regular overtime/SuperMastery power scaling. Extra dribble skills/gacha/13stats/Traits/advanced aerial hold+guides/shops deferredPhase2; walls remainPhase1. Owner approved docs commit and checklist7 dribble/receive plus later explicit high momentumjump/four-way airlean and relevant locomotion fixes now; no blanket source implementation/commit/push/publish authority. Owner first6 visual accepted; technical review remains separate. Historical code/reviews/findings not erased.
+
 # Master Test Cases & TDD Acceptance Criteria (`docs/tdd/master-test-cases.md`)
 
 เกณฑ์ปัจจุบันปรับปรุงตามคำสั่ง **Owner Override 2026-10-25**: ยกเลิก legacy 02/03 (`CANCELLED_BY_OWNER / SUPERSEDED_FOR_R15_RESTART`) เพื่อเดินหน้า [Release-First Track](../plan/phase-01-gameplay-demo/release-first/plan.md) บน **Player Avatar R15 (Normalized to Same Body Dimensions)** (`RF-02` ถึง `RF-07`) มุ่งสู่ Public Alpha; เกณฑ์ใหม่ด้านล่างเป็น Planned/NOT RUN แยกจาก historical baseline ชัดเจน
@@ -169,3 +171,17 @@ Ownerdelta2026-10-21เพิ่มacceptance02 (ทุกข้อNOT RUNหล
 - **[TC-P1-02-15]** บอลแรงชนพื้นแล้วsolverคืนvelocityขึ้นต้องยังเด้ง ไม่ถูกgroundsettleตัด ส่วนบอลนิ่ง/lowenergyหยุดได้; jumpผู้เล่นจริงห้ามหักvelocityแนวราบ ไม่ตรวจแค่mockoverride; callbacksของcharacterเก่าไม่แก้ตัวใหม่
 
 OwnervisualREJECTEDหลังfix-002ไม่หายไปเพราะ40/40Edit เมื่อทำfix-003ต้องfreshEdit/Live/visual/affected01regressionผูกhashปัจจุบัน เอฟเฟกต์เต็มแผนอื่นไม่เป็นblocker02
+
+## Street Football acceptance matrix — 2026-10-26 current target
+All rows PLANNED / NOT RUN for new systems; Owner old visual acceptance is not a runtime security test.
+| Group | Required cases | Task |
+| --- | --- | --- |
+| Contact/HP | kick flinch retains ball including zeroHP; slide fall loose; normal body-check miss; no combat death; regen/stun1..1.5; protection rejects damage+gauge; same victim NEW action afterI-frame legal | T05 |
+| Gauge/Orb | event replay/one collision repeated callbacks; source earn budgets; victim>attacker at different upgrades;0/99/100 clamps; ground+air Orb; ball/player simultaneous claim; stale/unknown last toucher leaves Orb | T06 |
+| Walls before Super | wallrun/launch/contact receive/finish/counterplay/ceiling/corner/noI-frame | T07 |
+| Six Supers | each manual aim/no homing/telegraph/miss;100 arm debit,one use,expiry,duplicate execute,reset/leave; Frost protection; Overdrive envelope; Breaker knockback/cage cap; seeded Knuckle fast multi-bounce | T08 |
+| Upgrade | earnedCash-only,selected owned copy,cap/rate-only,no power/stamina changes; concurrent debit/retry/rejoin returns same durable result | T09 |
+| Match | lead timeout end,tie->GG,first goal atomic win,no penalties/overtime/TeamA tied winner; clock-boundary goal,double sensor,disconnect cancellation,shutdown/reward replay/reset | T10 |
+| Momentumjump/Airlean | stand<walk<sprint forward distance,higherjump,vy slows apex then falls,4-way lean/neutral,ceiling/ledge/rapidjump/death cleanup; aim seam only/no shooting change; fake boosted velocity rejected | active checklist7 delta |
+| Network/performance |4clients+50..150ms,simultaneous contact,NaN/inf/malformed/spam,stale generation; same baseline step time/query/network/instances; publish clip IDs/permissions | each +T12 |
+No removed foul/free-kick/card/penalty/overtime tests are release requirements; old cases below/above are historical where conflicting. Exact commands and outcomes required per task; no fabricated PASS.

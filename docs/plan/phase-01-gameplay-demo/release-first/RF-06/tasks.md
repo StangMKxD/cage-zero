@@ -1,3 +1,5 @@
+> **2026-10-26 ROUTING:** This checklist below is historical and superseded where conflicting. Current feature tasks/state are ONLY in [single live RF02 board](../RF-02/tasks.md), with scope in [Master](../plan.md). No execution/approval inferred from old checkboxes.
+
 # RF-06: Match, HUD & Economy — Tasks
 
 - **Plan:** [RF-06 Plan](plan.md)

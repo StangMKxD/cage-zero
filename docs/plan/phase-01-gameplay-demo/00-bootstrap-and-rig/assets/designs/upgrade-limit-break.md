@@ -1,3 +1,5 @@
+> **SUPERSEDED TARGET 2026-10-26:** This historical stat/stamina/awakening upgrade design is NOT the active implementation contract. [Current design](../../../release-first/assets/street-football-design.md) and Release-First plan restrict upgrade to capped Super Gauge earn rate only; no Super damage/range/duration/stat/stamina benefit. Phase1 earnedCash-only deterministic per-copy upgrade, no duplicate burn. Preserve historical decisions; no runtime migration claimed.
+
 # Cage Zero — Upgrade & Limit Break Architecture Spec (`+0` to `+5` Awakening & Stamina Pipeline)
 
 - **Task Assignment:** `DOCS-ARCH-20261024` — Foundation Architecture Extension under Plan 00
