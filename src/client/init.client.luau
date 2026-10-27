@@ -59,6 +59,40 @@ if remaining > 0 then
 			InputController.Init()
 		end
 
+		local SprintCtrlModule = ControllersFolder:FindFirstChild("SprintController")
+		if SprintCtrlModule and SprintCtrlModule:IsA("ModuleScript") then
+			local SprintController = require(SprintCtrlModule)
+			SprintController.Init()
+		end
+
+		local AirMovementModule = ControllersFolder:FindFirstChild("AirMovementController")
+		if AirMovementModule and AirMovementModule:IsA("ModuleScript") then
+			local AirMovementController = require(AirMovementModule)
+			AirMovementController.Init()
+		end
+
 		-- Option A Cleanup: TrainingHUD is inert reference material; not initialized
 	end
 end
+
+-- 5. Initialize CameraPreviewController & MovementHeadingPreviewController (Studio-only prototype for Owner review)
+task.spawn(function()
+	local SharedConfigs = Shared:WaitForChild("configs", 5.0) :: Folder?
+	local CamPreviewConfigModule = SharedConfigs and SharedConfigs:WaitForChild("CameraPreviewConfigs", 5.0) :: ModuleScript?
+	if CamPreviewConfigModule and CamPreviewConfigModule:IsA("ModuleScript") then
+		local CameraPreviewConfigs = require(CamPreviewConfigModule)
+		if CameraPreviewConfigs.IsActiveInCurrentContext() then
+			local ControllersFolder = script:WaitForChild("controllers", 5.0) :: Folder?
+			if ControllersFolder and ControllersFolder:IsA("Folder") then
+				local CamPreviewModule = ControllersFolder:WaitForChild("CameraPreviewController", 5.0) :: ModuleScript?
+				local MovePreviewModule = ControllersFolder:WaitForChild("MovementHeadingPreviewController", 5.0) :: ModuleScript?
+				if CamPreviewModule and CamPreviewModule:IsA("ModuleScript") and MovePreviewModule and MovePreviewModule:IsA("ModuleScript") then
+					local CameraPreviewController = require(CamPreviewModule)
+					local MovementHeadingPreviewController = require(MovePreviewModule)
+					CameraPreviewController.Init()
+					MovementHeadingPreviewController.Init()
+				end
+			end
+		end
+	end
+end)

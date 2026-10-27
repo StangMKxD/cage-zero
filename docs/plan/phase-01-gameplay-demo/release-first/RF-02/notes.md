@@ -9,6 +9,26 @@
 
 ---
 
+## Active Follow-Up Task — RF02-CAMERA-PREVIEW (Third-Person Free Orbit, Reticle & Direction-Latch Locomotion)
+
+- **Execution Contract:** [`camera-preview-HANDOFF.md`](../assets/camera-preview-HANDOFF.md)
+- **Status:** **SOURCE_FROZEN_AWAITING_REVIEW_AND_LOCAL_COMMIT (Implementer claim; Owner tested & verified live; pending independent Codex review & local commit)**
+- **Report:** [`camera-preview-report-001.md`](../assets/camera-preview-report-001.md)
+- **Scope & Engine Delivery:**
+  - Owner Directives Verified Live:
+    1. **Free Orbit View (Scriptable Camera):** Third-person orbit around character, raycast occlusion query against arena walls/roof.
+    2. **Direction-Latch Locomotion:** Holding WASD preserves run heading while camera orbits; chord change immediately re-latches direction to current yaw. `AutoRotate = true` preserved so engine rotates character naturally; zero artificial CFrame/joint overrides.
+    3. **ShiftLock-Style White Reticle (`< · >`):** Pure white centered reticle with dark outline matching Owner reference (`media_1792941995887_13f3aca1.png`).
+    4. **Mouse Capture & Dual-Monitor Guard:** Click-to-Capture prevents trapping cursor on game launch; `MouseIconEnabled = false` hides OS mouse; continuous lock clamp in RenderStep prevents mouse escaping to secondary monitor during sweeps; `LeftShift` toggles; `Esc` / unfocus releases cleanly.
+    5. **Mouse Wheel Zoom:** Unconstrained smooth zoom from 3.0 to 35.0 studs.
+    6. **Clean Player Head:** Display name and health bar hidden (`DisplayDistanceType = None`, `NameDisplayDistance = 0`).
+  - Studio Parity & Scope: Exactly 3 new files (`CameraPreviewConfigs.luau`, `CameraPreviewController.luau`, `MovementHeadingPreviewController.luau`) and 1 modified bootstrapper (`init.client.luau`) synchronized with 100% byte/SHA256 readback parity.
+  - Protected Baseline: 5 core runtime scripts untouched; R15 avatar configs, height (+30%), ball physics, and approved idle assets preserved.
+  - Studio confirmed in `Edit` mode.
+  - **SOURCE FROZEN:** Implementer source edits are frozen. Codex will independently review and commit.
+
+---
+
 ## Active Follow-Up Task — RF02-LEGACY-ANIM-CLEANUP (Legacy Animation Removal)
 
 - **Execution Contract:** [`legacy-animation-removal-HANDOFF.md`](../assets/legacy-animation-removal-HANDOFF.md) & [`review-021.md`](../assets/review-021.md)

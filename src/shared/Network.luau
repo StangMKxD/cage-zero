@@ -30,6 +30,7 @@ local RemoteNames = table.freeze({
 	InventoryEquipRequest = "InventoryEquipRequest",
 	SummonRequest = "SummonRequest",
 	TradeActionRequest = "TradeActionRequest",
+	SprintIntentRequest = "SprintIntentRequest",
 })
 
 local Definitions: { [string]: RemoteDefinition } = table.freeze({
@@ -104,6 +105,12 @@ local Definitions: { [string]: RemoteDefinition } = table.freeze({
 		kind = "RemoteEvent" :: RemoteKind,
 		direction = "ClientToServer" :: RemoteDirection,
 		moduleScope = "Module 06, 07",
+	}),
+	SprintIntentRequest = table.freeze({
+		name = "SprintIntentRequest",
+		kind = "RemoteEvent" :: RemoteKind,
+		direction = "ClientToServer" :: RemoteDirection,
+		moduleScope = "Module RF-02",
 	}),
 })
 

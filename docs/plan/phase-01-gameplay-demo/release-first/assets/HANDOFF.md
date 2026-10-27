@@ -1,5 +1,7 @@
 # Release-First — documentation migration assignment
 
+> **Latest Owner camera-preview authorization:** after accepting Idle,Owner requests view-only orbit/center reticle/maintained run heading. Flash executes only [camera-preview-HANDOFF.md](camera-preview-HANDOFF.md),Studio-only prototype. Argon/Idle files stay stopped/protected. No shot/head/chest/root pose writes or production rollout;one report then Owner review.
+
 > **Latest Owner local-commit gate:** Owner authorizes Codex to make local task-scoped commit(s) of reviewed foundation once blocking findings pass, before Idle starts. No push. Flash must deliver final hashes/report and SOURCE_FROZEN; Argon holds new Idle authoring/Studio changes until COMMIT_DONE. No AGY staging/commit authority. Current review018 lifecycle findings must be corrected before commit. Exclude unfinished Idle artifacts and preserve unrelated dirty work; no blanket git add.
 
 > **LATEST OWNER AUTHORIZATION — Player Avatar R15 + ball size:** Owner requests R15 using their own avatar and a slightly smaller ball. Execute only [r15-player-and-ball-HANDOFF.md](r15-player-and-ball-HANDOFF.md): scoped spawn/normalization/native-baseline migration,10% radius preview adjustment,sync and bounded smoke. Overrides prior no-R15/protected-rig wording only within that allowlist. No custom Idle/new football gameplay/Git/publish; STOP for Owner visual direction after delivery.
