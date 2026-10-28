@@ -23,8 +23,12 @@ DribbleActionConfigs.GOAL_BALL_DISTANCE = 2.55
 DribbleActionConfigs.GOAL_INTENT_TIMEOUT = 0.5
 DribbleActionConfigs.INTENT_INTERVAL = 0.1
 DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG = 120
+DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_FRONT_DEG = 34
+DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_BACK_DEG = 88
 DribbleActionConfigs.CUT_MAX_DURATION = 1.2
-DribbleActionConfigs.CUT_FADE_SEC = 0.12
+DribbleActionConfigs.CUT_FADE_SEC = 0.15
+DribbleActionConfigs.CUT_FADE_OUT_SEC = 0.18
+DribbleActionConfigs.CUT_COOLDOWN_SEC = 0.20
 DribbleActionConfigs.REVERSE_INPUT_GRACE_SEC = 0.25
 
 -- Cuts keep the carrier moving at full normal speed along the locked cut direction until the animation finishes.
@@ -43,7 +47,7 @@ DribbleActionConfigs.CUT_LINEAR_MAX_REL_SPEED = 28.0
 DribbleActionConfigs.STUDIO_FALLBACK_ENABLED = true
 DribbleActionConfigs.PREVIEW_RIG_PATH = "Workspace.PreviewRigs.PreviewRig_R15_Boy_Height30"
 DribbleActionConfigs.ANIMSAVES_CONTAINER = "AnimSaves"
-DribbleActionConfigs.LOOP_FADE_SEC = 0.14
+DribbleActionConfigs.LOOP_FADE_SEC = 0.18
 DribbleActionConfigs.WALK_BASE_SPEED = 16.0
 DribbleActionConfigs.RUN_BASE_SPEED = 32.0
 DribbleActionConfigs.GOAL_BASE_SPEED = 8.0
@@ -54,16 +58,16 @@ DribbleActionConfigs.TOUCH_PULSE_DURATION_SEC = 0.24
 DribbleActionConfigs.TOUCH_PULSE_BOOST_WALK = 0.38
 DribbleActionConfigs.TOUCH_PULSE_BOOST_RUN = 0.62
 DribbleActionConfigs.TOUCH_PULSE_BOOST_CUT = 0.72
-DribbleActionConfigs.TOUCH_PULSE_BOOST_GOAL = 0.26
+DribbleActionConfigs.TOUCH_PULSE_BOOST_GOAL = 0.18
 -- Orbit / radial speed multiplier when an animation foot-touch marker strikes the ball
 DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_WALK = 1.65
 DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_RUN = 2.05
 DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_CUT = 2.45
-DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_GOAL = 1.50
+DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_GOAL = 1.35
 DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_WALK = 4.5
 DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_RUN = 8.5
 DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_CUT = 11.5
-DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_GOAL = 3.2
+DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_GOAL = 1.2
 
 -- Published asset IDs remain nil until officially published; Studio uses validated local KeyframeSequences.
 DribbleActionConfigs.PublishedIds = table.freeze({
@@ -92,7 +96,7 @@ DribbleActionConfigs.ApprovedCutAnimations = table.freeze({
 DribbleActionConfigs.Clips = table.freeze({
 	WalkDribble = table.freeze({
 		ClipName = "RF02_WalkDribble_R15_v01",
-		ExpectedKeyframeCount = 33,
+		ExpectedKeyframeCount = 209,
 		ExpectedDuration = 1.04,
 		DurationTolerance = 0.05,
 		ExpectedLoop = true,
@@ -103,7 +107,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	RunDribble = table.freeze({
 		ClipName = "RF02_RunDribble_R15_v01",
-		ExpectedKeyframeCount = 33,
+		ExpectedKeyframeCount = 145,
 		ExpectedDuration = 0.72,
 		DurationTolerance = 0.05,
 		ExpectedLoop = true,
@@ -114,7 +118,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	GModeLoop = table.freeze({
 		ClipName = "RF02_GMode_SlowControlLoop_R15_v01",
-		ExpectedKeyframeCount = 33,
+		ExpectedKeyframeCount = 225,
 		ExpectedDuration = 1.12,
 		DurationTolerance = 0.05,
 		ExpectedLoop = true,
@@ -125,7 +129,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	FrontLeft = table.freeze({
 		ClipName = "RF02_CutDiagFrontLeft_AW_R15_v01",
-		ExpectedKeyframeCount = 69,
+		ExpectedKeyframeCount = 137,
 		ExpectedDuration = 0.68,
 		DurationTolerance = 0.05,
 		ExpectedLoop = false,
@@ -137,7 +141,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	FrontRight = table.freeze({
 		ClipName = "RF02_CutDiagFrontRight_WD_R15_v01",
-		ExpectedKeyframeCount = 69,
+		ExpectedKeyframeCount = 137,
 		ExpectedDuration = 0.68,
 		DurationTolerance = 0.05,
 		ExpectedLoop = false,
@@ -149,7 +153,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	BackLeft = table.freeze({
 		ClipName = "RF02_CutDiagBackLeft_AS_R15_v01",
-		ExpectedKeyframeCount = 77,
+		ExpectedKeyframeCount = 153,
 		ExpectedDuration = 0.76,
 		DurationTolerance = 0.05,
 		ExpectedLoop = false,
@@ -161,7 +165,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	BackRight = table.freeze({
 		ClipName = "RF02_CutDiagBackRight_SD_R15_v01",
-		ExpectedKeyframeCount = 77,
+		ExpectedKeyframeCount = 153,
 		ExpectedDuration = 0.76,
 		DurationTolerance = 0.05,
 		ExpectedLoop = false,
@@ -173,7 +177,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	ReverseLeft = table.freeze({
 		ClipName = "RF02_CutReverse_WS_R15_v01",
-		ExpectedKeyframeCount = 83,
+		ExpectedKeyframeCount = 165,
 		ExpectedDuration = 0.82,
 		DurationTolerance = 0.05,
 		ExpectedLoop = false,
@@ -185,7 +189,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	ReverseRight = table.freeze({
 		ClipName = "RF02_CutReverse_WS_R15_v01",
-		ExpectedKeyframeCount = 83,
+		ExpectedKeyframeCount = 165,
 		ExpectedDuration = 0.82,
 		DurationTolerance = 0.05,
 		ExpectedLoop = false,
@@ -197,7 +201,7 @@ DribbleActionConfigs.Clips = table.freeze({
 
 	GoalReverse = table.freeze({
 		ClipName = "RF02_GMode_SoleDragBack_WS_R15_v01",
-		ExpectedKeyframeCount = 75,
+		ExpectedKeyframeCount = 149,
 		ExpectedDuration = 0.74,
 		DurationTolerance = 0.05,
 		ExpectedLoop = false,

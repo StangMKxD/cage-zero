@@ -1,33 +1,33 @@
 [
   {
     "disk": "src/shared/configs/DribbleActionConfigs.luau",
-    "sha256": "aab839ee6c4d7d2d7e37b261b9d32f385457bffa8674c2f1d2daf45e3ab5ea0c",
-    "bytes": 6896
+    "sha256": "70fcc8c7ba16a9b304c8b16e257c94dad7a693ed4d256c3c74714657b60ee2ad",
+    "bytes": 8422
   },
   {
     "disk": "src/client/character/DribbleClipData.luau",
-    "sha256": "7bb04effa1345582015a7acf17aab0a796317e53a2a8f6c4289f752a18e93630",
-    "bytes": 25853
+    "sha256": "1ce1b1d70585aa6034c7f219d0fe5fca94fa08bfcc97ca148b2551a8081b256e",
+    "bytes": 31334
   },
   {
     "disk": "src/client/character/DribbleAnimationHelper.luau",
-    "sha256": "1702d8536ec5babbcdeaa9dfe588c9b2b3fb1a809f8fd5fb50eaa6e737627036",
-    "bytes": 11676
+    "sha256": "2fec0165f91e2318d90ec006133ed5ed053cda8a3ac56236ad4ce3a78f016f7b",
+    "bytes": 12285
   },
   {
     "disk": "src/client/character/DribbleAnimationController.luau",
-    "sha256": "680aef689cdb1789a1dcfe4f3d5d8daff6f5b64fc140a644d1b4f2b1336e549f",
-    "bytes": 14710
+    "sha256": "ce5a8821b08d7438dbdee65fb475d110c0e91d63c1076fde9b6f695e4b02eed4",
+    "bytes": 16033
   },
   {
     "disk": "src/client/controllers/DribbleCutController.luau",
-    "sha256": "2ff243a2e237c049c2837f2888a66c4217eb65b69d31e9116bc2cf44ebd69d55",
-    "bytes": 4509
+    "sha256": "dd20ba973ef20231bef1a9bf669c51a38eccbbfd1b1597ccee66ba133e6dcefd",
+    "bytes": 6951
   },
   {
     "disk": "src/client/controllers/MovementHeadingPreviewController.luau",
-    "sha256": "404c2f76e15fbe6f90ede32ef6da0694936bf1da827cedf54eb98ef49df429d8",
-    "bytes": 23944
+    "sha256": "e3b2bdd1ad363debacdca957a1382eb1eb6429359798673e0b552e32373aedbd",
+    "bytes": 27726
   },
   {
     "disk": "src/client/init.client.luau",
@@ -36,7 +36,7 @@
   },
   {
     "disk": "src/server/services/BallService.luau",
-    "sha256": "afb57bfb496c85820e74a1ddf34fbb7abeff8671698a0e1f228d86578b7f0879",
-    "bytes": 46110
+    "sha256": "9d3bc110ffcd533787098a35e5fc7a8b1b0740380b3f2baf9ec69a4fd32dacd7",
+    "bytes": 54338
   }
 ]

@@ -43,7 +43,9 @@ local lastGoalIntent = false
 local lastGoalSentTime = 0.0
 local lastCutChord = "NONE"
 local lastCutInput = Vector3.zero
+local lastCutWorldDir = Vector3.zero
 local lastCutInputTime = 0.0
+local lastCutEndTime = 0.0
 
 -- Bounded jump input buffer (os.clock deadline); cleared once Humanoid enters Jumping
 local jumpBufferUntil: number = 0
@@ -287,6 +289,7 @@ local function updateMovementIntent(camYaw: number)
 		if opposingKeys then
 			DribbleCutController.Cancel()
 			lastCutInput = Vector3.zero
+			lastCutWorldDir = Vector3.zero
 			lastCutChord = "NONE"
 			currentWorldDirection = Vector3.zero
 		else
@@ -303,30 +306,62 @@ local function updateMovementIntent(camYaw: number)
 			if input.Magnitude > 0 then
 				if now - lastCutInputTime > DribbleActionConfigs.REVERSE_INPUT_GRACE_SEC then
 					lastCutInput = Vector3.zero
+					lastCutWorldDir = Vector3.zero
 					lastCutChord = "NONE"
 				end
 				if not locked and cutsAllowed then
 					local name = DribbleControlRules.CutForTransition(lastCutChord, chord, lastCutInput, input, DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG)
+					local prevWorldDir = if lastCutWorldDir.Magnitude > 0.001
+						then lastCutWorldDir
+						elseif lastCutInput.Magnitude > 0.001
+							then (CFrame.Angles(0, camYaw, 0):VectorToWorldSpace(lastCutInput)).Unit
+						else worldDir
+
+					-- Mouse-steer cut detection: if holding the same key (e.g. W) and turning the mouse/camera so desired
+					-- world direction diverges significantly from the current body heading, trigger the matching diagonal/reverse cut!
+					local cutCooldown = DribbleActionConfigs.CUT_COOLDOWN_SEC or 0.20
+					if not name and currentHrp and (now - lastCutEndTime >= cutCooldown) then
+						local bodyLook = DribbleControlRules.HorizontalDirection(currentHrp.CFrame.LookVector)
+						if bodyLook.Magnitude > 0.001 and worldDir.Magnitude > 0.001 then
+							local steerAngleDeg = math.deg(math.acos(math.clamp(bodyLook:Dot(worldDir), -1, 1)))
+							local crossY = bodyLook:Cross(worldDir).Y -- > 0 means steering Left, < 0 means steering Right
+							local frontThresh = DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_FRONT_DEG or 34
+							local backThresh = DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_BACK_DEG or 88
+							local revThresh = DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG or 120
+							if steerAngleDeg >= revThresh then
+								name = if crossY < 0 then "ReverseRight" else "ReverseLeft"
+								prevWorldDir = bodyLook
+							elseif steerAngleDeg >= backThresh then
+								name = if crossY >= 0 then "BackLeft" else "BackRight"
+								prevWorldDir = bodyLook
+							elseif steerAngleDeg >= frontThresh then
+								name = if crossY >= 0 then "FrontLeft" else "FrontRight"
+								prevWorldDir = bodyLook
+							end
+						end
+					end
+
 					if not name and lastCutChord == "NONE" and #chord == 2 then
 						name = if input.Z < 0
 							then (if input.X < 0 then "FrontLeft" else "FrontRight")
 							else (if input.X < 0 then "BackLeft" else "BackRight")
 					end
 					if name then
-						local prevWorldDir = if lastCutInput.Magnitude > 0.001
-							then (CFrame.Angles(0, camYaw, 0):VectorToWorldSpace(lastCutInput)).Unit
-							else worldDir
 						locked = DribbleCutController.TryStart(char, name, worldDir, prevWorldDir)
+						if locked then
+							lastCutEndTime = now
+						end
 					end
 				end
 				-- Latest held input wins when the real animation finishes, without replay.
 				lastCutChord = chord
 				lastCutInput = input
+				lastCutWorldDir = worldDir
 				lastCutInputTime = now
 			end
 			-- While a cut animation is active, lock the carrier's travel direction to the cut's diagonal/exit direction
-			-- at full normal speed until the animation finishes; new A/D or diagonal changes take effect once the clip ends.
-			if locked then
+			-- at full normal speed until ControlRelease; once ControlRelease is reached, seamlessly steer into the running loop.
+			if locked and not DribbleCutController.IsControlReleased(char) then
 				local lockedDir = DribbleCutController.GetActiveCutDirection()
 				if lockedDir and lockedDir.Magnitude > 0.001 then
 					currentWorldDirection = lockedDir
@@ -336,7 +371,9 @@ local function updateMovementIntent(camYaw: number)
 	else
 		DribbleCutController.Cancel()
 		lastCutInput = Vector3.zero
+		lastCutWorldDir = Vector3.zero
 		lastCutChord = "NONE"
+		lastCutEndTime = now
 	end
 
 	local isMoving = currentWorldDirection.Magnitude > 0.001
@@ -445,6 +482,7 @@ local function resetAllKeys()
 	DribbleCutController.Cancel()
 	lastCutChord = "NONE"
 	lastCutInput = Vector3.zero
+	lastCutWorldDir = Vector3.zero
 	if lastGoalIntent then
 		local remote = getBallActionRemote()
 		if remote and currentCharacter then

@@ -39,13 +39,19 @@ function Controller.Cancel()
 		lockedCharacter:SetAttribute("DribbleCutActive", false)
 		lockedCharacter:SetAttribute("DribbleCutName", "")
 		lockedCharacter:SetAttribute("DribbleCutClipName", "")
+		lockedCharacter:SetAttribute("DribbleCutControlReleaseReached", false)
 	end
 	lockedCharacter = nil
 	deadline = 0
 	if old then
 		pcall(function()
-			old:Stop(Config.CUT_FADE_SEC)
-			old:Destroy()
+			local fade = Config.CUT_FADE_SEC or 0.15
+			old:Stop(fade)
+			task.delay(fade + 0.05, function()
+				pcall(function()
+					old:Destroy()
+				end)
+			end)
 		end)
 	end
 end
@@ -130,6 +136,10 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 		newTrack:GetMarkerReachedSignal("ControlRelease"):Connect(function()
 			if track == newTrack and lockedCharacter == character then
 				character:SetAttribute("DribbleCutControlReleaseReached", true)
+				local fadeOut = Config.CUT_FADE_OUT_SEC or 0.18
+				pcall(function()
+					newTrack:AdjustWeight(0.001, fadeOut)
+				end)
 			end
 		end)
 	)
@@ -137,6 +147,15 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 	table.insert(
 		activeConnections,
 		newTrack.Ended:Connect(function()
+			if track == newTrack then
+				Controller.Cancel()
+			end
+		end)
+	)
+
+	table.insert(
+		activeConnections,
+		newTrack.Stopped:Connect(function()
 			if track == newTrack then
 				Controller.Cancel()
 			end
@@ -166,6 +185,16 @@ function Controller.IsLocked(character: Model): boolean
 	return track ~= nil
 end
 
+function Controller.IsControlReleased(character: Model?): boolean
+	if not track or lockedCharacter ~= character then
+		return true
+	end
+	if character and character:GetAttribute("DribbleCutControlReleaseReached") == true then
+		return true
+	end
+	return false
+end
+
 function Controller.GetActiveTrack(): AnimationTrack?
 	return track
 end
@@ -186,6 +215,11 @@ function Controller.GetActiveCutDirection(): Vector3?
 		return activeCutDirection
 	end
 	local entry = activeEntryDirection or activeCutDirection
+	-- For 180-degree reverse cuts (W->S), keep moving/facing along entry until the foot traps the ball (TouchR),
+	-- then flip cleanly to the opposite direction so the body doesn't swing sideways right!
+	if activeCutName == "ReverseLeft" or activeCutName == "ReverseRight" or activeCutName == "GoalReverse" then
+		return entry
+	end
 	local strikePhase = Config.CUT_BALL_STRIKE_PHASE or 0.36
 	local u = if track.Length > 0.01 then math.clamp(track.TimePosition / track.Length, 0, 1) else 1.0
 	local alpha = math.clamp(u / math.max(0.05, strikePhase), 0, 1)

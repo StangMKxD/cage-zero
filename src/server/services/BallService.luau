@@ -78,6 +78,7 @@ local isInitialized = false
 local currentDribblePhase: string = "Free"
 local currentDribbleSpeedFactor: number = 1.0
 local controlledCarrierRoot: BasePart? = nil
+local bypassCarrierBodyCircleThisStep: boolean = false
 local previousPossessorUserId: number? = nil
 
 -- Jump Self-Lob state tracking
@@ -90,7 +91,7 @@ local goalDribbleRequests: {[number]: {character: Model, expires: number, lastSt
 local lastGoalStartByPlayer: {[number]: number} = {}
 local dribbleTouchIntents: {[number]: {character: Model, foot: string, clip: string, isCut: boolean, startTime: number, expires: number}} = {}
 local lastDribbleTouchByPlayer: {[number]: number} = {}
-local dribbleCutIntents: {[number]: {character: Model, direction: Vector3, entryDirection: Vector3, startTime: number, duration: number, expires: number}} = {}
+local dribbleCutIntents: {[number]: {character: Model, cutName: string?, direction: Vector3, entryDirection: Vector3, startTime: number, duration: number, expires: number}} = {}
 
 local BallService = {}
 
@@ -197,6 +198,7 @@ function BallService.SetDribbleCutIntent(player: Player, payload: any): boolean
 	end
 	dribbleCutIntents[player.UserId] = {
 		character = character,
+		cutName = payload.cut,
 		direction = horizontal.Unit,
 		entryDirection = entryDir,
 		startTime = now,
@@ -587,6 +589,7 @@ end
 local function simulateDribbleAndReceive(dt: number, now: number)
 	controlledCarrierRoot = nil
 	lastActiveCarrierCand = nil
+	bypassCarrierBodyCircleThisStep = false
 	if BallService.IsFreeBallOnly() then
 		return
 	end
@@ -853,16 +856,37 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 				isMoving = true
 			end
 		end
-		local leadDir: Vector3
-		if isMoving then
-			leadDir = horizMove.Unit
-		else
-			local look = carrierCand.rootPart.CFrame.LookVector
-			leadDir = Vector3.new(look.X, 0, look.Z).Unit
-		end
-
 		local cSpeed = Vector3.new(cVel.X, 0, cVel.Z).Magnitude
 		local goalMode = carrierCand.character:GetAttribute("GoalDribbleActive") == true
+
+		-- During a sprint cut:
+		-- 1) Before the boot strikes the ball (wind-up / plant phase), the ball stays on the entry line so the foot visibly reaches and hits it first.
+		-- 2) Once the boot strikes the ball (TouchL/TouchR marker or strikePhase), the ball slides linearly along a straight line (through the legs for W->S reverse, or straight diagonally for 45/135 cuts) with zero circular orbit!
+		local cutIntent = dribbleCutIntents[currentCarrierId]
+		local isCutEligible = cutIntent ~= nil
+			and (cutIntent.character == carrierCand.character and cutIntent.expires > now)
+			and ((isSprinting and not goalMode) or (goalMode and cutIntent.cutName == "GoalReverse"))
+		local isCutActive = isCutEligible == true
+
+		local look = carrierCand.rootPart.CFrame.LookVector
+		local bodyLook = Vector3.new(look.X, 0, look.Z).Unit
+		local leadDir: Vector3
+		if goalMode and not isCutActive then
+			-- In Goal Mode (Close-Control / G mode), the ball is always controlled & rolled in FRONT of the body
+			-- (where the character is facing, towards the goal), even while backpedaling with S or strafing with A/D!
+			local goal = DribbleControlRules.AttackGoal(carrierCand.teamSide, Constants.ARENA_HALF_LENGTH_Z, Constants.GOAL_BACK_ZONE_STUDS)
+			if goal then
+				local dirToGoal = DribbleControlRules.HorizontalDirection(goal - carrierCand.rootPart.Position)
+				leadDir = if dirToGoal.Magnitude > 0.001 then dirToGoal else bodyLook
+			else
+				leadDir = bodyLook
+			end
+		elseif isMoving then
+			leadDir = horizMove.Unit
+		else
+			leadDir = bodyLook
+		end
+
 		local touchIntent = dribbleTouchIntents[currentCarrierId]
 		local markerPulse = 0.0
 		local touchSpeedScale = 1.0
@@ -898,52 +922,54 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			then 0
 			elseif hasRecentMarker then markerPulse
 			else DribbleGeometryHelper.ComputeMicroTouchOffset(cSpeed, isSprinting, now)
-		if goalMode and not isMoving then
-			local goal = DribbleControlRules.AttackGoal(carrierCand.teamSide, Constants.ARENA_HALF_LENGTH_Z, Constants.GOAL_BACK_ZONE_STUDS)
-			if goal then
-				leadDir = DribbleControlRules.HorizontalDirection(goal - carrierCand.rootPart.Position)
-			end
-		end
-		-- During a sprint cut:
-		-- 1) Before the boot strikes the ball (wind-up / plant phase), the ball stays on the entry line so the foot visibly reaches and hits it first.
-		-- 2) Once the boot strikes the ball (TouchL/TouchR marker or strikePhase), the ball slides linearly along the diagonal cut line at a paced speed so ball and animation finish together.
-		local cutIntent = dribbleCutIntents[currentCarrierId]
+
 		local cutLead = 0.0
-		local isCutActive = false
 		local cutPostStrike = false
-		if cutIntent then
-			if cutIntent.character == carrierCand.character and cutIntent.expires > now and isSprinting and not goalMode then
-				isCutActive = true
-				local uCut = math.clamp((now - cutIntent.startTime) / math.max(0.1, cutIntent.duration), 0, 1)
-				local strikePhase = DribbleActionConfigs.CUT_BALL_STRIKE_PHASE or 0.36
-				local hasCutTouch = touchIntent ~= nil
-					and touchIntent.character == carrierCand.character
-					and touchIntent.isCut
-					and touchIntent.startTime >= (cutIntent.startTime - 0.05)
-				cutPostStrike = hasCutTouch or (uCut >= strikePhase)
-				if not cutPostStrike then
-					-- Wind-up phase: keep ball in front of the entry heading while the leg swings in to strike it
-					local preAlpha = math.clamp(uCut / math.max(0.05, strikePhase), 0, 1) * 0.25
-					local blended = cutIntent.entryDirection * (1 - preAlpha) + cutIntent.direction * preAlpha
-					leadDir = if blended.Magnitude > 0.001 then blended.Unit else cutIntent.entryDirection
-					cutLead = 0.0
-				else
-					-- Strike & follow-through phase: smoothly ramp target from entry to exit diagonal across the remaining animation duration
-					local postU = if hasCutTouch
-						then math.max(
-							math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1),
-							math.clamp((now - touchIntent.startTime) / math.max(0.15, cutIntent.duration * (1.0 - strikePhase)), 0, 1)
-						)
-						else math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1)
-					local dirAlpha = math.clamp(postU * 1.6, 0, 1)
-					local sDir = dirAlpha * dirAlpha * (3 - 2 * dirAlpha)
-					local blended = cutIntent.entryDirection * (1 - sDir) + cutIntent.direction * sDir
-					leadDir = if blended.Magnitude > 0.001 then blended.Unit else cutIntent.direction
-					cutLead = DribbleActionConfigs.CUT_BALL_LEAD_SPRINT * math.sin(postU * math.pi)
-				end
+		local cutLinearTarget: Vector3? = nil
+		if cutIntent and isCutActive then
+			local uCut = math.clamp((now - cutIntent.startTime) / math.max(0.1, cutIntent.duration), 0, 1)
+			local strikePhase = DribbleActionConfigs.CUT_BALL_STRIKE_PHASE or 0.36
+			local hasCutTouch = touchIntent ~= nil
+				and touchIntent.character == carrierCand.character
+				and touchIntent.isCut
+				and touchIntent.startTime >= (cutIntent.startTime - 0.05)
+			cutPostStrike = hasCutTouch or (uCut >= strikePhase)
+			local baseD = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
+			local pEntry, _, _ = DribbleGeometryHelper.FeasibleFrontTarget(
+				carrierCand.rootPart.Position,
+				cutIntent.entryDirection,
+				isSprinting,
+				0
+			)
+			if not cutPostStrike then
+				-- Wind-up phase: keep ball right on the entry line so the foot reaches out and traps it first
+				leadDir = cutIntent.entryDirection
+				cutLead = 0.0
+				cutLinearTarget = pEntry
 			else
-				dribbleCutIntents[currentCarrierId] = nil
+				-- Strike & pull-through phase: interpolate target along a pure straight lineSegment from pEntry to pExit
+				-- (so W->S pulls straight through the legs instead of orbiting around the right hip!)
+				local postU = if hasCutTouch
+					then math.max(
+						math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1),
+						math.clamp((now - touchIntent.startTime) / math.max(0.15, cutIntent.duration * (1.0 - strikePhase)), 0, 1)
+					)
+					else math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1)
+				local linAlpha = math.clamp(postU * 1.45, 0, 1)
+				local sLin = linAlpha * linAlpha * (3 - 2 * linAlpha)
+				leadDir = cutIntent.direction
+				cutLead = DribbleActionConfigs.CUT_BALL_LEAD_SPRINT * math.sin(postU * math.pi)
+				local pExit, _, _ = DribbleGeometryHelper.FeasibleFrontTarget(
+					carrierCand.rootPart.Position,
+					cutIntent.direction,
+					isSprinting,
+					microOffset + cutLead
+				)
+				cutLinearTarget = pEntry * (1 - sLin) + pExit * sLin
+				bypassCarrierBodyCircleThisStep = true
 			end
+		elseif cutIntent then
+			dribbleCutIntents[currentCarrierId] = nil
 		end
 
 		local target, flankDeg, infeasible = DribbleGeometryHelper.FeasibleFrontTarget(
@@ -952,6 +978,11 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			isSprinting,
 			microOffset + cutLead
 		)
+		if cutLinearTarget then
+			target = cutLinearTarget
+			flankDeg = 0
+			infeasible = false
+		end
 		if goalMode then
 			-- Reuse the same joint-safe target search, with a close-control radius + bounded marker/cut lead pulse.
 			local baseDistance = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
@@ -960,8 +991,8 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 				(DribbleActionConfigs.GOAL_BALL_DISTANCE - baseDistance) + markerPulse + cutLead)
 		end
 		local v: Vector3
-		if isCutActive and cutPostStrike then
-			-- Direct linear diagonal trajectory toward the cut target, paced so ball arrives as the animation finishes
+		if isCutActive then
+			-- Direct linear trajectory toward the cut target (no circular polar orbit arc in either wind-up or pull-through)
 			local toTarget = Vector3.new(target.X - ballState.position.X, 0, target.Z - ballState.position.Z)
 			local linearGain = (DribbleActionConfigs.CUT_LINEAR_TRACK_GAIN or 9.5) * math.min(touchSpeedScale, 1.35)
 			local maxRel = DribbleActionConfigs.CUT_LINEAR_MAX_REL_SPEED or 28.0
@@ -1080,21 +1111,30 @@ function BallService.StepPhysics(dt: number)
 		local p1 = hrp.Position
 		local p0 = carrierPrevRootPos[carrierCand.userId] or p1
 		carrierPrevRootPos[carrierCand.userId] = p1
-		local look = hrp.CFrame.LookVector
-		local sepPos, sepVel, _adjusted, infeasible = DribbleGeometryHelper.ResolveBodyCage(
-			p0,
-			p1,
-			prevPos,
-			nextPos,
-			nextVel,
-			hrp.AssemblyLinearVelocity,
-			clampedDt,
-			Vector3.new(look.X, 0, look.Z)
-		)
-		nextPos = sepPos
-		nextVel = sepVel
-		if infeasible then
-			currentDribbleSpeedFactor = DribbleConfigs.INFEASIBLE_SPEED_FACTOR
+		if bypassCarrierBodyCircleThisStep then
+			-- During a linear cut pull-back (e.g. W->S sole drag), allow the ball to pass straight through the legs
+			-- while still clamping inside the cage walls.
+			local rBall = DribbleConfigs.BALL_COLLISION_RADIUS
+			local mx = Constants.ARENA_HALF_WIDTH_X - rBall
+			local mz = Constants.ARENA_HALF_LENGTH_Z - rBall
+			nextPos = Vector3.new(math.clamp(nextPos.X, -mx, mx), nextPos.Y, math.clamp(nextPos.Z, -mz, mz))
+		else
+			local look = hrp.CFrame.LookVector
+			local sepPos, sepVel, _adjusted, infeasible = DribbleGeometryHelper.ResolveBodyCage(
+				p0,
+				p1,
+				prevPos,
+				nextPos,
+				nextVel,
+				hrp.AssemblyLinearVelocity,
+				clampedDt,
+				Vector3.new(look.X, 0, look.Z)
+			)
+			nextPos = sepPos
+			nextVel = sepVel
+			if infeasible then
+				currentDribbleSpeedFactor = DribbleConfigs.INFEASIBLE_SPEED_FACTOR
+			end
 		end
 	else
 		lastActiveCarrierCand = nil

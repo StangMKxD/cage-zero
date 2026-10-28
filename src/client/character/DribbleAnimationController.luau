@@ -136,9 +136,43 @@ local function updateDribblePlayback(thisGen: number)
 		return
 	end
 
-	-- One-shot directional/reverse cut takes priority and locks movement until completion
+	-- One-shot directional/reverse cut takes priority and locks movement until completion.
+	-- Keep underlying RunDribble (or GModeLoop in goal mode) playing under Action-priority cuts
+	-- and keep base locomotion muted so there is zero 1-frame snap to R15AnimationController!
 	if DribbleCutController.IsLocked(char) then
-		stopAllDribbleLoops(DribbleActionConfigs.CUT_FADE_SEC)
+		muteBaseLocomotionWeights()
+		local goalMode = (char:GetAttribute("GoalDribbleActive") == true)
+		if goalMode then
+			if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
+				currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			if currentTracks.RunDribble and currentTracks.RunDribble.IsPlaying then
+				currentTracks.RunDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			local gTrack = currentTracks.GModeLoop
+			if gTrack then
+				if not gTrack.IsPlaying then
+					gTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
+				end
+				gTrack:AdjustSpeed(1.0)
+			end
+			activeLoopKey = "GModeLoop"
+		else
+			if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
+				currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			if currentTracks.GModeLoop and currentTracks.GModeLoop.IsPlaying then
+				currentTracks.GModeLoop:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			local runTrack = currentTracks.RunDribble
+			if runTrack then
+				if not runTrack.IsPlaying then
+					runTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
+				end
+				runTrack:AdjustSpeed(1.0)
+			end
+			activeLoopKey = "RunDribble"
+		end
 		char:SetAttribute("ActiveDribbleClip", DribbleCutController.GetActiveClipName() or "")
 		return
 	end
