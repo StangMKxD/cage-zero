@@ -1,0 +1,4692 @@
+{
+  "assetId": "dd820132-adba-4028-a2a9-bee3ed64c69a",
+  "summary": {
+    "tracks": 15,
+    "keys": 495,
+    "duration": 1.04,
+    "loop": true,
+    "layerTracks": 0,
+    "rootMotionTracks": 0,
+    "analyzedTracks": 15,
+    "analyzedKeys": 495
+  },
+  "trackMotion": [
+    {
+      "channel": "base",
+      "joint": "Head",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 17.330794710931382,
+        "startTime": 0.098,
+        "endTime": 0.13,
+        "startKeyIndex": 3,
+        "endKeyIndex": 4
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 369.709689589592,
+        "time": 0.715,
+        "keyIndex": 22
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftFoot",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 209.15678227184878,
+        "startTime": 0.098,
+        "endTime": 0.13,
+        "startKeyIndex": 3,
+        "endKeyIndex": 4
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 4176.950075474492,
+        "time": 0.195,
+        "keyIndex": 6
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftHand",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 18.281250000001137,
+        "startTime": 0.228,
+        "endTime": 0.26,
+        "startKeyIndex": 7,
+        "endKeyIndex": 8
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 109.84848484847087,
+        "time": 0.52,
+        "keyIndex": 16
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftLowerArm",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 48.375000000000014,
+        "startTime": 0.488,
+        "endTime": 0.52,
+        "startKeyIndex": 15,
+        "endKeyIndex": 16
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 295.7167832168209,
+        "time": 0.715,
+        "keyIndex": 22
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftLowerLeg",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 150.78787878787912,
+        "startTime": 0.91,
+        "endTime": 0.943,
+        "startKeyIndex": 28,
+        "endKeyIndex": 29
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 1788.0536130535727,
+        "time": 0.195,
+        "keyIndex": 6
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftUpperArm",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 155.95022280411942,
+        "startTime": 0.78,
+        "endTime": 0.813,
+        "startKeyIndex": 24,
+        "endKeyIndex": 25
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 1168.1332593480633,
+        "time": 0.683,
+        "keyIndex": 21
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftUpperLeg",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 226.74637028428359,
+        "startTime": 0.26,
+        "endTime": 0.293,
+        "startKeyIndex": 8,
+        "endKeyIndex": 9
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 3104.7174371732763,
+        "time": 0.195,
+        "keyIndex": 6
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LowerTorso",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0.2948119103767696,
+        "startTime": 0.683,
+        "endTime": 0.715,
+        "startKeyIndex": 21,
+        "endKeyIndex": 22
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 27.744245602693532,
+        "startTime": 0.293,
+        "endTime": 0.325,
+        "startKeyIndex": 9,
+        "endKeyIndex": 10
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 4.28024253330378,
+        "time": 0.325,
+        "keyIndex": 10
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 237.31022817936815,
+        "time": 0.52,
+        "keyIndex": 16
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightFoot",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 209.15678227184858,
+        "startTime": 0.618,
+        "endTime": 0.65,
+        "startKeyIndex": 19,
+        "endKeyIndex": 20
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 4176.950075474505,
+        "time": 0.715,
+        "keyIndex": 22
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightHand",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 18.281250000001137,
+        "startTime": 0.228,
+        "endTime": 0.26,
+        "startKeyIndex": 7,
+        "endKeyIndex": 8
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 109.84848484847087,
+        "time": 0.52,
+        "keyIndex": 16
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightLowerArm",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 48.375000000000014,
+        "startTime": 0.488,
+        "endTime": 0.52,
+        "startKeyIndex": 15,
+        "endKeyIndex": 16
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 295.7167832168209,
+        "time": 0.715,
+        "keyIndex": 22
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightLowerLeg",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 150.78787878787887,
+        "startTime": 0.39,
+        "endTime": 0.423,
+        "startKeyIndex": 12,
+        "endKeyIndex": 13
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 1788.0536130535752,
+        "time": 0.715,
+        "keyIndex": 22
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightUpperArm",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 155.95022280411916,
+        "startTime": 0.26,
+        "endTime": 0.293,
+        "startKeyIndex": 8,
+        "endKeyIndex": 9
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 1168.1332593480538,
+        "time": 0.163,
+        "keyIndex": 5
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightUpperLeg",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 227.13735564354292,
+        "startTime": 0.78,
+        "endTime": 0.813,
+        "startKeyIndex": 24,
+        "endKeyIndex": 25
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 3151.8327833362528,
+        "time": 0.715,
+        "keyIndex": 22
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "UpperTorso",
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.033,
+        "startKeyIndex": 0,
+        "endKeyIndex": 1
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 38.665204601490466,
+        "startTime": 0.228,
+        "endTime": 0.26,
+        "startKeyIndex": 7,
+        "endKeyIndex": 8
+      },
+      "largestLocalPositionVelocityChange": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.033,
+        "keyIndex": 1
+      },
+      "largestLocalAngularVelocityChange": {
+        "degreesPerSecondSquared": 267.84423370532164,
+        "time": 0.098,
+        "keyIndex": 3
+      }
+    }
+  ],
+  "contactTrackCoverage": [],
+  "advisories": [
+    {
+      "id": "dense-tracks",
+      "severity": "check",
+      "detail": "Head, LeftFoot, LeftHand, LeftLowerArm, LeftLowerLeg, LeftUpperArm, LeftUpperLeg, LowerTorso, RightFoot, RightHand, RightLowerArm, RightLowerLeg, RightUpperArm, RightUpperLeg, UpperTorso has more than 32 keys. Check for redundant keys and preserve only keys that shape timing, arcs, contacts, or secondary motion."
+    },
+    {
+      "id": "synchronized-timing",
+      "severity": "check",
+      "detail": "Every track uses the same key times. Check whether the whole body is moving in lockstep; stagger motion by role where the action calls for it."
+    },
+    {
+      "id": "visual-review",
+      "severity": "note",
+      "detail": "Preview the motion on the target rig. Judge silhouette, readable intent, weight shifts, contacts, arcs, spacing, and transitions. Numeric trackMotion values are finite differences of local recipe keys (not rendered/world-space measurements) and can highlight intervals to inspect, but cannot certify animation quality."
+    }
+  ],
+  "curveMotionSampleRateHz": 60,
+  "curveMotion": [
+    {
+      "channel": "base",
+      "joint": "Head",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.10600000000000001,
+          "settleTime": 1.04,
+          "peakSpeed": 17.35052435868743,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 17.35052435868743,
+        "startTime": 0.098,
+        "endTime": 0.114,
+        "keySegment": {
+          "startKeyIndex": 3,
+          "endKeyIndex": 4,
+          "startTime": 0.098,
+          "endTime": 0.13,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 739.7574302771724,
+        "time": 0.715,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 46234.83939232342,
+        "time": 0.187,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftFoot",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.10600000000000001,
+          "settleTime": 0.975,
+          "peakSpeed": 210.8816824158066,
+          "activeDuration": 0.975,
+          "activeSampleDuration": 0.9099999999999998,
+          "activeSampleCount": 56,
+          "activeCoverageFraction": 0.8749999999999998
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 210.8816824158066,
+        "startTime": 0.098,
+        "endTime": 0.114,
+        "keySegment": {
+          "startKeyIndex": 3,
+          "endKeyIndex": 4,
+          "startTime": 0.098,
+          "endTime": 0.13,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 8558.263051839825,
+        "time": 0.195,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 534891.4407399907,
+        "time": 0.187,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftHand",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.236,
+          "settleTime": 1.04,
+          "peakSpeed": 18.281250000000004,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 18.281250000000004,
+        "startTime": 0.228,
+        "endTime": 0.244,
+        "keySegment": {
+          "startKeyIndex": 7,
+          "endKeyIndex": 8,
+          "startTime": 0.228,
+          "endTime": 0.26,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 219.69696969696614,
+        "time": 0.52,
+        "keySegment": {
+          "startKeyIndex": 15,
+          "endKeyIndex": 16,
+          "startTime": 0.488,
+          "endTime": 0.52,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 13731.060606060175,
+        "time": 0.512,
+        "keySegment": {
+          "startKeyIndex": 15,
+          "endKeyIndex": 16,
+          "startTime": 0.488,
+          "endTime": 0.52,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftLowerArm",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 1.032,
+          "settleTime": 1.04,
+          "peakSpeed": 48.37500000000022,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 0.974,
+          "activeSampleCount": 60,
+          "activeCoverageFraction": 0.9365384615384614
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 48.37500000000022,
+        "startTime": 1.024,
+        "endTime": 1.04,
+        "keySegment": {
+          "startKeyIndex": 31,
+          "endKeyIndex": 32,
+          "startTime": 1.008,
+          "endTime": 1.04,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 591.4335664335847,
+        "time": 0.195,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 36964.59790210049,
+        "time": 0.187,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftLowerLeg",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.93475,
+          "settleTime": 1.04,
+          "peakSpeed": 150.78787878787946,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 150.78787878787946,
+        "startTime": 0.9265,
+        "endTime": 0.943,
+        "keySegment": {
+          "startKeyIndex": 28,
+          "endKeyIndex": 29,
+          "startTime": 0.91,
+          "endTime": 0.943,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 3576.1072261072272,
+        "time": 0.195,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 223506.7016317017,
+        "time": 0.187,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftUpperArm",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.78825,
+          "settleTime": 1.04,
+          "peakSpeed": 155.94955407187,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 155.94955407187,
+        "startTime": 0.78,
+        "endTime": 0.7965,
+        "keySegment": {
+          "startKeyIndex": 24,
+          "endKeyIndex": 25,
+          "startTime": 0.78,
+          "endTime": 0.813,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 2336.534969471024,
+        "time": 0.683,
+        "keySegment": {
+          "startKeyIndex": 20,
+          "endKeyIndex": 21,
+          "startTime": 0.65,
+          "endTime": 0.683,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 146033.43559193835,
+        "time": 0.6910000000000001,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LeftUpperLeg",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.26825,
+          "settleTime": 1.04,
+          "peakSpeed": 227.06543630270642,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 0.9759999999999998,
+          "activeSampleCount": 60,
+          "activeCoverageFraction": 0.9384615384615382
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 227.06543630270642,
+        "startTime": 0.26,
+        "endTime": 0.27649999999999997,
+        "keySegment": {
+          "startKeyIndex": 8,
+          "endKeyIndex": 9,
+          "startTime": 0.26,
+          "endTime": 0.293,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 6259.5612397656705,
+        "time": 0.195,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 391222.5774853528,
+        "time": 0.187,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "LowerTorso",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.6910000000000001,
+          "settleTime": 1.04,
+          "peakSpeed": 0.2948119103767698,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.317,
+          "settleTime": 1.04,
+          "peakSpeed": 27.763109023686418,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0.2948119103767698,
+        "startTime": 0.683,
+        "endTime": 0.6990000000000001,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 27.763109023686418,
+        "startTime": 0.309,
+        "endTime": 0.325,
+        "keySegment": {
+          "startKeyIndex": 9,
+          "endKeyIndex": 10,
+          "startTime": 0.293,
+          "endTime": 0.325,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 8.560485066607539,
+        "time": 0.845,
+        "keySegment": {
+          "startKeyIndex": 25,
+          "endKeyIndex": 26,
+          "startTime": 0.813,
+          "endTime": 0.845,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 475.64430996030535,
+        "time": 0.52,
+        "keySegment": {
+          "startKeyIndex": 15,
+          "endKeyIndex": 16,
+          "startTime": 0.488,
+          "endTime": 0.52,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 535.0303166629709,
+        "time": 0.837,
+        "keySegment": {
+          "startKeyIndex": 25,
+          "endKeyIndex": 26,
+          "startTime": 0.813,
+          "endTime": 0.845,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 29727.769372518724,
+        "time": 0.512,
+        "keySegment": {
+          "startKeyIndex": 15,
+          "endKeyIndex": 16,
+          "startTime": 0.488,
+          "endTime": 0.52,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightFoot",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.626,
+          "settleTime": 0.975,
+          "peakSpeed": 210.8816824158064,
+          "activeDuration": 0.975,
+          "activeSampleDuration": 0.9099999999999998,
+          "activeSampleCount": 56,
+          "activeCoverageFraction": 0.8749999999999998
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 210.8816824158064,
+        "startTime": 0.618,
+        "endTime": 0.634,
+        "keySegment": {
+          "startKeyIndex": 19,
+          "endKeyIndex": 20,
+          "startTime": 0.618,
+          "endTime": 0.65,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 8558.263051839898,
+        "time": 0.715,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 534891.4407399968,
+        "time": 0.7070000000000001,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightHand",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.236,
+          "settleTime": 1.04,
+          "peakSpeed": 18.281250000000004,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 18.281250000000004,
+        "startTime": 0.228,
+        "endTime": 0.244,
+        "keySegment": {
+          "startKeyIndex": 7,
+          "endKeyIndex": 8,
+          "startTime": 0.228,
+          "endTime": 0.26,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 219.69696969696614,
+        "time": 0.52,
+        "keySegment": {
+          "startKeyIndex": 15,
+          "endKeyIndex": 16,
+          "startTime": 0.488,
+          "endTime": 0.52,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 13731.060606060175,
+        "time": 0.512,
+        "keySegment": {
+          "startKeyIndex": 15,
+          "endKeyIndex": 16,
+          "startTime": 0.488,
+          "endTime": 0.52,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightLowerArm",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.512,
+          "settleTime": 1.04,
+          "peakSpeed": 48.37500000000022,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 0.974,
+          "activeSampleCount": 60,
+          "activeCoverageFraction": 0.9365384615384614
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 48.37500000000022,
+        "startTime": 0.504,
+        "endTime": 0.52,
+        "keySegment": {
+          "startKeyIndex": 15,
+          "endKeyIndex": 16,
+          "startTime": 0.488,
+          "endTime": 0.52,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 591.4335664335949,
+        "time": 0.715,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 36964.59790210176,
+        "time": 0.7070000000000001,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightLowerLeg",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.39825,
+          "settleTime": 1.04,
+          "peakSpeed": 150.7878787878787,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 150.7878787878787,
+        "startTime": 0.39,
+        "endTime": 0.4065,
+        "keySegment": {
+          "startKeyIndex": 12,
+          "endKeyIndex": 13,
+          "startTime": 0.39,
+          "endTime": 0.423,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 3576.107226107256,
+        "time": 0.715,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 223506.70163170467,
+        "time": 0.7070000000000001,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightUpperArm",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.26825,
+          "settleTime": 1.04,
+          "peakSpeed": 155.94955407186973,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 155.94955407186973,
+        "startTime": 0.26,
+        "endTime": 0.27649999999999997,
+        "keySegment": {
+          "startKeyIndex": 8,
+          "endKeyIndex": 9,
+          "startTime": 0.26,
+          "endTime": 0.293,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 2336.5349694710007,
+        "time": 0.163,
+        "keySegment": {
+          "startKeyIndex": 4,
+          "endKeyIndex": 5,
+          "startTime": 0.13,
+          "endTime": 0.163,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 146033.43559193696,
+        "time": 0.17099999999999999,
+        "keySegment": {
+          "startKeyIndex": 5,
+          "endKeyIndex": 6,
+          "startTime": 0.163,
+          "endTime": 0.195,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "RightUpperLeg",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.80475,
+          "settleTime": 1.04,
+          "peakSpeed": 228.28358744063428,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 0.9759999999999998,
+          "activeSampleCount": 60,
+          "activeCoverageFraction": 0.9384615384615382
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 228.28358744063428,
+        "startTime": 0.7965,
+        "endTime": 0.813,
+        "keySegment": {
+          "startKeyIndex": 24,
+          "endKeyIndex": 25,
+          "startTime": 0.78,
+          "endTime": 0.813,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 6392.938012706999,
+        "time": 0.715,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 399558.6257941901,
+        "time": 0.7070000000000001,
+        "keySegment": {
+          "startKeyIndex": 21,
+          "endKeyIndex": 22,
+          "startTime": 0.683,
+          "endTime": 0.715,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    },
+    {
+      "channel": "base",
+      "joint": "UpperTorso",
+      "evaluationCount": 65,
+      "phaseTiming": {
+        "position": {
+          "status": "still",
+          "thresholdFraction": 0.05,
+          "onsetTime": null,
+          "peakTime": null,
+          "settleTime": null,
+          "peakSpeed": 0,
+          "activeDuration": 0,
+          "activeSampleDuration": 0,
+          "activeSampleCount": 0,
+          "activeCoverageFraction": 0
+        },
+        "angular": {
+          "status": "active",
+          "thresholdFraction": 0.05,
+          "onsetTime": 0,
+          "peakTime": 0.252,
+          "settleTime": 1.04,
+          "peakSpeed": 38.663322611586736,
+          "activeDuration": 1.04,
+          "activeSampleDuration": 1.04,
+          "activeSampleCount": 64,
+          "activeCoverageFraction": 1
+        }
+      },
+      "peakLocalPositionSpeed": {
+        "unitsPerSecond": 0,
+        "startTime": 0,
+        "endTime": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularSpeed": {
+        "degreesPerSecond": 38.663322611586736,
+        "startTime": 0.244,
+        "endTime": 0.26,
+        "keySegment": {
+          "startKeyIndex": 7,
+          "endKeyIndex": 8,
+          "startTime": 0.228,
+          "endTime": 0.26,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionAcceleration": {
+        "unitsPerSecondSquared": 0,
+        "time": 0.0165,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularAcceleration": {
+        "degreesPerSecondSquared": 532.0764709710628,
+        "time": 0.098,
+        "keySegment": {
+          "startKeyIndex": 2,
+          "endKeyIndex": 3,
+          "startTime": 0.065,
+          "endTime": 0.098,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalPositionJerk": {
+        "unitsPerSecondCubed": 0,
+        "time": 0.02475,
+        "keySegment": {
+          "startKeyIndex": 0,
+          "endKeyIndex": 1,
+          "startTime": 0,
+          "endTime": 0.033,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      },
+      "peakLocalAngularJerk": {
+        "degreesPerSecondCubed": 33254.77943569136,
+        "time": 0.10600000000000001,
+        "keySegment": {
+          "startKeyIndex": 3,
+          "endKeyIndex": 4,
+          "startTime": 0.098,
+          "endTime": 0.13,
+          "easingStyle": "Linear",
+          "easingDirection": "InOut"
+        }
+      }
+    }
+  ],
+  "loopSeamVelocity": [
+    {
+      "channel": "base",
+      "joint": "Head",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 2.0315855766814517,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "LeftFoot",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 7.962103936918762,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "LeftHand",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.5700756194715124,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "LeftLowerArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.9202254652097537,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "LeftLowerLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 11.454674179882112,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "LeftUpperArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 23.904415848989515,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "LeftUpperLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 27.166126476029667,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "LowerTorso",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0.09568612181112111,
+      "angularDiscontinuityDegreesPerSecond": 7.729209897569842,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "RightFoot",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 7.962103936918762,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "RightHand",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.5700756194715124,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "RightLowerArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.9202254652158786,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "RightLowerLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 5.1218472114906035,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "RightUpperArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 23.904415848989515,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "RightUpperLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 27.166126476032012,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    },
+    {
+      "channel": "base",
+      "joint": "UpperTorso",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 7.329350030290893,
+      "interpretation": "Local channel endpoints and one-sided sampled velocities, before layer composition or rig hierarchy. Equal velocities do not imply matching endpoint poses. Root travel or turning may intentionally accumulate across loops; disabled or zero-weight layers do not imply visible motion. Review the rendered wrap against the intended action."
+    }
+  ],
+  "composedLoopSeam": [
+    {
+      "joint": "Head",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 2.0315855766814517,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "LeftFoot",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 7.962103936918762,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "LeftHand",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.5700756194715124,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "LeftLowerArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.9202254652097537,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "LeftLowerLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 11.454674179882112,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "LeftUpperArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 23.904415848989515,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "LeftUpperLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 27.166126476029667,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "LowerTorso",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0.09568612181112111,
+      "angularDiscontinuityDegreesPerSecond": 7.729209897569842,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "RightFoot",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 7.962103936918762,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "RightHand",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.5700756194715124,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "RightLowerArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 3.9202254652158786,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "RightLowerLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 5.1218472114906035,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "RightUpperArm",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 23.904415848989515,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "RightUpperLeg",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 27.166126476032012,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    },
+    {
+      "joint": "UpperTorso",
+      "endpointPositionOffsetStuds": 0,
+      "endpointAngularOffsetDegrees": 0,
+      "velocitySampleStepSeconds": 0.0010400000000000001,
+      "positionDiscontinuityStudsPerSecond": 0,
+      "angularDiscontinuityDegreesPerSecond": 7.329350030290893,
+      "interpretation": "Resultant local joint pose after base, enabled weighted layer stack and matching root-motion composition. Disabled/zero-weight-only joints are omitted. This excludes hierarchy, world-space contact, rendered appearance and intent; root accumulation may be deliberate."
+    }
+  ],
+  "coordination": {
+    "basis": "Independent base-track local channels only. Enabled/disabled layers and root motion remain separately reported and are not composed here; no hierarchy or world-space inference is made.",
+    "sampleRateHz": 60,
+    "phaseLagWindowSeconds": 0.016666666666666666,
+    "position": {
+      "activeJointCount": 1,
+      "synchronizedPeakGroups": [],
+      "largestOnsetLags": [],
+      "largestPeakLags": []
+    },
+    "angular": {
+      "activeJointCount": 15,
+      "synchronizedPeakGroups": [
+        {
+          "joints": [
+            "Head",
+            "LeftFoot"
+          ],
+          "startTime": 0.10600000000000001,
+          "endTime": 0.10600000000000001,
+          "spreadSeconds": 0
+        },
+        {
+          "joints": [
+            "LeftHand",
+            "RightHand",
+            "UpperTorso"
+          ],
+          "startTime": 0.236,
+          "endTime": 0.252,
+          "spreadSeconds": 0.016000000000000014
+        },
+        {
+          "joints": [
+            "LeftUpperLeg",
+            "RightUpperArm"
+          ],
+          "startTime": 0.26825,
+          "endTime": 0.26825,
+          "spreadSeconds": 0
+        },
+        {
+          "joints": [
+            "LeftUpperArm",
+            "RightUpperLeg"
+          ],
+          "startTime": 0.78825,
+          "endTime": 0.80475,
+          "spreadSeconds": 0.01649999999999996
+        }
+      ],
+      "largestOnsetLags": [
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftFoot",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftHand",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftUpperArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftUpperLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LowerTorso",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightFoot",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightHand",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightLowerArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightLowerLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightUpperArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightUpperLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "UpperTorso",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftHand",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        }
+      ],
+      "largestPeakLags": [
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.926,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.926,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.82875,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.82875,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftHand",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.796,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "RightHand",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.796,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "UpperTorso",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.78,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftUpperLeg",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.76375,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "RightUpperArm",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.76375,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LowerTorso",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0.7150000000000001,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightUpperLeg",
+          "lagSeconds": 0.69875,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "RightUpperLeg",
+          "lagSeconds": 0.69875,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftHand",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.69875,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "RightHand",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.69875,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "UpperTorso",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.68275,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftUpperArm",
+          "lagSeconds": 0.68225,
+          "overlapSeconds": 1.04
+        }
+      ]
+    }
+  },
+  "composedCoordination": {
+    "basis": "Composed local joint trajectories sampled after base tracks, enabled weighted layers in stack order, and matching root-motion channels. Disabled and zero-weight layers are excluded. This is resultant local motion, not per-source attribution; it does not infer hierarchy, world-space travel, rendered quality, or intent.",
+    "uniformSampleCount": 64,
+    "uniformSampleCapped": false,
+    "sampleRateHz": 60,
+    "phaseLagWindowSeconds": 0.016666666666666666,
+    "position": {
+      "activeJointCount": 1,
+      "synchronizedPeakGroups": [],
+      "largestOnsetLags": [],
+      "largestPeakLags": []
+    },
+    "angular": {
+      "activeJointCount": 15,
+      "synchronizedPeakGroups": [
+        {
+          "joints": [
+            "RightUpperArm",
+            "LeftUpperLeg"
+          ],
+          "startTime": 0.2620634920634921,
+          "endTime": 0.2723809523809524,
+          "spreadSeconds": 0.01031746031746028
+        },
+        {
+          "joints": [
+            "LeftLowerArm",
+            "RightLowerArm"
+          ],
+          "startTime": 0.5034920634920635,
+          "endTime": 0.5034920634920635,
+          "spreadSeconds": 0
+        },
+        {
+          "joints": [
+            "Head",
+            "RightFoot"
+          ],
+          "startTime": 0.6355555555555557,
+          "endTime": 0.6355555555555557,
+          "spreadSeconds": 0
+        },
+        {
+          "joints": [
+            "LeftHand",
+            "RightHand",
+            "UpperTorso"
+          ],
+          "startTime": 0.7676190476190476,
+          "endTime": 0.7676190476190476,
+          "spreadSeconds": 0
+        },
+        {
+          "joints": [
+            "LeftUpperArm",
+            "RightUpperLeg"
+          ],
+          "startTime": 0.7861904761904762,
+          "endTime": 0.7861904761904762,
+          "spreadSeconds": 0
+        }
+      ],
+      "largestOnsetLags": [
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftFoot",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftHand",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftUpperArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LeftUpperLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "LowerTorso",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightFoot",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightHand",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightLowerArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightLowerLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightUpperArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "RightUpperLeg",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "Head",
+          "laterJoint": "UpperTorso",
+          "lagSeconds": 0,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftHand",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftLowerArm",
+          "lagSeconds": 0,
+          "overlapSeconds": 0.975
+        }
+      ],
+      "largestPeakLags": [
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.8346746031746032,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "RightUpperArm",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.6799126984126984,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftUpperArm",
+          "lagSeconds": 0.6788888888888889,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "RightUpperLeg",
+          "lagSeconds": 0.6788888888888889,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftUpperLeg",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.6695952380952381,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "LeftHand",
+          "lagSeconds": 0.6603174603174603,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "RightHand",
+          "lagSeconds": 0.6603174603174603,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "UpperTorso",
+          "lagSeconds": 0.6603174603174603,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LowerTorso",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.6365793650793652,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "RightLowerLeg",
+          "laterJoint": "LeftLowerLeg",
+          "lagSeconds": 0.5375317460317461,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "Head",
+          "lagSeconds": 0.5282539682539683,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "LeftFoot",
+          "laterJoint": "RightFoot",
+          "lagSeconds": 0.5282539682539683,
+          "overlapSeconds": 0.975
+        },
+        {
+          "earlierJoint": "RightUpperArm",
+          "laterJoint": "LeftUpperArm",
+          "lagSeconds": 0.5241269841269841,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "RightUpperArm",
+          "laterJoint": "RightUpperLeg",
+          "lagSeconds": 0.5241269841269841,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftUpperLeg",
+          "laterJoint": "LeftUpperArm",
+          "lagSeconds": 0.5138095238095238,
+          "overlapSeconds": 1.04
+        },
+        {
+          "earlierJoint": "LeftUpperLeg",
+          "laterJoint": "RightUpperLeg",
+          "lagSeconds": 0.5138095238095238,
+          "overlapSeconds": 1.04
+        }
+      ]
+    }
+  },
+  "actionPhaseMap": {
+    "source": "unsegmented",
+    "markerRule": "Explicit marker.phase metadata takes precedence: anticipation, main_action, follow_through, and recovery label boundaries; event excludes the marker from phase segmentation. For legacy markers with no phase field, recognized names (anticipation/windup/preparation, action/attack/strike/impact/release/cast, follow-through, recovery/settle/return) retain name-based inference. Ordinary events can use phase:event to disambiguate a phase-like name. Without any recognized phase marker, the full clip is returned as unsegmented; intent is not inferred from motion peaks.",
+    "detailLimitPerPhase": 6,
+    "phases": [
+      {
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "duration": 1.04,
+        "boundaryMarkers": [],
+        "endingMarkers": [],
+        "boundaryLabels": [],
+        "activeChannelCount": 15,
+        "activeChannels": [
+          {
+            "joint": "Head",
+            "channel": "base",
+            "angularWindow": {
+              "startTime": 0,
+              "peakTime": 0.10600000000000001,
+              "settleTime": 1.04
+            }
+          },
+          {
+            "joint": "LeftFoot",
+            "channel": "base",
+            "angularWindow": {
+              "startTime": 0,
+              "peakTime": 0.10600000000000001,
+              "settleTime": 0.975
+            }
+          },
+          {
+            "joint": "LeftHand",
+            "channel": "base",
+            "angularWindow": {
+              "startTime": 0,
+              "peakTime": 0.236,
+              "settleTime": 1.04
+            }
+          },
+          {
+            "joint": "LeftLowerArm",
+            "channel": "base",
+            "angularWindow": {
+              "startTime": 0,
+              "peakTime": 1.032,
+              "settleTime": 1.04
+            }
+          },
+          {
+            "joint": "LeftLowerLeg",
+            "channel": "base",
+            "angularWindow": {
+              "startTime": 0,
+              "peakTime": 0.93475,
+              "settleTime": 1.04
+            }
+          },
+          {
+            "joint": "LeftUpperArm",
+            "channel": "base",
+            "angularWindow": {
+              "startTime": 0,
+              "peakTime": 0.78825,
+              "settleTime": 1.04
+            }
+          }
+        ],
+        "omittedActiveChannelCount": 9,
+        "peakEvents": [
+          {
+            "joint": "LowerTorso",
+            "channel": "base",
+            "dimension": "position",
+            "peakTime": 0.13825,
+            "peakSpeed": 0.2727272727272727,
+            "unit": "studs/second",
+            "keySegment": {
+              "startKeyIndex": 4,
+              "endKeyIndex": 5,
+              "startTime": 0.13,
+              "endTime": 0.163,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LowerTorso",
+            "channel": "base",
+            "dimension": "position",
+            "peakTime": 0.17099999999999999,
+            "peakSpeed": 0.2948119103767689,
+            "unit": "studs/second",
+            "keySegment": {
+              "startKeyIndex": 5,
+              "endKeyIndex": 6,
+              "startTime": 0.163,
+              "endTime": 0.195,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LeftUpperLeg",
+            "channel": "base",
+            "dimension": "angular",
+            "peakTime": 0.252,
+            "peakSpeed": 211.58946939694235,
+            "unit": "degrees/second",
+            "keySegment": {
+              "startKeyIndex": 7,
+              "endKeyIndex": 8,
+              "startTime": 0.228,
+              "endTime": 0.26,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LeftUpperLeg",
+            "channel": "base",
+            "dimension": "angular",
+            "peakTime": 0.26825,
+            "peakSpeed": 227.06543630270642,
+            "unit": "degrees/second",
+            "keySegment": {
+              "startKeyIndex": 8,
+              "endKeyIndex": 9,
+              "startTime": 0.26,
+              "endTime": 0.293,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LeftUpperLeg",
+            "channel": "base",
+            "dimension": "angular",
+            "peakTime": 0.317,
+            "peakSpeed": 217.60750892087913,
+            "unit": "degrees/second",
+            "keySegment": {
+              "startKeyIndex": 9,
+              "endKeyIndex": 10,
+              "startTime": 0.293,
+              "endTime": 0.325,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LowerTorso",
+            "channel": "base",
+            "dimension": "position",
+            "peakTime": 0.447,
+            "peakSpeed": 0.2881107642904028,
+            "unit": "studs/second",
+            "keySegment": {
+              "startKeyIndex": 13,
+              "endKeyIndex": 14,
+              "startTime": 0.423,
+              "endTime": 0.455,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LowerTorso",
+            "channel": "base",
+            "dimension": "position",
+            "peakTime": 0.6747500000000001,
+            "peakSpeed": 0.27272727272727265,
+            "unit": "studs/second",
+            "keySegment": {
+              "startKeyIndex": 20,
+              "endKeyIndex": 21,
+              "startTime": 0.65,
+              "endTime": 0.683,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LowerTorso",
+            "channel": "base",
+            "dimension": "position",
+            "peakTime": 0.6910000000000001,
+            "peakSpeed": 0.2948119103767698,
+            "unit": "studs/second",
+            "keySegment": {
+              "startKeyIndex": 21,
+              "endKeyIndex": 22,
+              "startTime": 0.683,
+              "endTime": 0.715,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "RightUpperLeg",
+            "channel": "base",
+            "dimension": "angular",
+            "peakTime": 0.756,
+            "peakSpeed": 211.9373159908966,
+            "unit": "degrees/second",
+            "keySegment": {
+              "startKeyIndex": 23,
+              "endKeyIndex": 24,
+              "startTime": 0.748,
+              "endTime": 0.78,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "RightUpperLeg",
+            "channel": "base",
+            "dimension": "angular",
+            "peakTime": 0.80475,
+            "peakSpeed": 228.28358744063428,
+            "unit": "degrees/second",
+            "keySegment": {
+              "startKeyIndex": 24,
+              "endKeyIndex": 25,
+              "startTime": 0.78,
+              "endTime": 0.813,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "RightUpperLeg",
+            "channel": "base",
+            "dimension": "angular",
+            "peakTime": 0.837,
+            "peakSpeed": 219.30403244725682,
+            "unit": "degrees/second",
+            "keySegment": {
+              "startKeyIndex": 25,
+              "endKeyIndex": 26,
+              "startTime": 0.813,
+              "endTime": 0.845,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          },
+          {
+            "joint": "LowerTorso",
+            "channel": "base",
+            "dimension": "position",
+            "peakTime": 0.967,
+            "peakSpeed": 0.2881107642904028,
+            "unit": "studs/second",
+            "keySegment": {
+              "startKeyIndex": 29,
+              "endKeyIndex": 30,
+              "startTime": 0.943,
+              "endTime": 0.975,
+              "easingStyle": "Linear",
+              "easingDirection": "InOut"
+            }
+          }
+        ],
+        "omittedPeakEventCount": 500,
+        "poseProgression": {
+          "basis": "Composed local joint transforms sampled from base tracks, enabled weighted layers in stack order, and matching root-motion tracks. Rotation uses quaternion angular distance. No parent hierarchy, world-space trajectory, rendered appearance, or physical contact is inferred.",
+          "sampleRateHz": 60,
+          "uniformSampleCount": 64,
+          "uniformSampleCapped": false,
+          "jointCount": 15,
+          "omittedJointCount": 9,
+          "joints": [
+            {
+              "joint": "RightUpperLeg",
+              "entry": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  -0.1897191217954274,
+                  0.001986806624033258,
+                  0.010281578770595264,
+                  0.981782560734603
+                ]
+              },
+              "exit": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  -0.1897191217954274,
+                  0.001986806624033258,
+                  0.010281578770595264,
+                  0.981782560734603
+                ]
+              },
+              "netTranslationStuds": 0,
+              "netRotationDegrees": 0,
+              "peakTranslationFromEntryStuds": 0,
+              "peakTranslationTime": 0,
+              "peakRotationFromEntryDegrees": 48.44700353364867,
+              "peakRotationTime": 0.683,
+              "evaluationCount": 95
+            },
+            {
+              "joint": "LeftUpperLeg",
+              "entry": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  0.1897191217954274,
+                  0.001986806624033258,
+                  -0.010281578770595264,
+                  0.981782560734603
+                ]
+              },
+              "exit": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  0.1897191217954274,
+                  0.001986806624033258,
+                  -0.010281578770595264,
+                  0.981782560734603
+                ]
+              },
+              "netTranslationStuds": 0,
+              "netRotationDegrees": 0,
+              "peakTranslationFromEntryStuds": 0,
+              "peakTranslationTime": 0,
+              "peakRotationFromEntryDegrees": 44.80648750870911,
+              "peakRotationTime": 0.585,
+              "evaluationCount": 95
+            },
+            {
+              "joint": "LeftUpperArm",
+              "entry": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  -0.17521929988725554,
+                  0.009787471233727679,
+                  -0.09460713484709912,
+                  0.9799244319792683
+                ]
+              },
+              "exit": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  -0.17521929988725554,
+                  0.009787471233727679,
+                  -0.09460713484709912,
+                  0.9799244319792683
+                ]
+              },
+              "netTranslationStuds": 0,
+              "netRotationDegrees": 0,
+              "peakTranslationFromEntryStuds": 0,
+              "peakTranslationTime": 0,
+              "peakRotationFromEntryDegrees": 40.42926611515939,
+              "peakRotationTime": 0.52,
+              "evaluationCount": 95
+            },
+            {
+              "joint": "RightUpperArm",
+              "entry": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  0.17521929988725554,
+                  0.009787471233727679,
+                  0.09460713484709912,
+                  0.9799244319792683
+                ]
+              },
+              "exit": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  0.17521929988725554,
+                  0.009787471233727679,
+                  0.09460713484709912,
+                  0.9799244319792683
+                ]
+              },
+              "netTranslationStuds": 0,
+              "netRotationDegrees": 0,
+              "peakTranslationFromEntryStuds": 0,
+              "peakTranslationTime": 0,
+              "peakRotationFromEntryDegrees": 40.42926611515939,
+              "peakRotationTime": 0.52,
+              "evaluationCount": 95
+            },
+            {
+              "joint": "LeftLowerLeg",
+              "entry": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  -0.13777300385065988,
+                  0,
+                  0,
+                  0.9904638304400449
+                ]
+              },
+              "exit": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  -0.13777300385065988,
+                  0,
+                  0,
+                  0.9904638304400449
+                ]
+              },
+              "netTranslationStuds": 0,
+              "netRotationDegrees": 0,
+              "peakTranslationFromEntryStuds": 0,
+              "peakTranslationTime": 0,
+              "peakRotationFromEntryDegrees": 26.018,
+              "peakRotationTime": 0.78,
+              "evaluationCount": 95
+            },
+            {
+              "joint": "LeftFoot",
+              "entry": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  0.06012292501749635,
+                  -0.0005246848178213948,
+                  0.008710747823598623,
+                  0.9981528347229878
+                ]
+              },
+              "exit": {
+                "position": [
+                  0,
+                  0,
+                  0
+                ],
+                "rotationQuaternion": [
+                  0.06012292501749635,
+                  -0.0005246848178213948,
+                  0.008710747823598623,
+                  0.9981528347229878
+                ]
+              },
+              "netTranslationStuds": 0,
+              "netRotationDegrees": 0,
+              "peakTranslationFromEntryStuds": 0,
+              "peakTranslationTime": 0,
+              "peakRotationFromEntryDegrees": 21.875428732635154,
+              "peakRotationTime": 0.195,
+              "evaluationCount": 95
+            }
+          ]
+        },
+        "contacts": []
+      }
+    ]
+  },
+  "refinementPlan": [
+    {
+      "rankWithinSignal": 1,
+      "signal": "peakLocalPositionSpeed",
+      "value": 0.2948119103767698,
+      "unit": "studs/second",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.6910000000000001,
+      "keySegment": {
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "startTime": 0.683,
+        "endTime": 0.715,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Local pose change per second; a high value may be intentional for a fast action.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 1,
+        "sampleWindow": {
+          "startTime": 0.683,
+          "endTime": 0.6990000000000001
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": []
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.6910000000000001s and decide whether this position speed is intentional. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.683,
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 2,
+      "signal": "peakLocalPositionSpeed",
+      "value": 0.2948119103767689,
+      "unit": "studs/second",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.17099999999999999,
+      "keySegment": {
+        "startKeyIndex": 5,
+        "endKeyIndex": 6,
+        "startTime": 0.163,
+        "endTime": 0.195,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Local pose change per second; a high value may be intentional for a fast action.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 1,
+        "sampleWindow": {
+          "startTime": 0.163,
+          "endTime": 0.179
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": []
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.17099999999999999s and decide whether this position speed is intentional. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.163,
+        "startKeyIndex": 5,
+        "endKeyIndex": 6,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 3,
+      "signal": "peakLocalPositionSpeed",
+      "value": 0.2881107642904028,
+      "unit": "studs/second",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.447,
+      "keySegment": {
+        "startKeyIndex": 13,
+        "endKeyIndex": 14,
+        "startTime": 0.423,
+        "endTime": 0.455,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Local pose change per second; a high value may be intentional for a fast action.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 1,
+        "sampleWindow": {
+          "startTime": 0.439,
+          "endTime": 0.455
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": []
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.447s and decide whether this position speed is intentional. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.423,
+        "startKeyIndex": 13,
+        "endKeyIndex": 14,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 1,
+      "signal": "peakLocalAngularSpeed",
+      "value": 228.28358744063428,
+      "unit": "degrees/second",
+      "joint": "RightUpperLeg",
+      "channel": "base",
+      "eventTime": 0.80475,
+      "keySegment": {
+        "startKeyIndex": 24,
+        "endKeyIndex": 25,
+        "startTime": 0.78,
+        "endTime": 0.813,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Local pose change per second; a high value may be intentional for a fast action.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 1,
+        "sampleWindow": {
+          "startTime": 0.7965,
+          "endTime": 0.813
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": []
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.80475s and decide whether this angular speed is intentional. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "RightUpperLeg",
+        "keyTime": 0.78,
+        "startKeyIndex": 24,
+        "endKeyIndex": 25,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 2,
+      "signal": "peakLocalAngularSpeed",
+      "value": 227.06543630270642,
+      "unit": "degrees/second",
+      "joint": "LeftUpperLeg",
+      "channel": "base",
+      "eventTime": 0.26825,
+      "keySegment": {
+        "startKeyIndex": 8,
+        "endKeyIndex": 9,
+        "startTime": 0.26,
+        "endTime": 0.293,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Local pose change per second; a high value may be intentional for a fast action.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 1,
+        "sampleWindow": {
+          "startTime": 0.26,
+          "endTime": 0.27649999999999997
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": []
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.26825s and decide whether this angular speed is intentional. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LeftUpperLeg",
+        "keyTime": 0.26,
+        "startKeyIndex": 8,
+        "endKeyIndex": 9,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 3,
+      "signal": "peakLocalAngularSpeed",
+      "value": 219.30403244725682,
+      "unit": "degrees/second",
+      "joint": "RightUpperLeg",
+      "channel": "base",
+      "eventTime": 0.837,
+      "keySegment": {
+        "startKeyIndex": 25,
+        "endKeyIndex": 26,
+        "startTime": 0.813,
+        "endTime": 0.845,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Local pose change per second; a high value may be intentional for a fast action.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 1,
+        "sampleWindow": {
+          "startTime": 0.829,
+          "endTime": 0.845
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": []
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.837s and decide whether this angular speed is intentional. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "RightUpperLeg",
+        "keyTime": 0.813,
+        "startKeyIndex": 25,
+        "endKeyIndex": 26,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 1,
+      "signal": "peakLocalPositionAcceleration",
+      "value": 8.560485066607539,
+      "unit": "studs/second^2",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.845,
+      "keySegment": {
+        "startKeyIndex": 25,
+        "endKeyIndex": 26,
+        "startTime": 0.813,
+        "endTime": 0.845,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose speed; this can reflect a deliberate sharp accent or curve transition.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 2,
+        "sampleWindow": {
+          "startTime": 0.829,
+          "endTime": 0.8614999999999999
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.845,
+            "leftSegmentStartKeyIndex": 25,
+            "rightSegmentStartKeyIndex": 26
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.845s and decide whether this position acceleration is intentional. Its finite-difference sample window crosses key boundary at 0.845s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.813,
+        "startKeyIndex": 25,
+        "endKeyIndex": 26,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 2,
+      "signal": "peakLocalPositionAcceleration",
+      "value": 8.560485066607527,
+      "unit": "studs/second^2",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.325,
+      "keySegment": {
+        "startKeyIndex": 9,
+        "endKeyIndex": 10,
+        "startTime": 0.293,
+        "endTime": 0.325,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose speed; this can reflect a deliberate sharp accent or curve transition.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 2,
+        "sampleWindow": {
+          "startTime": 0.309,
+          "endTime": 0.3415
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.325,
+            "leftSegmentStartKeyIndex": 9,
+            "rightSegmentStartKeyIndex": 10
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.325s and decide whether this position acceleration is intentional. Its finite-difference sample window crosses key boundary at 0.325s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.293,
+        "startKeyIndex": 9,
+        "endKeyIndex": 10,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 3,
+      "signal": "peakLocalPositionAcceleration",
+      "value": 8.534859274986486,
+      "unit": "studs/second^2",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.065,
+      "keySegment": {
+        "startKeyIndex": 1,
+        "endKeyIndex": 2,
+        "startTime": 0.033,
+        "endTime": 0.065,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose speed; this can reflect a deliberate sharp accent or curve transition.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 2,
+        "sampleWindow": {
+          "startTime": 0.049,
+          "endTime": 0.0815
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.065,
+            "leftSegmentStartKeyIndex": 1,
+            "rightSegmentStartKeyIndex": 2
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.065s and decide whether this position acceleration is intentional. Its finite-difference sample window crosses key boundary at 0.065s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.033,
+        "startKeyIndex": 1,
+        "endKeyIndex": 2,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 1,
+      "signal": "peakLocalAngularAcceleration",
+      "value": 8558.263051839898,
+      "unit": "degrees/second^2",
+      "joint": "RightFoot",
+      "channel": "base",
+      "eventTime": 0.715,
+      "keySegment": {
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "startTime": 0.683,
+        "endTime": 0.715,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose speed; this can reflect a deliberate sharp accent or curve transition.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 2,
+        "sampleWindow": {
+          "startTime": 0.6990000000000001,
+          "endTime": 0.7315
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.715,
+            "leftSegmentStartKeyIndex": 21,
+            "rightSegmentStartKeyIndex": 22
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.715s and decide whether this angular acceleration is intentional. Its finite-difference sample window crosses key boundary at 0.715s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "RightFoot",
+        "keyTime": 0.683,
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 2,
+      "signal": "peakLocalAngularAcceleration",
+      "value": 8558.263051839825,
+      "unit": "degrees/second^2",
+      "joint": "LeftFoot",
+      "channel": "base",
+      "eventTime": 0.195,
+      "keySegment": {
+        "startKeyIndex": 5,
+        "endKeyIndex": 6,
+        "startTime": 0.163,
+        "endTime": 0.195,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose speed; this can reflect a deliberate sharp accent or curve transition.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 2,
+        "sampleWindow": {
+          "startTime": 0.179,
+          "endTime": 0.21150000000000002
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.195,
+            "leftSegmentStartKeyIndex": 5,
+            "rightSegmentStartKeyIndex": 6
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.195s and decide whether this angular acceleration is intentional. Its finite-difference sample window crosses key boundary at 0.195s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LeftFoot",
+        "keyTime": 0.163,
+        "startKeyIndex": 5,
+        "endKeyIndex": 6,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 3,
+      "signal": "peakLocalAngularAcceleration",
+      "value": 6392.938012706999,
+      "unit": "degrees/second^2",
+      "joint": "RightUpperLeg",
+      "channel": "base",
+      "eventTime": 0.715,
+      "keySegment": {
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "startTime": 0.683,
+        "endTime": 0.715,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose speed; this can reflect a deliberate sharp accent or curve transition.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 2,
+        "sampleWindow": {
+          "startTime": 0.6990000000000001,
+          "endTime": 0.7315
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.715,
+            "leftSegmentStartKeyIndex": 21,
+            "rightSegmentStartKeyIndex": 22
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.715s and decide whether this angular acceleration is intentional. Its finite-difference sample window crosses key boundary at 0.715s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "RightUpperLeg",
+        "keyTime": 0.683,
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 1,
+      "signal": "peakLocalPositionJerk",
+      "value": 535.0303166629709,
+      "unit": "studs/second^3",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.837,
+      "keySegment": {
+        "startKeyIndex": 25,
+        "endKeyIndex": 26,
+        "startTime": 0.813,
+        "endTime": 0.845,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose acceleration; this can reflect a deliberate snap, easing choice, or sampling sensitivity.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 3,
+        "sampleWindow": {
+          "startTime": 0.813,
+          "endTime": 0.8614999999999999
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.845,
+            "leftSegmentStartKeyIndex": 25,
+            "rightSegmentStartKeyIndex": 26
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.837s and decide whether this position jerk is intentional. Its finite-difference sample window crosses key boundary at 0.845s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.813,
+        "startKeyIndex": 25,
+        "endKeyIndex": 26,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 2,
+      "signal": "peakLocalPositionJerk",
+      "value": 535.03031666297,
+      "unit": "studs/second^3",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.317,
+      "keySegment": {
+        "startKeyIndex": 9,
+        "endKeyIndex": 10,
+        "startTime": 0.293,
+        "endTime": 0.325,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose acceleration; this can reflect a deliberate snap, easing choice, or sampling sensitivity.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 3,
+        "sampleWindow": {
+          "startTime": 0.293,
+          "endTime": 0.3415
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.325,
+            "leftSegmentStartKeyIndex": 9,
+            "rightSegmentStartKeyIndex": 10
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.317s and decide whether this position jerk is intentional. Its finite-difference sample window crosses key boundary at 0.325s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.293,
+        "startKeyIndex": 9,
+        "endKeyIndex": 10,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 3,
+      "signal": "peakLocalPositionJerk",
+      "value": 533.4287046866554,
+      "unit": "studs/second^3",
+      "joint": "LowerTorso",
+      "channel": "base",
+      "eventTime": 0.057,
+      "keySegment": {
+        "startKeyIndex": 1,
+        "endKeyIndex": 2,
+        "startTime": 0.033,
+        "endTime": 0.065,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose acceleration; this can reflect a deliberate snap, easing choice, or sampling sensitivity.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 3,
+        "sampleWindow": {
+          "startTime": 0.033,
+          "endTime": 0.0815
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.065,
+            "leftSegmentStartKeyIndex": 1,
+            "rightSegmentStartKeyIndex": 2
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.057s and decide whether this position jerk is intentional. Its finite-difference sample window crosses key boundary at 0.065s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LowerTorso",
+        "keyTime": 0.033,
+        "startKeyIndex": 1,
+        "endKeyIndex": 2,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 1,
+      "signal": "peakLocalAngularJerk",
+      "value": 534891.4407399968,
+      "unit": "degrees/second^3",
+      "joint": "RightFoot",
+      "channel": "base",
+      "eventTime": 0.7070000000000001,
+      "keySegment": {
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "startTime": 0.683,
+        "endTime": 0.715,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose acceleration; this can reflect a deliberate snap, easing choice, or sampling sensitivity.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 3,
+        "sampleWindow": {
+          "startTime": 0.683,
+          "endTime": 0.7315
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.715,
+            "leftSegmentStartKeyIndex": 21,
+            "rightSegmentStartKeyIndex": 22
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.7070000000000001s and decide whether this angular jerk is intentional. Its finite-difference sample window crosses key boundary at 0.715s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "RightFoot",
+        "keyTime": 0.683,
+        "startKeyIndex": 21,
+        "endKeyIndex": 22,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 2,
+      "signal": "peakLocalAngularJerk",
+      "value": 534891.4407399907,
+      "unit": "degrees/second^3",
+      "joint": "LeftFoot",
+      "channel": "base",
+      "eventTime": 0.187,
+      "keySegment": {
+        "startKeyIndex": 5,
+        "endKeyIndex": 6,
+        "startTime": 0.163,
+        "endTime": 0.195,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose acceleration; this can reflect a deliberate snap, easing choice, or sampling sensitivity.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 3,
+        "sampleWindow": {
+          "startTime": 0.163,
+          "endTime": 0.21150000000000002
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.195,
+            "leftSegmentStartKeyIndex": 5,
+            "rightSegmentStartKeyIndex": 6
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.187s and decide whether this angular jerk is intentional. Its finite-difference sample window crosses key boundary at 0.195s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "LeftFoot",
+        "keyTime": 0.163,
+        "startKeyIndex": 5,
+        "endKeyIndex": 6,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    },
+    {
+      "rankWithinSignal": 3,
+      "signal": "peakLocalAngularJerk",
+      "value": 518682.60920241603,
+      "unit": "degrees/second^3",
+      "joint": "RightFoot",
+      "channel": "base",
+      "eventTime": 0.72325,
+      "keySegment": {
+        "startKeyIndex": 22,
+        "endKeyIndex": 23,
+        "startTime": 0.715,
+        "endTime": 0.748,
+        "easingStyle": "Linear",
+        "easingDirection": "InOut"
+      },
+      "phaseContext": {
+        "source": "unsegmented",
+        "label": "unsegmented",
+        "occurrence": 1,
+        "startTime": 0,
+        "endTime": 1.04,
+        "boundaryMarkers": []
+      },
+      "overlappingContacts": [],
+      "interpretation": {
+        "signalMeaning": "Change in local pose acceleration; this can reflect a deliberate snap, easing choice, or sampling sensitivity.",
+        "evidenceScope": "Sampled at 65 evaluations over the authored base channel using local recipe transforms and the recorded outgoing easing. It excludes rig hierarchy, skinning, world-space motion, physics, and rendered appearance.",
+        "issueStatus": "unclassified",
+        "requiresVisualDecision": true
+      },
+      "measurementProvenance": {
+        "sampleRateHz": 60,
+        "derivativeOrder": 3,
+        "sampleWindow": {
+          "startTime": 0.6990000000000001,
+          "endTime": 0.748
+        },
+        "segmentAttribution": "segment_containing_event_time",
+        "crossedBoundaries": [
+          {
+            "kind": "authored_key",
+            "time": 0.715,
+            "leftSegmentStartKeyIndex": 21,
+            "rightSegmentStartKeyIndex": 22
+          }
+        ]
+      },
+      "repairOptions": [
+        {
+          "operation": "set_easing",
+          "whenToUse": "When the endpoint poses are right but the transition timing/acceleration reads incorrectly.",
+          "risk": "Changes motion throughout this key segment and may shift contact timing."
+        },
+        {
+          "operation": "set_curve",
+          "whenToUse": "When a custom Bezier timing curve is needed and the segment endpoints should remain fixed.",
+          "risk": "Curve handles can create overshoot or sharp velocity changes; re-audit and preview."
+        },
+        {
+          "operation": "insert_key",
+          "whenToUse": "When review identifies a specific missing breakdown pose that clarifies the arc, contact, or anticipation.",
+          "risk": "Adds a new pose and can change silhouette, spacing, and neighboring interpolation."
+        }
+      ],
+      "suggestedNextStep": "Preview the unsegmented clip around 0.72325s and decide whether this angular jerk is intentional. Its finite-difference sample window crosses key boundary at 0.715s; the reported patch segment is selected by event time, so inspect both sides before editing. This measurement is not itself a defect. If the endpoint poses are right, dry-run set_easing first; use set_curve only for a deliberate custom timing shape, and insert_key only for a specific missing breakdown. Preserve declared contact and accepted motion, compare before/after, then re-audit and preview again.",
+      "patchFocus": {
+        "joint": "RightFoot",
+        "keyTime": 0.715,
+        "startKeyIndex": 22,
+        "endKeyIndex": 23,
+        "availableOperations": [
+          "set_easing",
+          "set_curve",
+          "insert_key"
+        ]
+      }
+    }
+  ],
+  "limitation": "Structural advisories and kinematic measurements cannot certify an artistic result or claim that the animation was visually inspected. trackMotion uses key-to-key finite differences; curveMotion samples the authored easing and shortest-path quaternion interpolation at the requested rate plus every key time, then estimates derivatives by finite differences. Both operate in local recipe coordinates and exclude rig hierarchy, skinning, rendered/world-space motion, and collision/physics.",
+  "next": "Review contactTrackCoverage for each declared interval. no_matching_channel and inactive_channels_only are authoring cues, not automatic failures: a resting effector may need no authored channel, while an active channel does not prove contact. For rig compatibility, rerun this audit with sessionId and rigId from a fresh inspection; offline channel matching cannot establish that the effector exists or is driven on the target rig. Preview and inspect the animation before making quality claims."
+}

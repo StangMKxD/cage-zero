@@ -1,0 +1,39 @@
+{
+  "id": "1829f456-6329-49b0-9e22-a2a8e86f35ea",
+  "name": "RF02_GMode_SoleDragBack_WS_R15_v01",
+  "duration": 0.52,
+  "loop": false,
+  "priority": "Action",
+  "markers": [
+    {
+      "name": "SoleTrapEntry",
+      "time": 0.06,
+      "value": "g_mode_sole_reach"
+    },
+    {
+      "name": "TouchR",
+      "time": 0.14,
+      "value": "g_mode_sole_lock_drag_right"
+    },
+    {
+      "name": "TouchL",
+      "time": 0.34,
+      "value": "g_mode_cushion_settle_left"
+    },
+    {
+      "name": "ControlRelease",
+      "time": 0.44,
+      "value": "cut_exit_ready"
+    },
+    {
+      "name": "ClipEnd",
+      "time": 0.52,
+      "value": "one_shot_complete"
+    }
+  ],
+  "scope": {
+    "sessionId": "0e7f69a9-ee63-4987-96ee-ca653f2883bd",
+    "rigId": "d360f7b9-0c8d-4edb-b405-630594559c92"
+  },
+  "savedAt": "2026-10-27T15:11:41.931Z"
+}

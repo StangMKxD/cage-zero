@@ -1,0 +1,186 @@
+{
+  "sessionId": "0e7f69a9-ee63-4987-96ee-ca653f2883bd",
+  "rigId": "d360f7b9-0c8d-4edb-b405-630594559c92",
+  "results": [
+    {
+      "clipName": "RF02_WalkDribble_R15_v01",
+      "assetId": "dd820132-adba-4028-a2a9-bee3ed64c69a",
+      "assetFingerprint": "f5524a975d93d3f6cf1ad25ab9be40e210f76362a9c0f7d27c39d2aef3ca1cb2",
+      "preflightFingerprint": "2af36c1627bf19019407635894877487e01c202d29c4c15c4ef3c54d0fec64f0",
+      "frameCount": 33,
+      "poseCount": 528,
+      "markerCount": 5,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_WalkDribble_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "dd820132-adba-4028-a2a9-bee3ed64c69a",
+        "assetFingerprint": "f5524a975d93d3f6cf1ad25ab9be40e210f76362a9c0f7d27c39d2aef3ca1cb2",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "2af36c1627bf19019407635894877487e01c202d29c4c15c4ef3c54d0fec64f0",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_RunDribble_R15_v01",
+      "assetId": "cfb4c569-e5e3-4fa3-a799-a9efb1183f63",
+      "assetFingerprint": "7687ed3f8904673a513b29e5dd0ea3b1f9c48be41784ac12886e24485dacccd8",
+      "preflightFingerprint": "492665055fd8a1cd4d107691ba6d53457ba808614fb7285b2b84fb401125b70c",
+      "frameCount": 33,
+      "poseCount": 528,
+      "markerCount": 5,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_RunDribble_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "cfb4c569-e5e3-4fa3-a799-a9efb1183f63",
+        "assetFingerprint": "7687ed3f8904673a513b29e5dd0ea3b1f9c48be41784ac12886e24485dacccd8",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "492665055fd8a1cd4d107691ba6d53457ba808614fb7285b2b84fb401125b70c",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_CutDiagFrontLeft_AW_R15_v01",
+      "assetId": "8c17c3a4-a473-4b4d-914c-3662ca946249",
+      "assetFingerprint": "bccd9d579b00b8aeed7076bdbab837077092bbfff5a577c398c680ac8f58b745",
+      "preflightFingerprint": "55b0cea1a1b4d51927b2805eb38b7f53aa8707845b27d2f09615aa24a23ca4b0",
+      "frameCount": 23,
+      "poseCount": 368,
+      "markerCount": 4,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_CutDiagFrontLeft_AW_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "8c17c3a4-a473-4b4d-914c-3662ca946249",
+        "assetFingerprint": "bccd9d579b00b8aeed7076bdbab837077092bbfff5a577c398c680ac8f58b745",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "55b0cea1a1b4d51927b2805eb38b7f53aa8707845b27d2f09615aa24a23ca4b0",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_CutDiagFrontRight_WD_R15_v01",
+      "assetId": "e37739fd-4431-4112-b30e-fe3dbd76d156",
+      "assetFingerprint": "c6b48d6eb31178e061475d4647c1658a29d42f78eb7384b93946df23a3d556cd",
+      "preflightFingerprint": "de7e3a0b81884dacc1810f94485ef85b95644fc1c5df7a9bf9c5885680d81e73",
+      "frameCount": 23,
+      "poseCount": 368,
+      "markerCount": 4,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_CutDiagFrontRight_WD_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "e37739fd-4431-4112-b30e-fe3dbd76d156",
+        "assetFingerprint": "c6b48d6eb31178e061475d4647c1658a29d42f78eb7384b93946df23a3d556cd",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "de7e3a0b81884dacc1810f94485ef85b95644fc1c5df7a9bf9c5885680d81e73",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_CutDiagBackLeft_AS_R15_v01",
+      "assetId": "c8d6ac99-7449-4448-bebb-e4a5c39a4141",
+      "assetFingerprint": "d762a5af190f4c1ac82e49eec48797cca6a39c8f03284a714bb67ff377821717",
+      "preflightFingerprint": "90710958f97317139ce102b18eef1fb7c75b4db587955b1251d499f22992ecdc",
+      "frameCount": 27,
+      "poseCount": 432,
+      "markerCount": 5,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_CutDiagBackLeft_AS_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "c8d6ac99-7449-4448-bebb-e4a5c39a4141",
+        "assetFingerprint": "d762a5af190f4c1ac82e49eec48797cca6a39c8f03284a714bb67ff377821717",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "90710958f97317139ce102b18eef1fb7c75b4db587955b1251d499f22992ecdc",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_CutDiagBackRight_SD_R15_v01",
+      "assetId": "8988e5d2-8782-4ba3-8b48-05a8f4ad4abb",
+      "assetFingerprint": "7d347990f3a8d43e3887d3955123e2f51f330a2470d6aca4dc10b6fa5355ece4",
+      "preflightFingerprint": "b9da2b288aac9e25da928d5f0128df06de25f5aad82107a5df4cd5469ff4eb36",
+      "frameCount": 27,
+      "poseCount": 432,
+      "markerCount": 5,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_CutDiagBackRight_SD_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "8988e5d2-8782-4ba3-8b48-05a8f4ad4abb",
+        "assetFingerprint": "7d347990f3a8d43e3887d3955123e2f51f330a2470d6aca4dc10b6fa5355ece4",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "b9da2b288aac9e25da928d5f0128df06de25f5aad82107a5df4cd5469ff4eb36",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_CutReverse_WS_R15_v01",
+      "assetId": "30cbe19c-759c-43bf-810b-bf45d124c4c9",
+      "assetFingerprint": "94a0d3bbc87e444a19908efc7607b9fae84566be5bedb9d01f5ec0c3e5d8df94",
+      "preflightFingerprint": "5f0d0dee3ee175c63f042417089e5e80ec34a64ad57fb60eb290e6bd3cb418a2",
+      "frameCount": 29,
+      "poseCount": 464,
+      "markerCount": 5,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_CutReverse_WS_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "30cbe19c-759c-43bf-810b-bf45d124c4c9",
+        "assetFingerprint": "94a0d3bbc87e444a19908efc7607b9fae84566be5bedb9d01f5ec0c3e5d8df94",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "5f0d0dee3ee175c63f042417089e5e80ec34a64ad57fb60eb290e6bd3cb418a2",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_GMode_SlowControlLoop_R15_v01",
+      "assetId": "039de0b2-5126-43b5-b5a4-9f11286410c7",
+      "assetFingerprint": "8621daed4afe48cbafa307c3c791c00047c9e27ed9f6adeb18b5f6c2c2a565c0",
+      "preflightFingerprint": "cf7526677b6ec97a58896b34a8efd4fc002039319b7a45557392567b69bc06f7",
+      "frameCount": 33,
+      "poseCount": 528,
+      "markerCount": 5,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_GMode_SlowControlLoop_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "039de0b2-5126-43b5-b5a4-9f11286410c7",
+        "assetFingerprint": "8621daed4afe48cbafa307c3c791c00047c9e27ed9f6adeb18b5f6c2c2a565c0",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "cf7526677b6ec97a58896b34a8efd4fc002039319b7a45557392567b69bc06f7",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    },
+    {
+      "clipName": "RF02_GMode_SoleDragBack_WS_R15_v01",
+      "assetId": "1829f456-6329-49b0-9e22-a2a8e86f35ea",
+      "assetFingerprint": "4a2f3cb93becfeefaf97edfcb4760acfd509ad1b318873d10d9ead0e216b4711",
+      "preflightFingerprint": "e5d571aa4585aed48d7d84384d6603c7986f0bec582810a651c45800cec22c78",
+      "frameCount": 27,
+      "poseCount": 432,
+      "markerCount": 5,
+      "animatedTrackCount": 15,
+      "saveResult": {
+        "saved": "RF02_GMode_SoleDragBack_WS_R15_v01",
+        "kind": "KeyframeSequence",
+        "assetId": "1829f456-6329-49b0-9e22-a2a8e86f35ea",
+        "assetFingerprint": "4a2f3cb93becfeefaf97edfcb4760acfd509ad1b318873d10d9ead0e216b4711",
+        "rigSignature": "[\"R15\",[\"HumanoidRootPart>LowerTorso:AnimationConstraint\",\"LeftLowerArm>LeftHand:AnimationConstraint\",\"LeftLowerLeg>LeftFoot:AnimationConstraint\",\"LeftUpperArm>LeftLowerArm:AnimationConstraint\",\"LeftUpperLeg>LeftLowerLeg:AnimationConstraint\",\"LowerTorso>LeftUpperLeg:AnimationConstraint\",\"LowerTorso>RightUpperLeg:AnimationConstraint\",\"LowerTorso>UpperTorso:AnimationConstraint\",\"RightLowerArm>RightHand:AnimationConstraint\",\"RightLowerLeg>RightFoot:AnimationConstraint\",\"RightUpperArm>RightLowerArm:AnimationConstraint\",\"RightUpperLeg>RightLowerLeg:AnimationConstraint\",\"UpperTorso>Head:AnimationConstraint\",\"UpperTorso>LeftUpperArm:AnimationConstraint\",\"UpperTorso>RightUpperArm:AnimationConstraint\"]]",
+        "preflightFingerprint": "e5d571aa4585aed48d7d84384d6603c7986f0bec582810a651c45800cec22c78",
+        "alreadySaved": false,
+        "note": "Local editable sequence. Publish using Roblox's Animation Editor when ready."
+      }
+    }
+  ]
+}

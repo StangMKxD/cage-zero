@@ -1,69 +1,41 @@
-> **Review030 Camera finalgrill:**5exactStudiomatches verified, butRF-F44legacytrue/directiondomain bypass andRF-F45<50ms sprintrejectlock reproduced usingactualfunctions. CHANGES_REQUESTED; report004next. Walk16side/backanimation fallback remainsassetgap/notOwneraccepted. [review030](../assets/review-030.md).
+> **PAUSED_BY_OWNER:** Owner says พักงานไว้ก่อน. Integration report001 received; independent Controller review INCOMPLETE, no signoff. Source/Studio/test work frozen; preserve all dirty code/clips. No automatic sync/commit/push/Play stop. Persistent Motion bridge unchanged. Resume only by explicit Owner instruction.
 
-> **Owner grill final:** hybridfacing—W/WA/WD faceTRAVEL+canSprint; idle/A/D/S/SA/SD faceCAMERA; side/back WALK16evenShift, onlyforwardSprint32. SamecamerataskscopeextendsSprint/selection; review029RF-F43fixpreserved, jumpfilesfrozenRF42open/dribblePAUSED. See camera-relativecontract finaldelta; report003next.
+# RF-02 live task board
+Turn: IMPLEMENTER (existing argon); Governance: OWNER_STANDARD; State: IMPLEMENTING approved delta AFTER prior sync completes.
+Base: b374102 + all current dirty work (report004 and Sprint RF46/48 protected). No commit/amend/push/publish.
+History: complete prior board snapshot in [archive-log](archive-log.md); historical findings are NOT automatically closed.
 
-> **Review029 CAMERA-RELATIVE:** vectorunit8/8 and exactStudio2fileparity independentlyverified; RF-F43 CHANGES_REQUESTED (airflagfalse can bypassnativeFreefall andwritegroundyaw). Ownercamera retest stillpending, RF-F24/25/42remainOPEN. [review029](../assets/review-029.md).
+## Active scope
+RF02-DRIBBLE-RECEIVE: Owner confirmed grill Q1..Q8/final summary. Moving lead follows MoveDirection, idle body front; original custom ball solver; forward micro-touches/no lateral sway; real rolling; immediate smooth sharp turn + dribble speed dip; successful-jump one-shot self-lob -> loose ball with brief former-owner regrab guard. No body-camera facing change or8wayanimation. [Authoritative final contract](../assets/dribble-front-control-HANDOFF.md).
 
-> **NEW Owner task2026-10-27 RF02-CAMERA-RELATIVE:** currentcamera NOT accepted; grounded body facesreticle, WASD continuouslycamera-relative (no oldworldlatch). ExistingpaneACK Flash3.8High; [contract](../assets/camera-relative-HANDOFF.md). Airyawlock/jumpcode frozen; dribblePAUSED. Review028RF-F42stillOPEN. Newcamera needs Owner retest; no sourceGit authority.
+| Workstream | Ownership / status |
+|---|---|
+| Finish report004 sync | Prior one-shot authorization only, exact parity callback before starting new disk edits. New delta NOT authorized to sync. |
+| Lead/touch/control | BallService, DribbleGeometryHelper, DribbleConfigs; MovementHeading dribble-only integration. IMPLEMENTING. |
+| Jump self-lob integration | Existing successful launch observation + minimal validated camera intent if needed. Jump physics frozen; no further aerial actions. IMPLEMENTING. |
+| Documentation | Controller sole board/checklist writer; implementer writes NEW report005. |
 
-> **Review028 / Owner latest:** jumpstutter Owner-testedgone. Technical CHANGES_REQUESTED RF-F42: server takeoffyaw anchor canreopen midair aftersettled; independent branchtest reproduced. Studio-onlytemporarykeyseam removed,4jumpfiles now exactdiskparity; rojo+diffcheckPASS. Conditionalcommit NOT executed, no delegation perOwner. [review028](../assets/review-028.md). Older failed-retest banners below historical.
+## Open evidence / findings
+RF-F51 joint body/cage sweep and RF-F54/55 stop/front tracking remain pending independent report004 review; revised movement lead contract changes front reference, not blanket defect closure. RF-F52 touch-phase gate SUPERSEDED. RF-F53 retained receive feet origin consistency. Other historic camera/lifecycle RF-F24/25/42 remain open outside scope.
 
-> **Owner failed retest after report002sync:** W thenSpace+S (alsoA/D;Shift sprint) stilljerks. CHANGES_REQUESTED; test heldW+S vs Wreleased variants and actual eventorder, not steadybackwardcase. Report003 next, samejump-onlypane; dribblePAUSED.
+## Verification gates
+Targeted exact-config offline tests, actual source review, diff check, Rojo packaging and protected Sprint SHA hashes required. JS models are not actual Luau/runtime proof. New-delta Studio sync/Play/network/visual NOTRUN / NOT_AUTHORIZED. Temporary seams absent; no fake pass.
 
-> **Latest JUMP-only status — BLOCKED waiting Studio:** Controller independently confirms list_roblox_studios empty. Report jump-stutter-report-002 records BEFORE velocity discontinuity (input reversal32studs/s), disk-only0.10s takeoffblend; AFTER/harnesscleanup/readback incomplete. Re-sync4clean diskmodules FIRST on reconnect (possible Studio-only input seam), then normal-handler AFTERtrials, remove seam+readback. No jumpPASS/Owner retest yet; dribble remainsPAUSED.
+## Protected / deferred
+Preserve Jump/Air/accepted360 noncarrier movement, Sprint RF46/48, camera/cage/rig/assets, Motion bridge and dirty work. No shooting/pass/header/volley/bicycle/combat/Super/new features. Goal-facing button queued AFTER dribble. Owner approval required for next sync and any commit. Full RF02 remains OPEN.
 
-> **Owner retest2026-10-27:** generaljump improved; backward/opposite-facing jump stillstutters. JUMP-ONLY CHANGES_REQUESTED on this trigger; bodyyaw remainslocked, translation independent. Dribble staysPAUSED. See latest jump-onlycontract delta; report002 next.
+## Owner direct implementation / live dribble replication fix
+Owner directs Controller to implement personally; former argon pane absent. Root owns this bounded code change (not independent technical signoff).
+Actual Play BEFORE: W then Shift+W, client moving68frames/minDist0.02595/front-4.11696/behind61; server moving65/minFront1.44944/behind0. Measurements read actual ball/root, not JS port. Root cause: stale absolute replicated ball transform rendered against newer client-owned character position.
+Working-tree fix: BallService publishes authoritative controlled-ball relative pose/time/owner; new DribblePresentationController rebases existing ball replica into current carrier render frame and rechecks cage/body, releases on invalid ownership/air/stale snapshot. Bootstrap loads it; validated server velocity fallback when MoveDirection stale. Authority/contact remain server-only. No duplicate ball/new remotes or movement/jump retune. Source+Edit exact parity confirmed for four touched/new scripts.
+Actual Play AFTER, after-render probe:99moving frames, behind0,minDist2.424999, body-box overlaps2; server97moving, minDist1.920219,1behind sample,11body-box overlaps. Not blanket collisionPASS. Owner says พอได้และ; further collision retune stopped for new animation request. Existing Jump/Air/Sprint hashes preserved; build/diffcheck PASS. New requested closer defaults DISK walk2.75/sprint3.1, safetyfloor2.425; not yet synced after this delta.
+Owner requests NEW dedicated animation pane through Motion, root codes; grilling pending (left/right ball deviation,2baseclips vs directionalcutclips,preview vs integration). No animation authoring until answers; goal-facing still queued later. No commit/push/publish.
 
-> **2026-10-27 OWNER RESUME — JUMP ONLY:** same acknowledged Argon fixes character stutter/apparent failedjump while moving. Dribble/frontball/touch-phase-turning remains PAUSED. Preserve accepted jumpheight/lean/yawlock/momentum; [narrow contract](../assets/jump-stutter-only-HANDOFF.md). No newpane/sourceGit. Current older banners below are historical where conflicting.
+## Current turn — Owner G/cut approval
+IMPLEMENTER Root owns CODE; animation-only external pane owns isolated Motion preview, no shared source/board. G now ACTIVE scope, not deferred: holdG, face opposing goal, goal-relative WASD, speed8 and Shift cap; validated server intent/expiry. Source implemented;52 actual Luau pure rule checks PASS; source compile/runtime checks pending. Discrete diagonal/reverse cut code prepared but approved animation IDs empty -> intentionally no movement freeze until preview accepted. No fakeclip/runtimePASS. Main animation lifecycle and old Jump/Air unchanged. See final contract delta. No commit/push.
 
-> **Latest Owner / Argon resumed:**6fileexactStudio sync independentlyconfirmed. Jump+leanOwnerfeelaccepted; intermittent failedjump/stutter stillOPEN. ArgonROLE_ACK, solewriter for frontballdribble + touch-phase delayed sprintturn (NOT automaticturnloss); [currentcontract](../assets/dribble-front-control-HANDOFF.md). Samepane/no newagent; reports003. Checklist7stillunchecked.
+## G/cut code checkpoint — DONE_BY_IMPL, not independent signoff
+G source synced + real-input smoke speed8/noShiftboost, goal-facingW/D/S, releaseSprint32, menu reset and jumpyaw0(52airframes).52Luau rules+12intent fixture checks PASS; six module require/compile PASS. ReturnedEdit and released Motion preview writer. Cut clip bindings deliberately empty pending Owner preview; no fake freeze or published assets. See [code report](../assets/goal-dribble-code-report-001.md) for exact scope/limits; old collision findings remain open. SprintController unchanged; SprintService changed only approvedG guard/negativeack. No Git. Next: Owner review9animation previews then separately authorize runtime animation integration.
 
-# Release-First — Single Live Task Board
-2026-10-26 · OWNER_STANDARD · Controller/Reviewer Codex · Owner Stang
-Base44c2810580a74727bf8eca7f5578576e14d4a516 + protected dirty source/camera/animation; no code staged by planning.
-Turn: IMPLEMENTER T02 + explicitly authorized momentumjump/airlean delta (acknowledged new AGY); Controller owns docs/board. Commit policy: Owner authorized DOCUMENTS commit; source needs separate authorization.
-[Plan](../plan.md) · [Design](../assets/street-football-design.md) · [Owner checklist](../assets/owner-checklist.md) · [Old board](../assets/plans-before-street-20261026/RF-02--tasks.md)
-
-## Feature tasks (all code/config/UI/verification inside each feature)
-| ID | Feature | Depends | State / owner |
-| --- | --- | --- | --- |
-| T01 | RF02 five-clip locomotion/camera/sprint checkpoint | foundation | OWNER_VISUAL_ACCEPTED / CHANGES_REQUESTED technical; Codex review; implementer frozen |
-| T02 | RF02 dribble/receive + high momentumjump/airlean — Owner checklist7 delta | foundation; retain T01 fixes | CHANGES_REQUESTED (review026); Owner transfer to acknowledged Codex implementer, fixes dispatched; AGY frozen; [contract](../assets/dribble-receive-HANDOFF.md) |
-| T03 | RF02 pass/shoot/curve/basic volley | T02 | PLANNED; unassigned |
-| T04 | RF02 dash/stamina/control polish | T01,T02 | PLANNED; unassigned |
-| T05 | RF03 street kick/slide/poke/block/body-check + HP | T02,T04 | PLANNED; unassigned |
-| T06 | RF03 gauge + ground/air Orbs | T03,T05 | PLANNED; unassigned |
-| T07 | RF04 Wall Run/Wall Launch | T03,T04,T05 | PLANNED; unassigned; beforeT08 |
-| T08 | RF05 SIX Supers in ONE feature | T06,T07 | PLANNED; unassigned |
-| T09 | RF05 baseline profile/loadout/gauge-only upgrade | T08 | PLANNED; unassigned |
-| T10 | RF06 2v2/GoldenGoal/rewards | T03,T05,T08,T09 | PLANNED; unassigned |
-| T11 | RF06 concise HUD / feedback | T06,T08,T10 | PLANNED; unassigned |
-| T12 | RF07 4-player/security/performance/Owner release + final doc sync | T01..11 | PLANNED; unassigned |
-Targets one focused day/feature, sixSupers one task; time is estimate, unmet checks remain open. No auto splitting/new gameplay or approval from checkbox.
-
-> **Review026 / Owner feedback:** jump works; airlean DOES NOT; dribble NOT finished. RF-F31..38 contact/contest/sort/actualjoint/serverflight/dt/lifecycle/testcoverage remainOPEN. [review026](../assets/review-026.md). Same-task writer only, no newpane.
-
-> **Review027:** RF-F40 init always aborts (generation increment twice); live player jointType=None; Owner still reports nolean/same sprintjumpdistance. RF-F41 lean input seam risk, RF-F38 normal-path evidence missing. [review027](../assets/review-027.md). CHANGES_REQUESTED; AGY released, Codex ROLE_ACK verified; actionable handoff dispatched (same task); AGY stays frozen.
-
-## Active findings
-| ID | Severity | Scope / status |
-| --- | --- | --- |
-| RF-F24/25 | Medium | Prior camera near-wall/async lifecycle risks; [review024](../assets/review-024.md), still OPEN |
-| RF-F26 | Observation | Post-LoadTracks guard hardening; actual yield/race NOT PROVEN; review025 |
-| RF-F27 | Medium | Sprint client intent can remain true after server cancellation/rejection; review025 OPEN |
-| RF-F28 | Medium | Land Action track not interrupted by grounded movement; review025 OPEN |
-| RF-F29/30 | Medium/Low | Sprint bind generation and numeric signal type; review025 OPEN |
-Prior A/F findings preserved in historical reports/old board; no closure by routing.
-
-## Evidence gates
-- Owner visual first6 accepted2026-10-26, including actual locomotion; Dash specifically NOT implemented per report.
-- AGY five-clip report READY_FOR_REVIEW; static Controller audit CHANGES_REQUESTED, not blanket technical pass. [review025](../assets/review-025.md).
-- Planning-only checks: local links/config requirement coverage/diff whitespace/staged-path audit pending final run.
-- T02 tests/sync/actual multiplayer evidence PENDING; new requirements code NOT RUN.
-- Production published animation IDs/permissions absent: release blocker for custom clips, Studio fallback not production proof.
-
-## Deferred / authorization
-Phase2: special dribble3+extra4; gacha/13stats/Traits/multiple character tuning; advanced aerial hold/trajectory; extra modes/economy/Robux/shops. Walls stayPhase1.
-Removed, not deferred: fouls/free kick/cards/penalties/regular overtime/SuperMastery power scaling.
-Owner requested docs commit now, no push. Do not stage concurrent source, previous notes/HANDOFF/camera draft or AGY reports without explicit inclusion/review.
-Full RF02/Phase1 and legacy00/01 remain open. No automatic implementation beyond T02.
+## Owner integration delegation — current source writer transfer
+Root SOURCE_FROZEN/STUDIO_RELEASED; owns only AI-Tools CLI/docs while animation pane expands after ACK to sole runtime animation-integration source writer. Owner explicitly supersedes preview-only gate to inspect in actual gameplay. Main dirty tree preserved; no concurrent Root source changes. [Integration contract](../assets/dribble-animation-integration-HANDOFF.md).9authoredclips/Gclose control/cuts + honest marker coordination; no new gameplay systems/Git/publish. Role ACK received; actionable dispatch submitted. Source/Studio writer: integration implementer. Root only AI-Tools CLI/docs; no monitoring, single push callback.

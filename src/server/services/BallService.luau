@@ -1,9 +1,11 @@
 --!strict
 -- src/server/services/BallService.luau
 -- Module 02: Server-Authoritative Ball Physics, Lifecycle & Ground Dribble/Receive
--- Governed by RF02-DRIBBLE-RECEIVE Contract (Owner Checklist 7, 2026-10-26 & Review026)
+-- Governed by RF02-DRIBBLE-RECEIVE Contract (Owner Checklist 7, 2026-10-27 Authoritative Grill Final)
 -- Server-authoritative custom position/velocity physics solver with bounded touch impulses,
--- proximity/relative-speed receive gates, deterministic contention resolution, and honest contact windows.
+-- proximity/relative-speed receive gates, deterministic contention resolution, honest contact windows,
+-- 360 movement lead tracking, forward radial micro-touches (zero lateral sway), real ball rolling,
+-- and one-shot Jump Self-Lob (Scoop) with atomic server possession release and brief recapture protection.
 -- NO welds, NO attachments, NO teleport/snap follow, NO visual Touched dependencies.
 
 local Players = game:GetService("Players")
@@ -17,6 +19,11 @@ local Types = require(Shared:WaitForChild("Types"))
 local Configs = Shared:WaitForChild("configs")
 local DribbleConfigs = require(Configs:WaitForChild("DribbleConfigs"))
 local JumpConfigs = require(Configs:WaitForChild("JumpConfigs"))
+local DribbleGeometryHelper = require(Shared:WaitForChild("DribbleGeometryHelper"))
+local DribbleControlRules = require(Shared:WaitForChild("DribbleControlRules"))
+local DribbleActionConfigs = require(Configs:WaitForChild("DribbleActionConfigs"))
+local SprintConfigs = require(Configs:WaitForChild("SprintConfigs"))
+local Network = require(Shared:WaitForChild("Network"))
 
 local Services = script.Parent
 local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
@@ -64,12 +71,140 @@ local lastStealTimeByPlayer: { [number]: number } = {}
 local blockedStealPairs: { [number]: { [number]: boolean } } = {}
 local lastPlayerPositions: { [number]: Vector3 } = {}
 local playerGenerations: { [number]: number } = {}
-local activeCharacterConnections: { [number]: RBXScriptConnection } = {}
+local activeCharacterConnections: { [number]: { RBXScriptConnection } } = {}
 local ballPart: Part? = nil
 local ballSpinRotation: CFrame = CFrame.identity
 local isInitialized = false
+local currentDribblePhase: string = "Free"
+local currentDribbleSpeedFactor: number = 1.0
+local controlledCarrierRoot: BasePart? = nil
+local previousPossessorUserId: number? = nil
+
+-- Jump Self-Lob state tracking
+local lastLobTimeByPlayer: { [number]: number } = {}
+local lastLobCarrierUserId: number? = nil
+local lobDischargedThisJump: { [number]: boolean } = {}
+local lastCameraLookByPlayer: { [number]: Vector3 } = {}
+local lastIntentTimeByPlayer: { [number]: number } = {}
+local goalDribbleRequests: {[number]: {character: Model, expires: number, lastStart: number}} = {}
+local lastGoalStartByPlayer: {[number]: number} = {}
+local dribbleTouchIntents: {[number]: {character: Model, foot: string, clip: string, isCut: boolean, startTime: number, expires: number}} = {}
+local lastDribbleTouchByPlayer: {[number]: number} = {}
+local dribbleCutIntents: {[number]: {character: Model, direction: Vector3, entryDirection: Vector3, startTime: number, duration: number, expires: number}} = {}
 
 local BallService = {}
+
+local function applyGoalDribbleMode(player: Player, character: Model, humanoid: Humanoid)
+	local request = goalDribbleRequests[player.UserId]
+	local state = humanoid:GetState()
+	local active = request ~= nil and request.character == character and request.expires > os.clock()
+		and humanoid.Health > 0 and humanoid.FloorMaterial ~= Enum.Material.Air
+		and (state == Enum.HumanoidStateType.Running or state == Enum.HumanoidStateType.RunningNoPhysics or state == Enum.HumanoidStateType.Landed)
+	local wasActive = character:GetAttribute("GoalDribbleActive") == true
+	character:SetAttribute("GoalDribbleActive", active)
+	if active then
+		humanoid.WalkSpeed = DribbleActionConfigs.GOAL_SPEED
+		character:SetAttribute("IsSprinting", false)
+	elseif wasActive then
+		humanoid.WalkSpeed = if character:GetAttribute("IsSprinting") == true then SprintConfigs.SPRINT_SPEED else SprintConfigs.NORMAL_WALK_SPEED
+	end
+end
+
+function BallService.SetGoalDribbleIntent(player: Player, payload: any): boolean
+	if typeof(payload) ~= "table" or typeof(payload.active) ~= "boolean" then return false end
+	local character = player.Character
+	if not character or payload.character ~= character or not character:IsDescendantOf(Workspace) then return false end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return false end
+	if payload.active then
+		local now = os.clock()
+		local lastStart = lastGoalStartByPlayer[player.UserId]
+		if lastStart and now - lastStart < DribbleActionConfigs.INTENT_INTERVAL * 0.5 then return false end
+		lastGoalStartByPlayer[player.UserId] = now
+		goalDribbleRequests[player.UserId] = {character = character, expires = now + DribbleActionConfigs.GOAL_INTENT_TIMEOUT, lastStart = now}
+	else
+		-- Stops are always accepted for the current character; never rate-limited.
+		goalDribbleRequests[player.UserId] = nil
+	end
+	applyGoalDribbleMode(player, character, humanoid)
+	return true
+end
+
+function BallService.SetDribbleTouchIntent(player: Player, payload: any): boolean
+	if typeof(payload) ~= "table" then return false end
+	if payload.foot ~= "L" and payload.foot ~= "R" then return false end
+	if typeof(payload.clip) ~= "string" or not DribbleActionConfigs.IsRecognizedClipName(payload.clip) then return false end
+	local character = player.Character
+	if not character or payload.character ~= character or not character:IsDescendantOf(Workspace) then return false end
+	if ballState.state ~= "Possessed" or ballState.possessorUserId ~= player.UserId then return false end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 or humanoid.FloorMaterial == Enum.Material.Air then return false end
+	local state = humanoid:GetState()
+	if state ~= Enum.HumanoidStateType.Running and state ~= Enum.HumanoidStateType.RunningNoPhysics and state ~= Enum.HumanoidStateType.Landed then
+		return false
+	end
+	if DribbleActionConfigs.IsGoalModeClipName(payload.clip) and character:GetAttribute("GoalDribbleActive") ~= true then
+		return false
+	end
+	local now = os.clock()
+	local lastTime = lastDribbleTouchByPlayer[player.UserId]
+	if lastTime and (now - lastTime) < DribbleActionConfigs.TOUCH_INTENT_COOLDOWN_SEC then
+		return false
+	end
+	lastDribbleTouchByPlayer[player.UserId] = now
+	dribbleTouchIntents[player.UserId] = {
+		character = character,
+		foot = payload.foot,
+		clip = payload.clip,
+		isCut = payload.isCut == true,
+		startTime = now,
+		expires = now + DribbleActionConfigs.TOUCH_PULSE_DURATION_SEC,
+	}
+	character:SetAttribute("ServerDribbleTouchFoot", payload.foot)
+	character:SetAttribute("ServerDribbleTouchClip", payload.clip)
+	if ballPart then
+		ballPart:SetAttribute("LastDribbleTouchFoot", payload.foot)
+		ballPart:SetAttribute("LastDribbleTouchClip", payload.clip)
+	end
+	return true
+end
+
+-- Cut exit intent: the ball goes and waits at the cut exit point (new heading) for the duration of the cut turn.
+function BallService.SetDribbleCutIntent(player: Player, payload: any): boolean
+	if typeof(payload) ~= "table" or typeof(payload.cut) ~= "string" then return false end
+	local approved = (DribbleActionConfigs.ApprovedCutAnimations :: { [string]: string? })[payload.cut]
+	local spec = (DribbleActionConfigs.Clips :: { [string]: DribbleActionConfigs.DribbleClipSpec })[payload.cut]
+	if not approved or not spec then return false end
+	local direction = payload.direction
+	if typeof(direction) ~= "Vector3" or not DribbleControlRules.IsFiniteVector(direction) then return false end
+	local horizontal = DribbleControlRules.HorizontalDirection(direction)
+	if horizontal.Magnitude < 0.5 then return false end
+	local character = player.Character
+	if not character or payload.character ~= character or not character:IsDescendantOf(Workspace) then return false end
+	if ballState.state ~= "Possessed" or ballState.possessorUserId ~= player.UserId then return false end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 or humanoid.FloorMaterial == Enum.Material.Air then return false end
+	if payload.cut == "GoalReverse" and character:GetAttribute("GoalDribbleActive") ~= true then return false end
+	local now = os.clock()
+	local duration = math.min(DribbleActionConfigs.CUT_MAX_DURATION, spec.ExpectedDuration)
+	local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local entryDir = horizontal.Unit
+	if hrp then
+		local look = Vector3.new(hrp.CFrame.LookVector.X, 0, hrp.CFrame.LookVector.Z)
+		if look.Magnitude > 0.01 then
+			entryDir = look.Unit
+		end
+	end
+	dribbleCutIntents[player.UserId] = {
+		character = character,
+		direction = horizontal.Unit,
+		entryDirection = entryDir,
+		startTime = now,
+		duration = duration,
+		expires = now + duration + DribbleActionConfigs.CUT_BALL_INTENT_GRACE_SEC,
+	}
+	return true
+end
 
 local function setStealPairBlocked(firstUserId: number, secondUserId: number, blocked: boolean)
 	local firstPairs = blockedStealPairs[firstUserId]
@@ -144,6 +279,35 @@ local function syncBallAttributes()
 	ballPart:SetAttribute("LastTouchAction", lastTouchInfo.action)
 	ballPart:SetAttribute("LastTouchTime", lastTouchInfo.touchTime)
 	ballPart:SetAttribute("TouchCount", lastTouchInfo.touchCount)
+	ballPart:SetAttribute("DribblePhase", currentDribblePhase)
+
+	local curUid = ballState.possessorUserId
+	if curUid ~= previousPossessorUserId then
+		if previousPossessorUserId ~= nil then
+			local prevPlayer = Players:GetPlayerByUserId(previousPossessorUserId)
+			local prevChar = prevPlayer and prevPlayer.Character
+			if prevChar then
+				prevChar:SetAttribute("IsBallCarrier", false)
+				prevChar:SetAttribute("DribblePhase", "Free")
+				prevChar:SetAttribute("DribbleSpeedFactor", 1.0)
+			end
+		end
+		previousPossessorUserId = curUid
+	end
+
+	if ballState.state ~= "Possessed" then
+		currentDribbleSpeedFactor = 1.0
+	end
+
+	if curUid ~= nil then
+		local curPlayer = Players:GetPlayerByUserId(curUid)
+		local curChar = curPlayer and curPlayer.Character
+		if curChar then
+			curChar:SetAttribute("IsBallCarrier", true)
+			curChar:SetAttribute("DribblePhase", currentDribblePhase)
+			curChar:SetAttribute("DribbleSpeedFactor", currentDribbleSpeedFactor)
+		end
+	end
 end
 
 function BallService.EnsureBallInstance(): Part
@@ -216,6 +380,7 @@ function BallService.SetPossessor(userId: number?)
 		ballState.possessorUserId = userId
 		ballState.state = "Possessed"
 		ballState.lastPossessingTeam = st.teamSide
+		currentDribblePhase = "Contact"
 		lastTouchInfo.touchId += 1
 		lastTouchInfo.ownerUserId = userId
 		lastTouchInfo.touchTime = os.clock()
@@ -224,6 +389,7 @@ function BallService.SetPossessor(userId: number?)
 	else
 		ballState.possessorUserId = nil
 		ballState.state = "Free"
+		currentDribblePhase = "Free"
 	end
 	syncBallAttributes()
 end
@@ -239,6 +405,10 @@ end
 function BallService.SetPlayerTeamSide(userId: number, teamSide: Types.TeamSide)
 	local st = getOrCreatePlayerState(userId)
 	st.teamSide = teamSide
+	local player = Players:GetPlayerByUserId(userId)
+	if player and player.Character then
+		player.Character:SetAttribute("AttackGoalPosition", DribbleControlRules.AttackGoal(teamSide, Constants.ARENA_HALF_LENGTH_Z, Constants.GOAL_BACK_ZONE_STUDS))
+	end
 end
 
 function BallService.GetPlayerTeamSide(userId: number): Types.TeamSide
@@ -285,6 +455,11 @@ function BallService.ResetBall(customPos: Vector3?, initialPossessingTeam: Types
 	ballState.inFlightAction = nil
 	ballSpinRotation = CFrame.identity
 	table.clear(blockedStealPairs)
+	table.clear(lastLobTimeByPlayer)
+	table.clear(lobDischargedThisJump)
+	table.clear(lastCameraLookByPlayer)
+	table.clear(lastIntentTimeByPlayer)
+	lastLobCarrierUserId = nil
 
 	lastTouchInfo.touchId += 1
 	lastTouchInfo.ownerUserId = nil
@@ -299,6 +474,86 @@ function BallService.ResetBall(customPos: Vector3?, initialPossessingTeam: Types
 		ballPart.CFrame = CFrame.new(spawnPos)
 	end
 	syncBallAttributes()
+end
+
+-- Camera look intent setter (from network remote or tests)
+function BallService.SetCameraLookIntent(userId: number, lookDir: Vector3)
+	local hDir = Vector3.new(lookDir.X, 0, lookDir.Z)
+	local mag = hDir.Magnitude
+	if mag > 1e-4 and mag == mag and mag < math.huge then
+		lastCameraLookByPlayer[userId] = hDir / mag
+	end
+end
+
+function BallService.GetLastLobInfo(): { time: number, carrierUserId: number? }
+	return {
+		time = if lastLobCarrierUserId ~= nil then (lastLobTimeByPlayer[lastLobCarrierUserId] or 0) else 0,
+		carrierUserId = lastLobCarrierUserId,
+	}
+end
+
+-- =============================================================================
+-- Jump Self-Lob (Scoop): Triggered by successful upward jump while carrier
+-- =============================================================================
+function BallService.TriggerSelfLob(player: Player, hrp: BasePart, humanoid: Humanoid): boolean
+	if not DribbleConfigs.SELF_LOB_ENABLED then
+		return false
+	end
+	local uid = player.UserId
+	if ballState.state ~= "Possessed" or ballState.possessorUserId ~= uid then
+		return false
+	end
+	if lobDischargedThisJump[uid] then
+		return false
+	end
+	lobDischargedThisJump[uid] = true
+
+	local cVel = hrp.AssemblyLinearVelocity
+	local horizVel = Vector3.new(cVel.X, 0, cVel.Z)
+	local isMoving = horizVel.Magnitude > DribbleConfigs.MIN_PLAYER_MOVE_SPEED
+
+	local launchDir: Vector3
+	if isMoving then
+		-- Verified horizontal movement snapshot
+		launchDir = horizVel.Unit
+	else
+		-- Stationary: horizontal CAMERA look (fallback to body look if none)
+		local camLook = lastCameraLookByPlayer[uid]
+		if camLook and camLook.Magnitude > 0.01 then
+			launchDir = camLook
+		else
+			local look = hrp.CFrame.LookVector
+			launchDir = Vector3.new(look.X, 0, look.Z).Unit
+		end
+	end
+
+	local lobVel = DribbleGeometryHelper.ComputeSelfLobVelocity(launchDir, cVel, isMoving)
+	local sep = DribbleGeometryHelper.GetCarrierSeparationDistance()
+	local launchPos = Vector3.new(hrp.Position.X, ballState.position.Y, hrp.Position.Z) + launchDir * sep
+
+	local r = DribbleConfigs.BALL_COLLISION_RADIUS
+	local mx = Constants.ARENA_HALF_WIDTH_X - r
+	local mz = Constants.ARENA_HALF_LENGTH_Z - r
+	launchPos = Vector3.new(math.clamp(launchPos.X, -mx, mx), launchPos.Y, math.clamp(launchPos.Z, -mz, mz))
+
+	local now = os.clock()
+	ballState.position = launchPos
+	ballState.velocity = lobVel
+	ballState.state = "Free"
+	ballState.possessorUserId = nil
+	currentDribblePhase = "Free"
+
+	lastLobTimeByPlayer[uid] = now
+	lastLobCarrierUserId = uid
+
+	lastTouchInfo.touchId += 1
+	lastTouchInfo.ownerUserId = uid
+	lastTouchInfo.touchTime = now
+	lastTouchInfo.action = "SelfLob"
+	lastTouchInfo.touchCount += 1
+
+	syncBallAttributes()
+	return true
 end
 
 -- =============================================================================
@@ -317,6 +572,9 @@ type PlayerCandidate = {
 	vertGap: number,
 }
 
+local lastActiveCarrierCand: PlayerCandidate? = nil
+local carrierPrevRootPos: { [number]: Vector3 } = {}
+
 -- RF-F33: Strict transitive total order comparator
 -- Guarantees mathematically strict weak ordering with zero pairwise cycles across all permutations.
 local function compareCandidates(a: PlayerCandidate, b: PlayerCandidate): boolean
@@ -327,6 +585,8 @@ local function compareCandidates(a: PlayerCandidate, b: PlayerCandidate): boolea
 end
 
 local function simulateDribbleAndReceive(dt: number, now: number)
+	controlledCarrierRoot = nil
+	lastActiveCarrierCand = nil
 	if BallService.IsFreeBallOnly() then
 		return
 	end
@@ -396,6 +656,14 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 		local eligibleReceivers: { PlayerCandidate } = {}
 
 		for _, cand in ipairs(candidates) do
+			-- Former owner lob recapture protection guard
+			local isFormerLobOwner = (cand.userId == lastLobCarrierUserId)
+			local inLobCooldown = isFormerLobOwner
+				and ((now - (lastLobTimeByPlayer[cand.userId] or 0)) < DribbleConfigs.SELF_LOB_RECAPTURE_COOLDOWN_SEC)
+			if inLobCooldown then
+				continue
+			end
+
 			local passGrounded = if DribbleConfigs.PLAYER_GROUNDED_REQUIRED then cand.isGrounded else true
 			local passBallGrounded = ballState.position.Y <= DribbleConfigs.GROUNDED_MAX_BALL_Y
 			local passVert = cand.vertGap <= DribbleConfigs.MAX_RECEIVE_VERTICAL_GAP
@@ -412,9 +680,11 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			table.sort(eligibleReceivers, compareCandidates)
 
 			local winner = eligibleReceivers[1]
+			lastActiveCarrierCand = winner
 			ballState.possessorUserId = winner.userId
 			ballState.state = "Possessed"
 			ballState.lastPossessingTeam = winner.teamSide
+			currentDribblePhase = "Contact"
 
 			lastTouchTimeByPlayer[winner.userId] = now
 			lastTouchInfo.touchId += 1
@@ -431,7 +701,8 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			local rootVelocity = winner.rootPart.AssemblyLinearVelocity
 			local horizontalSpeed = Vector3.new(rootVelocity.X, 0, rootVelocity.Z).Magnitude
 			local pSpeed = math.min(horizontalSpeed, DribbleConfigs.MAX_RECEIVE_CUSHION_SPEED)
-			ballState.velocity = forward * math.max(pSpeed, DribbleConfigs.MIN_RECEIVE_CUSHION_SPEED)
+			local initialLeadSpeed = math.max(pSpeed * 1.25, DribbleConfigs.MIN_RECEIVE_CUSHION_SPEED)
+			ballState.velocity = forward * initialLeadSpeed
 			syncBallAttributes()
 			return
 		end
@@ -445,22 +716,36 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 		for _, cand in ipairs(candidates) do
 			if cand.userId == currentCarrierId then
 				carrierCand = cand
+				lastActiveCarrierCand = carrierCand
 				break
 			end
 		end
 
 		-- Carrier no longer valid (died, disconnected, or missing root part)
 		if not carrierCand then
+			lastActiveCarrierCand = nil
 			ballState.possessorUserId = nil
 			ballState.state = "Free"
+			currentDribblePhase = "Free"
 			syncBallAttributes()
 			return
 		end
 
+		-- Check if carrier launched into an upward jump (authoritative liftoff detection)
+		local cVel = carrierCand.rootPart.AssemblyLinearVelocity
+		if not carrierCand.isGrounded and cVel.Y > DribbleConfigs.SELF_LOB_MIN_TAKEOFF_VY and not lobDischargedThisJump[currentCarrierId] then
+			local scooped = BallService.TriggerSelfLob(carrierCand.player, carrierCand.rootPart, carrierCand.humanoid)
+			if scooped then
+				return
+			end
+		end
+
 		-- Check if ball got away (Loose Ball trigger: distance exceeds LOOSE_BALL_DISTANCE)
 		if carrierCand.dist > DribbleConfigs.LOOSE_BALL_DISTANCE then
+			lastActiveCarrierCand = nil
 			ballState.possessorUserId = nil
 			ballState.state = "Free"
+			currentDribblePhase = "Free"
 			syncBallAttributes()
 			return
 		end
@@ -503,6 +788,7 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			table.sort(opponentsInStealRange, compareCandidates)
 
 			local stealer = opponentsInStealRange[1]
+			lastActiveCarrierCand = stealer
 			ballState.possessorUserId = stealer.userId
 			ballState.lastPossessingTeam = stealer.teamSide
 			-- Lock every opposing player already engaged in this close contest until
@@ -539,72 +825,184 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 		end
 
 		-- RF-F31: Require Real Contact Window for Carrier Touches & Cushion Damping
-		-- If ball is outside contact range (e.g. 4.5 < dist <= 7.5 or ball overhead/high),
-		-- carrier retains possession state but CANNOT touch or damp the ball!
-		-- Ball continues traveling freely under autonomous physics solver.
+		-- Grounded ball carriers retain continuous front-foot control across the entire possession window
+		-- (up to LOOSE_BALL_DISTANCE) unless dispossessed by an opponent steal, jump self-lob, or kick/shot.
 		local carrierInContact = carrierCand.isGrounded
 			and (ballState.position.Y <= DribbleConfigs.GROUNDED_MAX_BALL_Y)
 			and (carrierCand.vertGap <= DribbleConfigs.MAX_RECEIVE_VERTICAL_GAP)
-			and (carrierCand.dist <= DribbleConfigs.MAX_RECEIVE_DISTANCE)
-			and (carrierCand.relSpeed <= DribbleConfigs.MAX_RECEIVE_RELATIVE_SPEED)
+			and (carrierCand.dist <= DribbleConfigs.LOOSE_BALL_DISTANCE)
 
 		if not carrierInContact then
 			-- Out of physical contact window: preserve free physics flight/roll without modification
 			return
 		end
 
+		-- Continuous front-foot control for valid current grounded carrier:
+		-- 1. Moving: lead follows horizontal MoveDirection, independent of body/camera.
+		-- 2. Idle: lead smoothly settles to body LookVector front.
+		-- 3. Speed-related forward radial micro-touches (zero lateral sway).
+		local isSprinting = (carrierCand.character:GetAttribute("IsSprinting") == true)
 		local moveDir = carrierCand.humanoid.MoveDirection
-		local cVel = carrierCand.rootPart.AssemblyLinearVelocity
-		local horizSpeed = Vector3.new(cVel.X, 0, cVel.Z).Magnitude
-		local isMoving = (
-			moveDir.Magnitude > DribbleConfigs.MOVE_DIRECTION_THRESHOLD
-			or horizSpeed > DribbleConfigs.MIN_PLAYER_MOVE_SPEED
-		)
-
+		local horizMove = Vector3.new(moveDir.X, 0, moveDir.Z)
+		local isMoving = horizMove.Magnitude > DribbleConfigs.MOVE_DIRECTION_THRESHOLD
+		-- Replicated velocity remains available when server Humanoid input is stale.
 		if not isMoving then
-			-- RF-F31: Idle stop: dt-independent exponential cushion damping within contact gate
-			-- Replaces naive every-frame multiplication to avoid infinite-magnet attraction
-			local decay = math.exp(-DribbleConfigs.CUSHION_DAMPING_RATE * dt)
-			ballState.velocity = ballState.velocity * decay
-			if ballState.velocity.Magnitude < Constants.BALL_REST_THRESHOLD_SPEED then
-				ballState.velocity = Vector3.zero
+			local velocityDirection = Vector3.new(cVel.X, 0, cVel.Z)
+			if velocityDirection.Magnitude > DribbleConfigs.MIN_PLAYER_MOVE_SPEED then
+				horizMove = velocityDirection.Unit
+				isMoving = true
 			end
-			lastTouchInfo.action = "Cushion"
+		end
+		local leadDir: Vector3
+		if isMoving then
+			leadDir = horizMove.Unit
 		else
-			-- Moving: Check touch cooldown cadence
-			local isSprinting = (carrierCand.character:GetAttribute("IsSprinting") == true)
-			local cooldown = if isSprinting then DribbleConfigs.TOUCH_COOLDOWN_SPRINT else DribbleConfigs.TOUCH_COOLDOWN_NORMAL
-			local lastTouch = lastTouchTimeByPlayer[carrierCand.userId] or 0
+			local look = carrierCand.rootPart.CFrame.LookVector
+			leadDir = Vector3.new(look.X, 0, look.Z).Unit
+		end
 
-			if (now - lastTouch) >= cooldown then
-				local forward = if moveDir.Magnitude > DribbleConfigs.TARGET_DIRECTION_THRESHOLD
-					then moveDir.Unit
-					else Vector3.new(carrierCand.rootPart.CFrame.LookVector.X, 0, carrierCand.rootPart.CFrame.LookVector.Z).Unit
-				local targetSpot = carrierCand.rootPart.Position + forward * DribbleConfigs.DRIBBLE_TOUCH_FORWARD_OFFSET
-				local toTarget = (targetSpot - ballState.position)
-				local horizToTarget = Vector3.new(toTarget.X, 0, toTarget.Z)
-				local targetSpeed = if isSprinting then DribbleConfigs.DRIBBLE_TOUCH_SPEED_SPRINT else DribbleConfigs.DRIBBLE_TOUCH_SPEED_WALK
-
-				local impulseDir = if horizToTarget.Magnitude > DribbleConfigs.TARGET_DIRECTION_THRESHOLD
-					then (forward * 0.70 + horizToTarget.Unit * 0.30).Unit
-					else forward
-
-				local finalSpeed = math.min(targetSpeed, DribbleConfigs.MAX_BALL_DRIBBLE_SPEED)
-				local touchVel = impulseDir * finalSpeed
-				ballState.velocity = Vector3.new(touchVel.X, DribbleConfigs.DRIBBLE_TOUCH_VERTICAL_IMPULSE, touchVel.Z)
-
-				lastTouchTimeByPlayer[carrierCand.userId] = now
-				lastTouchInfo.touchId += 1
-				lastTouchInfo.ownerUserId = carrierCand.userId
-				lastTouchInfo.touchTime = now
-				lastTouchInfo.action = "DribbleTouch"
-				lastTouchInfo.touchCount += 1
-				syncBallAttributes()
+		local cSpeed = Vector3.new(cVel.X, 0, cVel.Z).Magnitude
+		local goalMode = carrierCand.character:GetAttribute("GoalDribbleActive") == true
+		local touchIntent = dribbleTouchIntents[currentCarrierId]
+		local markerPulse = 0.0
+		local touchSpeedScale = 1.0
+		local touchKickImpulse = 0.0
+		if touchIntent and touchIntent.character == carrierCand.character and touchIntent.expires > now then
+			local progress = math.clamp((now - touchIntent.startTime) / DribbleActionConfigs.TOUCH_PULSE_DURATION_SEC, 0, 1)
+			local wave = math.sin(progress * math.pi)
+			local boost = if goalMode
+				then DribbleActionConfigs.TOUCH_PULSE_BOOST_GOAL
+				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_PULSE_BOOST_CUT
+				elseif isSprinting then DribbleActionConfigs.TOUCH_PULSE_BOOST_RUN
+				else DribbleActionConfigs.TOUCH_PULSE_BOOST_WALK
+			markerPulse = boost * wave
+			local maxOrbitBoost = if goalMode
+				then DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_GOAL
+				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_CUT
+				elseif isSprinting then DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_RUN
+				else DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_WALK
+			touchSpeedScale = 1.0 + (maxOrbitBoost - 1.0) * wave
+			local maxImpulse = if goalMode
+				then DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_GOAL
+				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_CUT
+				elseif isSprinting then DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_RUN
+				else DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_WALK
+			-- Front-loaded impulse on foot strike (first half of the touch window) so the ball visibly accelerates off the boot
+			local strikeEnv = if progress < 0.55 then math.sin((progress / 0.55) * math.pi) else 0.0
+			touchKickImpulse = maxImpulse * strikeEnv
+		end
+		local hasRecentMarker = touchIntent ~= nil
+			and touchIntent.character == carrierCand.character
+			and (now - touchIntent.startTime) <= 0.65
+		local microOffset = if goalMode
+			then 0
+			elseif hasRecentMarker then markerPulse
+			else DribbleGeometryHelper.ComputeMicroTouchOffset(cSpeed, isSprinting, now)
+		if goalMode and not isMoving then
+			local goal = DribbleControlRules.AttackGoal(carrierCand.teamSide, Constants.ARENA_HALF_LENGTH_Z, Constants.GOAL_BACK_ZONE_STUDS)
+			if goal then
+				leadDir = DribbleControlRules.HorizontalDirection(goal - carrierCand.rootPart.Position)
 			end
+		end
+		-- During a sprint cut:
+		-- 1) Before the boot strikes the ball (wind-up / plant phase), the ball stays on the entry line so the foot visibly reaches and hits it first.
+		-- 2) Once the boot strikes the ball (TouchL/TouchR marker or strikePhase), the ball slides linearly along the diagonal cut line at a paced speed so ball and animation finish together.
+		local cutIntent = dribbleCutIntents[currentCarrierId]
+		local cutLead = 0.0
+		local isCutActive = false
+		local cutPostStrike = false
+		if cutIntent then
+			if cutIntent.character == carrierCand.character and cutIntent.expires > now and isSprinting and not goalMode then
+				isCutActive = true
+				local uCut = math.clamp((now - cutIntent.startTime) / math.max(0.1, cutIntent.duration), 0, 1)
+				local strikePhase = DribbleActionConfigs.CUT_BALL_STRIKE_PHASE or 0.36
+				local hasCutTouch = touchIntent ~= nil
+					and touchIntent.character == carrierCand.character
+					and touchIntent.isCut
+					and touchIntent.startTime >= (cutIntent.startTime - 0.05)
+				cutPostStrike = hasCutTouch or (uCut >= strikePhase)
+				if not cutPostStrike then
+					-- Wind-up phase: keep ball in front of the entry heading while the leg swings in to strike it
+					local preAlpha = math.clamp(uCut / math.max(0.05, strikePhase), 0, 1) * 0.25
+					local blended = cutIntent.entryDirection * (1 - preAlpha) + cutIntent.direction * preAlpha
+					leadDir = if blended.Magnitude > 0.001 then blended.Unit else cutIntent.entryDirection
+					cutLead = 0.0
+				else
+					-- Strike & follow-through phase: smoothly ramp target from entry to exit diagonal across the remaining animation duration
+					local postU = if hasCutTouch
+						then math.max(
+							math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1),
+							math.clamp((now - touchIntent.startTime) / math.max(0.15, cutIntent.duration * (1.0 - strikePhase)), 0, 1)
+						)
+						else math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1)
+					local dirAlpha = math.clamp(postU * 1.6, 0, 1)
+					local sDir = dirAlpha * dirAlpha * (3 - 2 * dirAlpha)
+					local blended = cutIntent.entryDirection * (1 - sDir) + cutIntent.direction * sDir
+					leadDir = if blended.Magnitude > 0.001 then blended.Unit else cutIntent.direction
+					cutLead = DribbleActionConfigs.CUT_BALL_LEAD_SPRINT * math.sin(postU * math.pi)
+				end
+			else
+				dribbleCutIntents[currentCarrierId] = nil
+			end
+		end
+
+		local target, flankDeg, infeasible = DribbleGeometryHelper.FeasibleFrontTarget(
+			carrierCand.rootPart.Position,
+			leadDir,
+			isSprinting,
+			microOffset + cutLead
+		)
+		if goalMode then
+			-- Reuse the same joint-safe target search, with a close-control radius + bounded marker/cut lead pulse.
+			local baseDistance = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
+			target, flankDeg, infeasible = DribbleGeometryHelper.FeasibleFrontTarget(
+				carrierCand.rootPart.Position, leadDir, isSprinting,
+				(DribbleActionConfigs.GOAL_BALL_DISTANCE - baseDistance) + markerPulse + cutLead)
+		end
+		local v: Vector3
+		if isCutActive and cutPostStrike then
+			-- Direct linear diagonal trajectory toward the cut target, paced so ball arrives as the animation finishes
+			local toTarget = Vector3.new(target.X - ballState.position.X, 0, target.Z - ballState.position.Z)
+			local linearGain = (DribbleActionConfigs.CUT_LINEAR_TRACK_GAIN or 9.5) * math.min(touchSpeedScale, 1.35)
+			local maxRel = DribbleActionConfigs.CUT_LINEAR_MAX_REL_SPEED or 28.0
+			local relVel = toTarget * linearGain
+			if relVel.Magnitude > maxRel then
+				relVel = relVel.Unit * maxRel
+			end
+			v = Vector3.new(cVel.X, 0, cVel.Z) + relVel
+			if v.Magnitude > DribbleConfigs.MAX_BALL_DRIBBLE_SPEED then
+				v = v.Unit * DribbleConfigs.MAX_BALL_DRIBBLE_SPEED
+			end
+		else
+			v = DribbleGeometryHelper.ComputeFrontVelocity(
+				carrierCand.rootPart.Position,
+				cVel,
+				ballState.position,
+				target,
+				dt * touchSpeedScale
+			)
+		end
+		if touchKickImpulse > 0 then
+			local toTarget = Vector3.new(target.X - ballState.position.X, 0, target.Z - ballState.position.Z)
+			local kickDir = if toTarget.Magnitude > 0.15 then toTarget.Unit else leadDir
+			v = v + kickDir * touchKickImpulse
+			if v.Magnitude > DribbleConfigs.MAX_BALL_DRIBBLE_SPEED then
+				v = v.Unit * DribbleConfigs.MAX_BALL_DRIBBLE_SPEED
+			end
+		end
+		ballState.velocity = Vector3.new(v.X, 0, v.Z)
+		currentDribblePhase = "Control"
+		controlledCarrierRoot = carrierCand.rootPart
+		lastTouchInfo.action = "DribbleControl"
+		if infeasible then
+			currentDribbleSpeedFactor = DribbleConfigs.INFEASIBLE_SPEED_FACTOR
+		elseif flankDeg > DribbleConfigs.BLOCKED_FLANK_ANGLE_DEG then
+			currentDribbleSpeedFactor = DribbleConfigs.BLOCKED_SPEED_FACTOR
+		else
+			currentDribbleSpeedFactor = 1.0
 		end
 	end
 end
-
 -- =============================================================================
 -- Autonomous Ball Physics & Trajectory Stepping
 -- =============================================================================
@@ -612,6 +1010,18 @@ function BallService.StepPhysics(dt: number)
 	-- Clamp delta time to guard against physics explosion spikes
 	local clampedDt = math.clamp(dt, 0.001, DribbleConfigs.MAX_DT_SIMULATION)
 	local now = os.clock()
+	-- Mode expiry must also run in free-ball-only mode, where receive simulation
+	-- deliberately returns early. Otherwise a lost release packet could leave speed capped.
+	for uid, request in goalDribbleRequests do
+		local player = Players:GetPlayerByUserId(uid)
+		local hum = request.character:FindFirstChildOfClass("Humanoid")
+		if player and player.Character == request.character and hum then
+			applyGoalDribbleMode(player, request.character, hum)
+		end
+		if not player or player.Character ~= request.character or request.expires <= now then
+			goalDribbleRequests[uid] = nil
+		end
+	end
 
 	-- 1. Server-authoritative Dribble & Receive simulation
 	simulateDribbleAndReceive(clampedDt, now)
@@ -658,27 +1068,67 @@ function BallService.StepPhysics(dt: number)
 		end
 	end
 
+	-- Joint swept body + cage clearance for the CURRENT valid carrier only (RF-F51)
+	local carrierCand = lastActiveCarrierCand
+	if
+		carrierCand
+		and ballState.state == "Possessed"
+		and ballState.possessorUserId == carrierCand.userId
+		and carrierCand.rootPart.Parent
+	then
+		local hrp = carrierCand.rootPart
+		local p1 = hrp.Position
+		local p0 = carrierPrevRootPos[carrierCand.userId] or p1
+		carrierPrevRootPos[carrierCand.userId] = p1
+		local look = hrp.CFrame.LookVector
+		local sepPos, sepVel, _adjusted, infeasible = DribbleGeometryHelper.ResolveBodyCage(
+			p0,
+			p1,
+			prevPos,
+			nextPos,
+			nextVel,
+			hrp.AssemblyLinearVelocity,
+			clampedDt,
+			Vector3.new(look.X, 0, look.Z)
+		)
+		nextPos = sepPos
+		nextVel = sepVel
+		if infeasible then
+			currentDribbleSpeedFactor = DribbleConfigs.INFEASIBLE_SPEED_FACTOR
+		end
+	else
+		lastActiveCarrierCand = nil
+	end
+
 	ballState.position = nextPos
 	ballState.velocity = nextVel
 
-	-- Part synchronization and roll spin CFrame
-	local hVel = ballState.velocity
-	local rollSpd = hVel.Magnitude
-	if rollSpd > 0.1 then
-		local velUnit = hVel.Unit
-		local rotAxis = Vector3.new(0, 1, 0):Cross(velUnit)
+	-- Visual roll from ACTUAL horizontal travel: angle = distance / radius; zero travel => zero spin
+	local travel = Vector3.new(nextPos.X - prevPos.X, 0, nextPos.Z - prevPos.Z)
+	local travelDist = travel.Magnitude
+	if travelDist > 1e-4 then
+		local rotAxis = Vector3.new(0, 1, 0):Cross(travel / travelDist)
 		if rotAxis.Magnitude > 0.01 then
-			local rotAngle = (rollSpd / Constants.BALL_RADIUS) * clampedDt
-			ballSpinRotation = CFrame.fromAxisAngle(rotAxis.Unit, rotAngle) * ballSpinRotation
+			ballSpinRotation = CFrame.fromAxisAngle(rotAxis.Unit, travelDist / Constants.BALL_RADIUS) * ballSpinRotation
 		end
 	end
-
 	if not ballPart or ballPart.Parent == nil then
 		BallService.EnsureBallInstance()
 	end
 
 	if ballPart then
 		ballPart.CFrame = CFrame.new(ballState.position) * ballSpinRotation
+		-- One relative-pose snapshot transports the controlled ball with the rendered
+		-- carrier, rather than mixing an old server ball pose with a newer local root.
+		-- This is presentation data only: ownership/contact/physics stay on the server.
+		local root = controlledCarrierRoot
+		if root and root.Parent and ballState.state == "Possessed" then
+			ballPart:SetAttribute("DribbleVisualPose", root.CFrame:ToObjectSpace(ballPart.CFrame))
+			ballPart:SetAttribute("DribbleVisualTime", Workspace:GetServerTimeNow())
+			ballPart:SetAttribute("DribbleVisualOwner", ballState.possessorUserId)
+		else
+			ballPart:SetAttribute("DribbleVisualOwner", nil)
+		end
 	end
 	syncBallAttributes()
 end
@@ -699,10 +1149,19 @@ local function setupPlayerLifecycle(player: Player)
 			return
 		end
 		activeCharacter = char
+		goalDribbleRequests[userId] = nil
+		lastGoalStartByPlayer[userId] = nil
+		dribbleTouchIntents[userId] = nil
+		dribbleCutIntents[userId] = nil
+		lastDribbleTouchByPlayer[userId] = nil
+		char:SetAttribute("GoalDribbleActive", false)
+		char:SetAttribute("AttackGoalPosition", DribbleControlRules.AttackGoal(getOrCreatePlayerState(userId).teamSide, Constants.ARENA_HALF_LENGTH_Z, Constants.GOAL_BACK_ZONE_STUDS))
 		local thisGen = currentGen
-		local oldConnection = activeCharacterConnections[userId]
-		if oldConnection then
-			oldConnection:Disconnect()
+		local oldConnections = activeCharacterConnections[userId]
+		if oldConnections then
+			for _, conn in ipairs(oldConnections) do
+				conn:Disconnect()
+			end
 			activeCharacterConnections[userId] = nil
 		end
 		local humanoid = char:WaitForChild("Humanoid", 5) :: Humanoid?
@@ -720,13 +1179,53 @@ local function setupPlayerLifecycle(player: Player)
 		humanoid.JumpHeight = JumpConfigs.EXPECTED_APEX_HEIGHT
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
 
-		activeCharacterConnections[userId] = humanoid.Died:Connect(function()
+		lobDischargedThisJump[userId] = false
+
+		local conns: { RBXScriptConnection } = {}
+
+		-- Jump state observer for upward self-lob scoop
+		table.insert(conns, humanoid.StateChanged:Connect(function(oldState, newState)
+			if playerGenerations[userId] ~= thisGen then
+				return
+			end
+			if player.Character ~= char or not char:IsDescendantOf(game) then
+				return
+			end
+
+			if ballState.state == "Possessed" and ballState.possessorUserId == userId then
+				local isJumpState = (newState == Enum.HumanoidStateType.Jumping)
+				local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if hrp then
+					local vy = hrp.AssemblyLinearVelocity.Y
+					local isCoalescedRising = (newState == Enum.HumanoidStateType.Freefall and vy > DribbleConfigs.SELF_LOB_MIN_TAKEOFF_VY)
+					if (isJumpState or isCoalescedRising) and not lobDischargedThisJump[userId] then
+						if vy > DribbleConfigs.SELF_LOB_MIN_TAKEOFF_VY then
+							BallService.TriggerSelfLob(player, hrp, humanoid)
+						end
+					end
+				end
+			end
+
+			if newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Running then
+				lobDischargedThisJump[userId] = false
+			end
+		end))
+
+		table.insert(conns, humanoid.Died:Connect(function()
+			if player.Character == char then
+				goalDribbleRequests[userId] = nil
+				dribbleTouchIntents[userId] = nil
+				dribbleCutIntents[userId] = nil
+				char:SetAttribute("GoalDribbleActive", false)
+			end
 			if playerGenerations[userId] == thisGen and activeCharacter == char and ballState.possessorUserId == userId then
 				ballState.possessorUserId = nil
 				ballState.state = "Free"
 				syncBallAttributes()
 			end
-		end)
+		end))
+
+		activeCharacterConnections[userId] = conns
 	end
 
 	if player.Character then
@@ -744,9 +1243,17 @@ local function setupPlayerLifecycle(player: Player)
 			activeCharacter = nil
 			playerGenerations[userId] = (playerGenerations[userId] or 0) + 1
 			lastPlayerPositions[userId] = nil
-			local deathConnection = activeCharacterConnections[userId]
-			if deathConnection then
-				deathConnection:Disconnect()
+			lobDischargedThisJump[userId] = nil
+			lastCameraLookByPlayer[userId] = nil
+			lastIntentTimeByPlayer[userId] = nil
+			dribbleTouchIntents[userId] = nil
+			dribbleCutIntents[userId] = nil
+			lastDribbleTouchByPlayer[userId] = nil
+			local oldConnections = activeCharacterConnections[userId]
+			if oldConnections then
+				for _, conn in ipairs(oldConnections) do
+					conn:Disconnect()
+				end
 				activeCharacterConnections[userId] = nil
 			end
 		end
@@ -768,6 +1275,58 @@ function BallService.Init()
 	BallService.EnsureBallInstance()
 	BallService.ResetBall()
 
+	-- Hook BallActionRequest for validated camera intent from client carrier
+	local remotesFolder = ReplicatedStorage:FindFirstChild(Network.RemoteFolderName)
+	if remotesFolder then
+		local ballActionRemote = remotesFolder:FindFirstChild(Network.Names.BallActionRequest)
+		if ballActionRemote and ballActionRemote:IsA("RemoteEvent") then
+			ballActionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
+				if typeof(payload) ~= "table" then
+					return
+				end
+				if payload.action == "GoalDribble" then
+					BallService.SetGoalDribbleIntent(player, payload)
+					return
+				end
+				if payload.action == "DribbleTouch" then
+					BallService.SetDribbleTouchIntent(player, payload)
+					return
+				end
+				if payload.action == "DribbleCut" then
+					BallService.SetDribbleCutIntent(player, payload)
+					return
+				end
+				if payload.action == "CameraIntent" then
+					local uid = player.UserId
+					if ballState.possessorUserId ~= uid then
+						return
+					end
+					local dir = payload.lookDirection
+					if typeof(dir) ~= "Vector3" then
+						return
+					end
+					if dir.X ~= dir.X or dir.Z ~= dir.Z then
+						return
+					end
+					if math.abs(dir.X) == math.huge or math.abs(dir.Z) == math.huge then
+						return
+					end
+					local hDir = Vector3.new(dir.X, 0, dir.Z)
+					local mag = hDir.Magnitude
+					if mag < 0.01 or mag > 1.5 then
+						return
+					end
+					local now = os.clock()
+					if (now - (lastIntentTimeByPlayer[uid] or 0)) < 0.05 then
+						return
+					end
+					lastIntentTimeByPlayer[uid] = now
+					lastCameraLookByPlayer[uid] = hDir / mag
+				end
+			end)
+		end
+	end
+
 	-- Step physics in Heartbeat
 	if RunService:IsServer() then
 		RunService.Heartbeat:Connect(function(dt: number)
@@ -783,14 +1342,24 @@ function BallService.Init()
 
 	Players.PlayerRemoving:Connect(function(player: Player)
 		local uid = player.UserId
+		goalDribbleRequests[uid] = nil
+		lastGoalStartByPlayer[uid] = nil
+		dribbleTouchIntents[uid] = nil
+		dribbleCutIntents[uid] = nil
+		lastDribbleTouchByPlayer[uid] = nil
 		playerStates[uid] = nil
 		lastTouchTimeByPlayer[uid] = nil
 		lastStealTimeByPlayer[uid] = nil
 		lastPlayerPositions[uid] = nil
 		playerGenerations[uid] = nil
-		local deathConnection = activeCharacterConnections[uid]
-		if deathConnection then
-			deathConnection:Disconnect()
+		lobDischargedThisJump[uid] = nil
+		lastCameraLookByPlayer[uid] = nil
+		lastIntentTimeByPlayer[uid] = nil
+		local oldConnections = activeCharacterConnections[uid]
+		if oldConnections then
+			for _, conn in ipairs(oldConnections) do
+				conn:Disconnect()
+			end
 			activeCharacterConnections[uid] = nil
 		end
 		clearStealPairsForPlayer(uid)

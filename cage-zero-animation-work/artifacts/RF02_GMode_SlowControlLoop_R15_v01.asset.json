@@ -1,0 +1,39 @@
+{
+  "id": "039de0b2-5126-43b5-b5a4-9f11286410c7",
+  "name": "RF02_GMode_SlowControlLoop_R15_v01",
+  "duration": 1.12,
+  "loop": true,
+  "priority": "Movement",
+  "markers": [
+    {
+      "name": "GStanceEntry",
+      "time": 0,
+      "value": "goal_facing_close_control_start"
+    },
+    {
+      "name": "TouchL",
+      "time": 0.245,
+      "value": "g_mode_sole_roll_left"
+    },
+    {
+      "name": "GMidStance",
+      "time": 0.56,
+      "value": "goal_facing_mid_cycle"
+    },
+    {
+      "name": "TouchR",
+      "time": 0.805,
+      "value": "g_mode_sole_roll_right"
+    },
+    {
+      "name": "GControlLoop",
+      "time": 1.12,
+      "value": "loop_seam"
+    }
+  ],
+  "scope": {
+    "sessionId": "0e7f69a9-ee63-4987-96ee-ca653f2883bd",
+    "rigId": "d360f7b9-0c8d-4edb-b405-630594559c92"
+  },
+  "savedAt": "2026-10-27T15:11:41.883Z"
+}

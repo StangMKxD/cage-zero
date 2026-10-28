@@ -1,0 +1,8 @@
+# RF02-DRIBBLE-ANIMATION — preparation only
+Project: C:\Users\Stang\cage-zero (read-only for this animation pane).
+Isolated artifacts workspace: C:\Users\Stang\cage-zero\cage-zero-animation-work. No shared dirty-source writes and no Git operations.
+Controller writes all game source, runtime integration and board. Animation pane owns only NEW dribble walk/run animation draft outputs and Motion preview, after final dispatch/Owner grill.
+Owner requested visible separate animation pane, Motion connection, left/right-foot touches while walking/running in all movement directions. Current grill Q1/Q2/Q3 still pending: lateral ball deviation vs feet-only; two base cycles vs cuts/directional additions; preview-first vs direct integration. DO NOT author until answers and actionable contract.
+Current explicit additional Owner request: move ball slightly closer. Controller handles code; not animation pane responsibility.
+Read Role Catalog, HERDR manual on cross-pane use, relevant project docs/READ.md and final approved dribble contract. Existing bridge C:\Users\Stang\AI-Tools\run-animation-session.mjs + local Motion RPC; never print credentials from animation-rpc.json. Reuse persistent bridge, do not start duplicates/kill/restart it. Keep Motion online. Do not manipulate gameplay avatar/scene or current Play. Connection/status inventory only during preparation. Dedicated preview rig/motion clip ownership will be specified after grill. No upload/publish/overwrite accepted animation/AnimSaves, no runtime script writes.
+Return a submitted concise Thai ACK or blocker to verified Controller route after live verification. No user/tab/pane manipulation.

@@ -1,0 +1,39 @@
+{
+  "id": "dd820132-adba-4028-a2a9-bee3ed64c69a",
+  "name": "RF02_WalkDribble_R15_v01",
+  "duration": 1.04,
+  "loop": true,
+  "priority": "Movement",
+  "markers": [
+    {
+      "name": "LeftSupportEntry",
+      "time": 0,
+      "value": "left_cycle_start"
+    },
+    {
+      "name": "TouchL",
+      "time": 0.195,
+      "value": "left_foot_ball_touch"
+    },
+    {
+      "name": "MidCycleTransition",
+      "time": 0.52,
+      "value": "right_half_entry"
+    },
+    {
+      "name": "TouchR",
+      "time": 0.715,
+      "value": "right_foot_ball_touch"
+    },
+    {
+      "name": "WalkDribbleLoop",
+      "time": 1.04,
+      "value": "loop_seam"
+    }
+  ],
+  "scope": {
+    "sessionId": "0e7f69a9-ee63-4987-96ee-ca653f2883bd",
+    "rigId": "d360f7b9-0c8d-4edb-b405-630594559c92"
+  },
+  "savedAt": "2026-10-27T15:11:41.517Z"
+}

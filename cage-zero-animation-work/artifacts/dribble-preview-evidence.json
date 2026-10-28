@@ -1,0 +1,437 @@
+{
+  "generatedAt": "2026-10-27T15:11:42.584Z",
+  "place": "Cage-Zero",
+  "placeId": "137721422246269",
+  "sessionId": "0e7f69a9-ee63-4987-96ee-ca653f2883bd",
+  "rigId": "d360f7b9-0c8d-4edb-b405-630594559c92",
+  "rigName": "PreviewRig_R15_Boy_Height30",
+  "rigPath": "Workspace.PreviewRigs.PreviewRig_R15_Boy_Height30",
+  "inspectJointCount": 15,
+  "inspectIssues": [],
+  "activePreview": {
+    "clipName": "RF02_WalkDribble_R15_v01",
+    "assetId": "dd820132-adba-4028-a2a9-bee3ed64c69a",
+    "seconds": 30,
+    "previewResult": {
+      "note": "Temporary clone; effects fire once per preview. Visual inspection required.",
+      "seconds": 30,
+      "previewStarted": true,
+      "model": "MotionPreview_PreviewRig_R15_Boy_Height30"
+    }
+  },
+  "clips": [
+    {
+      "name": "RF02_WalkDribble_R15_v01",
+      "assetId": "dd820132-adba-4028-a2a9-bee3ed64c69a",
+      "duration": 1.04,
+      "loop": true,
+      "priority": "Movement",
+      "keyCount": 33,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "LeftSupportEntry",
+          "time": 0,
+          "value": "left_cycle_start"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.195,
+          "value": "left_foot_ball_touch"
+        },
+        {
+          "name": "MidCycleTransition",
+          "time": 0.52,
+          "value": "right_half_entry"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.715,
+          "value": "right_foot_ball_touch"
+        },
+        {
+          "name": "WalkDribbleLoop",
+          "time": 1.04,
+          "value": "loop_seam"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 495,
+        "duration": 1.04,
+        "loop": true,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 495
+      },
+      "advisoryCount": 3
+    },
+    {
+      "name": "RF02_RunDribble_R15_v01",
+      "assetId": "cfb4c569-e5e3-4fa3-a799-a9efb1183f63",
+      "duration": 0.72,
+      "loop": true,
+      "priority": "Movement",
+      "keyCount": 33,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "LeftDriveEntry",
+          "time": 0,
+          "value": "left_stance_entry"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.135,
+          "value": "left_foot_sprint_tap"
+        },
+        {
+          "name": "RightDriveEntry",
+          "time": 0.36,
+          "value": "right_stance_entry"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.495,
+          "value": "right_foot_sprint_tap"
+        },
+        {
+          "name": "RunDribbleLoop",
+          "time": 0.72,
+          "value": "loop_seam"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 495,
+        "duration": 0.72,
+        "loop": true,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 495
+      },
+      "advisoryCount": 3
+    },
+    {
+      "name": "RF02_CutDiagFrontLeft_AW_R15_v01",
+      "assetId": "8c17c3a4-a473-4b4d-914c-3662ca946249",
+      "duration": 0.44,
+      "loop": false,
+      "priority": "Action",
+      "keyCount": 23,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "PlantBrake",
+          "time": 0.08,
+          "value": "AW_brake_plant"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.18,
+          "value": "AW_diagonal_cut_touch_left"
+        },
+        {
+          "name": "ControlRelease",
+          "time": 0.36,
+          "value": "cut_exit_ready"
+        },
+        {
+          "name": "ClipEnd",
+          "time": 0.44,
+          "value": "one_shot_complete"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 345,
+        "duration": 0.44,
+        "loop": false,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 345
+      },
+      "advisoryCount": 2
+    },
+    {
+      "name": "RF02_CutDiagFrontRight_WD_R15_v01",
+      "assetId": "e37739fd-4431-4112-b30e-fe3dbd76d156",
+      "duration": 0.44,
+      "loop": false,
+      "priority": "Action",
+      "keyCount": 23,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "PlantBrake",
+          "time": 0.08,
+          "value": "WD_brake_plant"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.18,
+          "value": "WD_diagonal_cut_touch_right"
+        },
+        {
+          "name": "ControlRelease",
+          "time": 0.36,
+          "value": "cut_exit_ready"
+        },
+        {
+          "name": "ClipEnd",
+          "time": 0.44,
+          "value": "one_shot_complete"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 345,
+        "duration": 0.44,
+        "loop": false,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 345
+      },
+      "advisoryCount": 2
+    },
+    {
+      "name": "RF02_CutDiagBackLeft_AS_R15_v01",
+      "assetId": "c8d6ac99-7449-4448-bebb-e4a5c39a4141",
+      "duration": 0.52,
+      "loop": false,
+      "priority": "Action",
+      "keyCount": 27,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "PlantBrake",
+          "time": 0.08,
+          "value": "AS_brake_entry"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.16,
+          "value": "AS_sole_lock_drag_left"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.3,
+          "value": "AS_exit_redirect_right"
+        },
+        {
+          "name": "ControlRelease",
+          "time": 0.44,
+          "value": "cut_exit_ready"
+        },
+        {
+          "name": "ClipEnd",
+          "time": 0.52,
+          "value": "one_shot_complete"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 405,
+        "duration": 0.52,
+        "loop": false,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 405
+      },
+      "advisoryCount": 2
+    },
+    {
+      "name": "RF02_CutDiagBackRight_SD_R15_v01",
+      "assetId": "8988e5d2-8782-4ba3-8b48-05a8f4ad4abb",
+      "duration": 0.52,
+      "loop": false,
+      "priority": "Action",
+      "keyCount": 27,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "PlantBrake",
+          "time": 0.08,
+          "value": "SD_brake_entry"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.16,
+          "value": "SD_sole_lock_drag_right"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.3,
+          "value": "SD_exit_redirect_left"
+        },
+        {
+          "name": "ControlRelease",
+          "time": 0.44,
+          "value": "cut_exit_ready"
+        },
+        {
+          "name": "ClipEnd",
+          "time": 0.52,
+          "value": "one_shot_complete"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 405,
+        "duration": 0.52,
+        "loop": false,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 405
+      },
+      "advisoryCount": 2
+    },
+    {
+      "name": "RF02_CutReverse_WS_R15_v01",
+      "assetId": "30cbe19c-759c-43bf-810b-bf45d124c4c9",
+      "duration": 0.56,
+      "loop": false,
+      "priority": "Action",
+      "keyCount": 29,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "HardBrake",
+          "time": 0.08,
+          "value": "WS_reversal_brake"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.16,
+          "value": "sole_lock_pullback_right"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.36,
+          "value": "reverse_control_tap_left"
+        },
+        {
+          "name": "ControlRelease",
+          "time": 0.48,
+          "value": "cut_exit_ready"
+        },
+        {
+          "name": "ClipEnd",
+          "time": 0.56,
+          "value": "one_shot_complete"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 435,
+        "duration": 0.56,
+        "loop": false,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 435
+      },
+      "advisoryCount": 2
+    },
+    {
+      "name": "RF02_GMode_SlowControlLoop_R15_v01",
+      "assetId": "039de0b2-5126-43b5-b5a4-9f11286410c7",
+      "duration": 1.12,
+      "loop": true,
+      "priority": "Movement",
+      "keyCount": 33,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "GStanceEntry",
+          "time": 0,
+          "value": "goal_facing_close_control_start"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.245,
+          "value": "g_mode_sole_roll_left"
+        },
+        {
+          "name": "GMidStance",
+          "time": 0.56,
+          "value": "goal_facing_mid_cycle"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.805,
+          "value": "g_mode_sole_roll_right"
+        },
+        {
+          "name": "GControlLoop",
+          "time": 1.12,
+          "value": "loop_seam"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 495,
+        "duration": 1.12,
+        "loop": true,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 495
+      },
+      "advisoryCount": 3
+    },
+    {
+      "name": "RF02_GMode_SoleDragBack_WS_R15_v01",
+      "assetId": "1829f456-6329-49b0-9e22-a2a8e86f35ea",
+      "duration": 0.52,
+      "loop": false,
+      "priority": "Action",
+      "keyCount": 27,
+      "trackCount": 15,
+      "markers": [
+        {
+          "name": "SoleTrapEntry",
+          "time": 0.06,
+          "value": "g_mode_sole_reach"
+        },
+        {
+          "name": "TouchR",
+          "time": 0.14,
+          "value": "g_mode_sole_lock_drag_right"
+        },
+        {
+          "name": "TouchL",
+          "time": 0.34,
+          "value": "g_mode_cushion_settle_left"
+        },
+        {
+          "name": "ControlRelease",
+          "time": 0.44,
+          "value": "cut_exit_ready"
+        },
+        {
+          "name": "ClipEnd",
+          "time": 0.52,
+          "value": "one_shot_complete"
+        }
+      ],
+      "auditSummary": {
+        "tracks": 15,
+        "keys": 405,
+        "duration": 0.52,
+        "loop": false,
+        "layerTracks": 0,
+        "rootMotionTracks": 0,
+        "analyzedTracks": 15,
+        "analyzedKeys": 405
+      },
+      "advisoryCount": 2
+    }
+  ]
+}

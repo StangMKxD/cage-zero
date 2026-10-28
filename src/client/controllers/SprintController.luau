@@ -24,8 +24,32 @@ local currentCharacter: Model? = nil
 
 local currentForwardIntent: number = 0
 local isMovingIntent: boolean = false
+local serverSprintRequested: boolean = false
 
 local SprintController = {}
+
+local function isLocomotionEligible(): boolean
+	local char = currentCharacter
+	if not char or not char:IsDescendantOf(game) then
+		return false
+	end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 then
+		return false
+	end
+	local state = hum:GetState()
+	if state == Enum.HumanoidStateType.Jumping
+		or state == Enum.HumanoidStateType.Freefall
+		or state == Enum.HumanoidStateType.Seated
+		or state == Enum.HumanoidStateType.Climbing
+		or state == Enum.HumanoidStateType.Swimming
+		or state == Enum.HumanoidStateType.Dead
+		or state == Enum.HumanoidStateType.Physics
+		or state == Enum.HumanoidStateType.PlatformStanding then
+		return false
+	end
+	return true
+end
 
 local function checkRetrySprint(thisGen: number)
 	if retryThread then
@@ -34,19 +58,8 @@ local function checkRetrySprint(thisGen: number)
 	end
 
 	local isShiftHeld = (next(activeSprintKeys) ~= nil)
-	if not isShiftHeld or not isMovingIntent then
+	if not isShiftHeld or not isMovingIntent or not isLocomotionEligible() then
 		return
-	end
-
-	-- Check if character is currently airborne or disabled
-	local char = currentCharacter
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if hum then
-		local state = hum:GetState()
-		if state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall
-			or state == Enum.HumanoidStateType.Seated or state == Enum.HumanoidStateType.Dead then
-			return
-		end
 	end
 
 	-- Schedule a single bounded retry after the rate limit window
@@ -56,7 +69,7 @@ local function checkRetrySprint(thisGen: number)
 			return
 		end
 		local stillShift = (next(activeSprintKeys) ~= nil)
-		if not stillShift or not isMovingIntent then
+		if not stillShift or not isMovingIntent or not isLocomotionEligible() then
 			return
 		end
 		local activeChar = currentCharacter
@@ -72,17 +85,20 @@ local function checkRetrySprint(thisGen: number)
 	end)
 end
 
-function syncSprintIntent()
+function syncSprintIntent(forceResend: boolean?)
 	local isShiftHeld = (next(activeSprintKeys) ~= nil)
-	local isEligible = isShiftHeld and isMovingIntent
+	local isEligible = isShiftHeld and isMovingIntent and isLocomotionEligible()
 
 	if not isEligible then
 		if retryThread then
 			task.cancel(retryThread)
 			retryThread = nil
 		end
-		if isSprinting then
+		local char = currentCharacter
+		local serverFlag = (char and char:GetAttribute("IsSprinting") == true)
+		if isSprinting or serverSprintRequested or serverFlag then
 			isSprinting = false
+			serverSprintRequested = false
 			lastSentTime = os.clock()
 			if sprintRemote then
 				sprintRemote:FireServer({
@@ -96,10 +112,11 @@ function syncSprintIntent()
 	end
 
 	-- isEligible == true
-	if isSprinting then
+	if isSprinting and not forceResend then
 		return
 	end
 	isSprinting = true
+	serverSprintRequested = true
 	lastSentTime = os.clock()
 
 	if sprintRemote then
@@ -135,8 +152,11 @@ local function resetSprintState()
 	table.clear(activeSprintKeys)
 	isMovingIntent = false
 	currentForwardIntent = 0
-	if isSprinting then
+	local char = currentCharacter
+	local serverFlag = (char and char:GetAttribute("IsSprinting") == true)
+	if isSprinting or serverSprintRequested or serverFlag then
 		isSprinting = false
+		serverSprintRequested = false
 		lastSentTime = os.clock()
 		if sprintRemote then
 			sprintRemote:FireServer({
@@ -204,7 +224,7 @@ local function setupCharacter(character: Model)
 	end
 
 	-- Cancel sprint intent on airborne, seated, climbing, or swimming states
-	local stateConn = humanoid.StateChanged:Connect(function(_oldState, newState)
+	local stateConn = humanoid.StateChanged:Connect(function(oldState, newState)
 		if characterGeneration == thisGen then
 			if newState == Enum.HumanoidStateType.Jumping or newState == Enum.HumanoidStateType.Freefall then
 				-- Airborne: cancel retry timer and suspend server sprint intent
@@ -212,8 +232,10 @@ local function setupCharacter(character: Model)
 					task.cancel(retryThread)
 					retryThread = nil
 				end
-				if isSprinting then
+				local serverFlag = (character:GetAttribute("IsSprinting") == true)
+				if isSprinting or serverSprintRequested or serverFlag then
 					isSprinting = false
+					serverSprintRequested = false
 					if sprintRemote then
 						sprintRemote:FireServer({
 							isShiftHeld = false,
@@ -223,8 +245,15 @@ local function setupCharacter(character: Model)
 					end
 				end
 			elseif newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Running then
-				-- Landing/Running: if user was holding Shift throughout jump and forward > 0, seamlessly resume sprint
-				syncSprintIntent()
+				-- Landing/Running: resume sprint ONLY when transitioning from an airborne state
+				local wasAirborne = (oldState == Enum.HumanoidStateType.Jumping or oldState == Enum.HumanoidStateType.Freefall)
+				if wasAirborne then
+					isSprinting = false
+					syncSprintIntent(true)
+				elseif not isSprinting then
+					-- Ordinary ground transition (e.g. Landed -> Running): only sync if not already sprinting
+					syncSprintIntent()
+				end
 			elseif newState == Enum.HumanoidStateType.Seated
 				or newState == Enum.HumanoidStateType.Climbing
 				or newState == Enum.HumanoidStateType.Swimming

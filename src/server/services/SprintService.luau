@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Network = require(Shared:WaitForChild("Network"))
 local SprintConfigs = require(Shared:WaitForChild("configs"):WaitForChild("SprintConfigs"))
+local DribbleActionConfigs = require(Shared:WaitForChild("configs"):WaitForChild("DribbleActionConfigs"))
 
 local lastSprintStartTime: { [Player]: number } = {}
 local activeConnections: { [Player]: { RBXScriptConnection } } = {}
@@ -39,6 +40,15 @@ local function setSprintState(player: Player, shouldSprint: boolean)
 	if not humanoid or humanoid.Health <= 0 or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
 		return
 	end
+	-- Owner-approved G close-control mode: Shift cannot raise its server speed cap.
+	if character:GetAttribute("GoalDribbleActive") == true then
+		humanoid.WalkSpeed = DribbleActionConfigs.GOAL_SPEED
+		character:SetAttribute("IsSprinting", false)
+		if shouldSprint then
+			character:SetAttribute("SprintRejectedSeq", (character:GetAttribute("SprintRejectedSeq") or 0) + 1)
+		end
+		return
+	end
 
 	if shouldSprint then
 		-- Verify not in a state that forbids sprinting
@@ -51,6 +61,9 @@ local function setSprintState(player: Player, shouldSprint: boolean)
 			or state == Enum.HumanoidStateType.Dead
 			or state == Enum.HumanoidStateType.Physics
 			or state == Enum.HumanoidStateType.PlatformStanding then
+			humanoid.WalkSpeed = SprintConfigs.NORMAL_WALK_SPEED
+			character:SetAttribute("IsSprinting", false)
+			character:SetAttribute("SprintRejectedSeq", (character:GetAttribute("SprintRejectedSeq") or 0) + 1)
 			return
 		end
 
@@ -102,9 +115,13 @@ local function onSprintIntentRequest(player: Player, payload: any)
 		local now = os.clock()
 		local lastStart = lastSprintStartTime[player] or 0
 		if (now - lastStart) < SprintConfigs.START_RATE_LIMIT_INTERVAL_SEC then
-			-- Rate limit exceeded: reject start request and signal rejection sequence (RF-F45 fix)
+			-- Rate limit exceeded: reject start request and signal rejection sequence (RF-F45/RF-F48 fix)
 			local char = player.Character
 			if char and char:IsDescendantOf(game) then
+				local hum = char:FindFirstChildOfClass("Humanoid")
+				if hum then
+					hum.WalkSpeed = if char:GetAttribute("GoalDribbleActive") == true then DribbleActionConfigs.GOAL_SPEED else SprintConfigs.NORMAL_WALK_SPEED
+				end
 				char:SetAttribute("IsSprinting", false)
 				char:SetAttribute("SprintRejectedSeq", (char:GetAttribute("SprintRejectedSeq") or 0) + 1)
 			end

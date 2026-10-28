@@ -44,6 +44,11 @@ remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
 assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before R15AnimationController.Init")
 R15AnimationController.Init(remaining)
 
+local DribbleAnimModule = CharacterFolder:FindFirstChild("DribbleAnimationController")
+if DribbleAnimModule and DribbleAnimModule:IsA("ModuleScript") then
+	require(DribbleAnimModule).Init(remaining)
+end
+
 -- Option A Cleanup: R6ActionPoseController excised
 
 -- 4. Initialize InputController (CameraShiftLockController disabled temporarily per Owner choice; normal Roblox camera)
@@ -54,6 +59,10 @@ if remaining > 0 then
 		-- CameraShiftLockController preserved as inert reference; not initialized (normal camera temporarily)
 
 		local InputCtrlModule = ControllersFolder:FindFirstChild("InputController")
+		local dribblePresentation = ControllersFolder:FindFirstChild("DribblePresentationController")
+		if dribblePresentation and dribblePresentation:IsA("ModuleScript") then
+			require(dribblePresentation).Init()
+		end
 		if InputCtrlModule and InputCtrlModule:IsA("ModuleScript") then
 			local InputController = require(InputCtrlModule)
 			InputController.Init()

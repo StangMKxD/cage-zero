@@ -1,31 +1,73 @@
 --!strict
 -- src/shared/configs/DribbleConfigs.luau
 -- Authoritative Configuration for Ground Dribble & Receive Mechanics (RF02-DRIBBLE-RECEIVE)
--- Governed by RF02-DRIBBLE-RECEIVE Contract (Owner Checklist 7, 2026-10-26 & Review026)
+-- Revised 2026-10-27 (Owner AUTHORITATIVE GRILL CONFIRMED):
+-- 1. Moving ground lead follows MoveDirection; idle smoothly settles to body LookVector front.
+-- 2. Bounded speed-related FORWARD radial micro-touches (zero lateral sway). Real-ball rolling.
+-- 3. Sharp turns > 120 deg get configurable speed dip; no old touch-phase wait / no automatic loss.
+-- 4. Successful upward jump while carrier triggers ONE self-lob scoop and clears possession atomically.
+--    Former owner has brief recapture cooldown guard before standard ground receive applies.
 
 export type DribbleConfig = {
-	-- Mode Toggles
 	FREE_BALL_ONLY_MODE: boolean,
 
-	-- Receive Gate Parameters
+	-- Receive / steal gate (retained, honest eligibility)
 	MAX_RECEIVE_DISTANCE: number,
 	MAX_RECEIVE_VERTICAL_GAP: number,
 	MAX_RECEIVE_RELATIVE_SPEED: number,
 	GROUNDED_MAX_BALL_Y: number,
 	PLAYER_GROUNDED_REQUIRED: boolean,
 
-	-- Dribble Touch Rhythm & Cadence
-	TOUCH_COOLDOWN_NORMAL: number,
-	TOUCH_COOLDOWN_SPRINT: number,
-
-	-- Touch Impulses & Kinematics
-	DRIBBLE_TOUCH_FORWARD_OFFSET: number,
-	DRIBBLE_TOUCH_SPEED_WALK: number,
-	DRIBBLE_TOUCH_SPEED_SPRINT: number,
-	DRIBBLE_TOUCH_VERTICAL_IMPULSE: number,
+	-- Continuous front control (valid current carrier only)
+	FRONT_DISTANCE_WALK: number,
+	FRONT_DISTANCE_SPRINT: number,
+	FRONT_RADIAL_GAIN: number,
+	FRONT_RADIAL_MAX_SPEED: number,
+	FRONT_ANGULAR_GAIN: number,
+	FRONT_MAX_ANGULAR_SPEED: number,
+	FRONT_MAX_REL_SPEED: number,
 	MAX_BALL_DRIBBLE_SPEED: number,
+	VISUAL_SNAPSHOT_MAX_AGE: number,
 
-	-- Loose Ball & Dispossession Parameters
+	-- Forward micro-touches (purely radial along lead direction, zero lateral sway)
+	MICRO_TOUCH_ENABLED: boolean,
+	MICRO_TOUCH_AMPLITUDE_WALK: number,
+	MICRO_TOUCH_AMPLITUDE_SPRINT: number,
+	MICRO_TOUCH_CADENCE_WALK: number,
+	MICRO_TOUCH_CADENCE_SPRINT: number,
+
+	-- Dribbling turn slow-down (carrier only, applied by client heading controller)
+	DRIBBLE_TURN_RATE_RAD_PER_SEC: number,
+	DRIBBLE_TURN_DIP_THRESHOLD_DEG: number,
+	DRIBBLE_TURN_MIN_FACTOR_WALK: number,
+	DRIBBLE_TURN_MIN_FACTOR_SPRINT: number,
+	DRIBBLE_TURN_EXPONENT: number,
+	DRIBBLE_TURN_RECOVERY_RATE: number,
+
+	-- Jump Self-Lob (Scoop)
+	SELF_LOB_ENABLED: boolean,
+	SELF_LOB_UPWARD_SPEED: number,
+	SELF_LOB_MIN_HORIZONTAL_SPEED: number,
+	SELF_LOB_MOMENTUM_FACTOR: number,
+	SELF_LOB_MAX_HORIZONTAL_SPEED: number,
+	SELF_LOB_MIN_TAKEOFF_VY: number,
+	SELF_LOB_RECAPTURE_COOLDOWN_SEC: number,
+
+	-- Joint body + cage clearance
+	CARRIER_BODY_RADIUS: number,
+	BALL_COLLISION_RADIUS: number,
+	MIN_BODY_SEPARATION_MARGIN: number,
+	CARRIER_SEPARATION_DISTANCE: number,
+	BODY_HEIGHT: number,
+	BODY_CONTACT_RESTITUTION: number,
+	MAX_OVERLAP_SEPARATION_STEP: number,
+	OVERLAP_RECOVERY_PUSH_SPEED: number,
+	FLANK_ANGLE_STEPS: number,
+	BLOCKED_FLANK_ANGLE_DEG: number,
+	BLOCKED_SPEED_FACTOR: number,
+	INFEASIBLE_SPEED_FACTOR: number,
+
+	-- Loose ball & dispossession
 	LOOSE_BALL_DISTANCE: number,
 	STEAL_INTERCEPT_DISTANCE: number,
 	STEAL_CONTEST_COOLDOWN_SEC: number,
@@ -46,45 +88,79 @@ export type DribbleConfig = {
 }
 
 local DribbleConfigs: DribbleConfig = {
-	-- When true, dribble/receive is completely bypassed and ball behaves purely as autonomous free ball
 	FREE_BALL_ONLY_MODE = false,
 
-	-- Reception Gate: Proximity & Relative Speed
-	-- Ball must be within 4.5 studs horizontal reach of player root
+	-- Reception gate
 	MAX_RECEIVE_DISTANCE = 4.5,
-	-- Ball and feet vertical separation cannot exceed 2.2 studs
 	MAX_RECEIVE_VERTICAL_GAP = 2.2,
-	-- If ball relative speed to player exceeds 38 studs/s, it deflects/passes by and cannot be trapped
 	MAX_RECEIVE_RELATIVE_SPEED = 38.0,
-	-- Ball must be near ground (cannot receive airborne balls above 2.8 studs from ground in ground dribble)
 	GROUNDED_MAX_BALL_Y = 2.8,
-	-- Player must be grounded (not jumping or in freefall)
 	PLAYER_GROUNDED_REQUIRED = true,
 
-	-- Cadence between foot touches: walk touch rhythm vs sprint touch rhythm (seconds)
-	TOUCH_COOLDOWN_NORMAL = 0.40,
-	TOUCH_COOLDOWN_SPRINT = 0.28,
+	-- Desired ball center distance ahead of RootPart along LEAD DIRECTION (must exceed CARRIER_SEPARATION_DISTANCE)
+	FRONT_DISTANCE_WALK = 2.75,
+	FRONT_DISTANCE_SPRINT = 3.1,
+	-- Polar front tracking around the carrier: radial pull toward front radius and
+	-- bounded angular swing toward lead direction.
+	FRONT_RADIAL_GAIN = 14.0,
+	FRONT_RADIAL_MAX_SPEED = 30.0,
+	FRONT_ANGULAR_GAIN = 25.0,
+	FRONT_MAX_ANGULAR_SPEED = 14.0,
+	-- Cap on ball speed RELATIVE to carrier (studs/s)
+	FRONT_MAX_REL_SPEED = 48.0,
+	-- Hard ball speed ceiling
+	MAX_BALL_DRIBBLE_SPEED = 72.0,
+	-- Discard prediction when authoritative ground control snapshots stop arriving.
+	VISUAL_SNAPSHOT_MAX_AGE = 0.25,
 
-	-- Forward placement offset ahead of player's RootPart where ball is pushed
-	DRIBBLE_TOUCH_FORWARD_OFFSET = 2.8,
-	-- Velocity impulse imparted on ball during normal walk dribble (studs/s)
-	DRIBBLE_TOUCH_SPEED_WALK = 18.5,
-	-- Velocity impulse imparted on ball during sprint dribble (studs/s)
-	DRIBBLE_TOUCH_SPEED_SPRINT = 33.0,
-	-- Vertical micro-lift (kept minimal for pure ground roll)
-	DRIBBLE_TOUCH_VERTICAL_IMPULSE = 0.0,
-	-- Hard speed ceiling on ball dribble impulses to prevent physics explosions
-	MAX_BALL_DRIBBLE_SPEED = 40.0,
+	-- Forward micro-touches (purely radial, zero lateral sway)
+	MICRO_TOUCH_ENABLED = true,
+	MICRO_TOUCH_AMPLITUDE_WALK = 0.25,
+	MICRO_TOUCH_AMPLITUDE_SPRINT = 0.40,
+	MICRO_TOUCH_CADENCE_WALK = 2.5,
+	MICRO_TOUCH_CADENCE_SPRINT = 4.0,
 
-	-- Distance beyond which carrier loses possession and ball becomes Free (studs)
+	-- CARRIER-ONLY body yaw rate while dribbling (rad/s). Non-carrier keeps accepted CameraPreviewConfigs rate (20).
+	DRIBBLE_TURN_RATE_RAD_PER_SEC = 10.0,
+	-- Dribbling turn values: turns > 120 deg get configurable short speed reduction; smooth recovery (3/s)
+	DRIBBLE_TURN_DIP_THRESHOLD_DEG = 120.0,
+	DRIBBLE_TURN_MIN_FACTOR_WALK = 0.60,
+	DRIBBLE_TURN_MIN_FACTOR_SPRINT = 0.45,
+	DRIBBLE_TURN_EXPONENT = 1.3,
+	DRIBBLE_TURN_RECOVERY_RATE = 3.0,
+
+	-- Jump Self-Lob (Scoop)
+	SELF_LOB_ENABLED = true,
+	SELF_LOB_UPWARD_SPEED = 24.0,
+	SELF_LOB_MIN_HORIZONTAL_SPEED = 8.0,
+	SELF_LOB_MOMENTUM_FACTOR = 1.05,
+	SELF_LOB_MAX_HORIZONTAL_SPEED = 36.0,
+	SELF_LOB_MIN_TAKEOFF_VY = 15.0,
+	SELF_LOB_RECAPTURE_COOLDOWN_SEC = 0.60,
+
+	-- Normalized rig assumptions (not measured per-part bounds)
+	CARRIER_BODY_RADIUS = 1.25,
+	BALL_COLLISION_RADIUS = 1.125,
+	MIN_BODY_SEPARATION_MARGIN = 0.05,
+	CARRIER_SEPARATION_DISTANCE = 2.425,
+	-- Body vertical span: [feet, feet + BODY_HEIGHT], feet = RootPart.Y - PLAYER_FEET_OFFSET (shared origin)
+	BODY_HEIGHT = 5.5,
+	BODY_CONTACT_RESTITUTION = 0.15,
+	MAX_OVERLAP_SEPARATION_STEP = 2.50,
+	OVERLAP_RECOVERY_PUSH_SPEED = 8.0,
+	-- Candidate angles on the clearance ring when searching a feasible flank
+	FLANK_ANGLE_STEPS = 72,
+	-- Front target deviating more than this from lead direction means front is obstructed: carrier is slowed
+	BLOCKED_FLANK_ANGLE_DEG = 60.0,
+	BLOCKED_SPEED_FACTOR = 0.5,
+	-- No feasible ball position at all (carrier outside cage box etc.)
+	INFEASIBLE_SPEED_FACTOR = 0.2,
+
 	LOOSE_BALL_DISTANCE = 7.5,
-	-- Distance where opponent can intercept / steal possession (studs)
 	STEAL_INTERCEPT_DISTANCE = 3.8,
-	-- Steal contest cooldown: prevents tick-by-tick ping-pong possession churn between overlapping players (seconds)
 	STEAL_CONTEST_COOLDOWN_SEC = 0.40,
-	-- Opponents must separate beyond this distance before the same pair can contest again.
 	STEAL_REENTRY_DISTANCE = 5.0,
-	-- Approximate root-to-foot vertical offset used by the contact window for the normalized R15 rig.
+	-- Root-to-foot vertical offset: single shared feet origin for receive, steal, front control and body span
 	PLAYER_FEET_OFFSET = 2.8,
 	MAX_RECEIVE_CUSHION_SPEED = 32.0,
 	MIN_RECEIVE_CUSHION_SPEED = 8.0,
@@ -92,12 +168,9 @@ local DribbleConfigs: DribbleConfig = {
 	MOVE_DIRECTION_THRESHOLD = 0.05,
 	MIN_PLAYER_MOVE_SPEED = 1.5,
 	TARGET_DIRECTION_THRESHOLD = 0.1,
-	-- Damping rate per second applied when player idles within contact zone to cushion the ball (dt-independent)
 	CUSHION_DAMPING_RATE = 3.5,
-	-- Legacy cushion damping factor retained for backward compatibility with existing tests
 	CUSHION_DAMPING_FACTOR = 0.65,
 
-	-- Simulation safety bounds
 	MAX_DT_SIMULATION = 0.10,
 	MAX_TELEPORT_DISPLACEMENT = 20.0,
 }
