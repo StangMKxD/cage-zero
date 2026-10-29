@@ -4,6 +4,8 @@
 
 # RF-02 live task board
 
+> **Sprint cut reference 2026-10-29:** Owner requested checkpoint c0a9c1f then NPCMotion-style cuts for all directions. Root personally adapted sampled reference into5 cut sequences; source/scene synced, syntax fresh-require/build passed, actual MCP verified all5 clips plus Touch/ControlRelease/ClipEnd/unlock/no carrier loss. Existing reversal bindings share one clip. Other8clips unchanged in14,520 samples. DONE_BY_IMPL / READY_FOR_OWNER_PLAYTEST; [cut report001](../assets/sprint-cut-npcmotion-report-001.md). New cut work uncommitted; Studio Edit, no push/publish/closure.
+
 > **Normal walk dribble 2026-10-29:** Owner authorized prior checkpoint commit2ab782d, then clarified same run-dribble system with softer animation. Root implemented Walk pose as reduced-amplitude Run choreography; other12clips unchanged in21,780samples. One module/one sequence synced; actual walk16/run32 and8Walk TouchL/R callbacks→server confirmed, no observed carrier loss. DONE_BY_IMPL / READY_FOR_OWNER_PLAYTEST; new work uncommitted, see [walk report001](../assets/walk-dribble-soft-report-001.md). No push/publish/closure.
 
 > **Latest G walking refinement 2026-10-29:** Owner accepts upper body/leg silhouette, requests low slow stepping instead of waving. Root personally authored stance/swing foot paths and baked leg IK into five moving G clips; upper body unchanged in 19,239 sampled comparisons. Actual after-render219 settled directional frames: support foot present every frame, both feet lifted0, low lift up to0.1994, speed8/no carrier loss. DONE_BY_IMPL / READY_FOR_OWNER_PLAYTEST, see [report003](../assets/g-ground-control-report-003.md). No commit/publish/closure.

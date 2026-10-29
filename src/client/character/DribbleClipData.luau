@@ -4,6 +4,8 @@
 -- Governed by RF02-DRIBBLE-ANIMATION-INTEGRATION Contract (2026-10-27).
 -- Provides deterministic KeyframeSequence construction with 15 R15 joints and KeyframeMarkers.
 
+local SprintCutReference = require(script.Parent:WaitForChild("SprintCutReferenceData"))
+
 export type MarkerEntry = {
 	t: number,
 	name: string,
@@ -145,216 +147,6 @@ local function groundedPelvisY(supHipPitchDeg: number, supKneePitchDeg: number, 
 	local curH = (1.05 * math.cos(hp) + 1.05 * math.cos(hp + kp)) * math.cos(hr)
 	local drop = math.max(0, STAND_LEG_HEIGHT - curH)
 	return -(0.055 + drop * 1.15 + extraDrop)
-end
-
-local function makeDiagFrontPose(dirSign: number)
-	-- Inside-of-foot / opposite-foot cut:
-	-- Cutting Left (AW, dirSign=+1) plants Left foot outside and sweeps Right foot across to push ball left!
-	-- Cutting Right (WD, dirSign=-1) plants Right foot outside and sweeps Left foot across to push ball right!
-	local useRightAsCut = dirSign > 0
-	return function(u: number): PoseMap
-		local plant = pulseQ(u, 0.0, 0.21, 0.64)
-		local touch = pulseQ(u, 0.06, 0.412, 0.88)
-		local drive = pulseQ(u, 0.30, 0.72, 1.00)
-
-		-- Outward-abducted stance so legs NEVER cross midline:
-		-- Left leg HipRoll <= 0 (always abducted left), Right leg HipRoll >= 0 (always abducted right).
-		local plantHipPitch = 36 * plant + 16 * touch - 14 * drive
-		local plantHipYaw = dirSign * (10 * plant + 8 * touch)
-		local plantHipRoll = dirSign * (-14 * plant - 10 * touch - 4 * drive)
-		local plantKneePitch = -18 - 44 * plant - 30 * touch - 8 * drive
-		local plantFootPitch = 22 * plant + 14 * touch - 14 * drive
-
-		-- Reaching leg lunges far forward (+68 deg hip, nearly extended knee -8 deg at touch peak) so the boot physically strikes the ball at Z ~ -2.56 studs!
-		local cutHipPitch = -12 * plant + 68 * touch + 34 * drive
-		local cutHipYaw = dirSign * (12 * touch + 16 * drive)
-		local cutHipRoll = dirSign * (8 * plant + 12 * touch + 14 * drive)
-		local cutKneePitch = -18 - 14 * plant + 10 * touch - 14 * drive
-		local cutFootPitch = 10 * plant - 22 * touch + 8 * drive
-		local cutFootYaw = dirSign * (20 * touch + 14 * drive)
-		local cutFootRoll = dirSign * (12 * touch)
-
-		local pelY = groundedPelvisY(plantHipPitch, plantKneePitch, plantHipRoll, 0.08 * plant + 0.06 * touch)
-		local pelX = dirSign * (0.38 * plant - 0.42 * touch - 0.52 * drive)
-		-- In R15 LowerTorso local space, -Z is forward! Lunging pelZ to -0.52 at touch brings the boot right onto the ball!
-		local pelZ = -0.06 + 0.18 * plant - 0.48 * touch - 0.30 * drive
-
-		local pelPitch = -11.5 - 8.5 * plant - 2.0 * touch - 6.0 * drive
-		local pelYaw = dirSign * (-16 * plant + 22 * touch + 28 * drive)
-		local pelRoll = dirSign * (12.0 * plant - 10.0 * touch - 12.0 * drive)
-
-		local chestPitch = -13.0 - 9.0 * plant - 9.0 * touch - 4.0 * drive
-		local chestYaw = dirSign * (-14 * plant + 28 * touch + 18 * drive)
-		local chestRoll = dirSign * (-9.0 * plant + 11.0 * touch + 9.0 * drive)
-
-		local headPitch = 20.5 + 8.0 * plant + 7.5 * touch + 3.0 * drive
-		local headYaw = dirSign * (18 * touch + 12 * drive)
-		local headRoll = dirSign * (5.0 * plant - 6.0 * touch)
-
-		return {
-			LowerTorso = { p = Vector3.new(pelX, pelY, pelZ), r = Vector3.new(pelPitch, pelYaw, pelRoll) },
-			UpperTorso = { r = Vector3.new(chestPitch, chestYaw, chestRoll) },
-			Head = { r = Vector3.new(headPitch, headYaw, headRoll) },
-			LeftUpperArm = {
-				r = Vector3.new(
-					if useRightAsCut then -34 * plant + 56 * touch - 28 * drive else 38 * plant - 58 * touch + 32 * drive,
-					14 * dirSign * touch - 10 * dirSign * plant,
-					-14 - 28 * plant - 22 * touch - 12 * drive
-				),
-			},
-			LeftLowerArm = { r = Vector3.new(72 + 18 * plant + 12 * touch + 6 * drive, 10 * plant, 0) },
-			LeftHand = { r = Vector3.new(-10 * touch, 0, -6 - 12 * plant) },
-			RightUpperArm = {
-				r = Vector3.new(
-					if useRightAsCut then 38 * plant - 58 * touch + 32 * drive else -34 * plant + 56 * touch - 28 * drive,
-					14 * dirSign * touch - 10 * dirSign * plant,
-					14 + 28 * plant + 22 * touch + 12 * drive
-				),
-			},
-			RightLowerArm = { r = Vector3.new(72 + 18 * plant + 12 * touch + 6 * drive, -10 * plant, 0) },
-			RightHand = { r = Vector3.new(-10 * touch, 0, 6 + 12 * plant) },
-			LeftUpperLeg = { r = if useRightAsCut then Vector3.new(plantHipPitch, plantHipYaw, plantHipRoll) else Vector3.new(cutHipPitch, cutHipYaw, cutHipRoll) },
-			LeftLowerLeg = { r = Vector3.new(if useRightAsCut then plantKneePitch else cutKneePitch, 0, 0) },
-			LeftFoot = { r = if useRightAsCut then Vector3.new(plantFootPitch, -plantHipYaw * 0.5, -plantHipRoll * 0.5) else Vector3.new(cutFootPitch, cutFootYaw, cutFootRoll) },
-			RightUpperLeg = { r = if useRightAsCut then Vector3.new(cutHipPitch, cutHipYaw, cutHipRoll) else Vector3.new(plantHipPitch, plantHipYaw, plantHipRoll) },
-			RightLowerLeg = { r = Vector3.new(if useRightAsCut then cutKneePitch else plantKneePitch, 0, 0) },
-			RightFoot = { r = if useRightAsCut then Vector3.new(cutFootPitch, cutFootYaw, cutFootRoll) else Vector3.new(plantFootPitch, -plantHipYaw * 0.5, -plantHipRoll * 0.5) },
-		}
-	end
-end
-
-local function makeDiagBackPose(dirSign: number)
-	-- Inside-pull / opposite-foot drag-back:
-	-- BackLeft (AS, dirSign=+1) plants Left support leg and uses Right foot to drag & pull ball toward back-left!
-	-- BackRight (SD, dirSign=-1) plants Right support leg and uses Left foot to drag & pull ball toward back-right!
-	local useRightAsDrag = dirSign > 0
-	return function(u: number): PoseMap
-		local reach = pulseQ(u, 0.0, 0.289, 0.72)
-		local redirect = pulseQ(u, 0.20, 0.579, 1.00)
-
-		-- Outward-abducted stance so legs NEVER cross midline:
-		-- Left leg HipRoll <= 0 (abducted left), Right leg HipRoll >= 0 (abducted right).
-		local supHipPitch = 30 * reach + 56 * redirect
-		local supHipYaw = dirSign * (10 * reach + 14 * redirect)
-		local supHipRoll = dirSign * (-14 * reach - 14 * redirect)
-		local supKneePitch = -18 - 46 * reach - 14 * redirect
-		local supFootPitch = 22 * reach - 20 * redirect
-		local supFootYaw = dirSign * (18 * redirect)
-
-		-- At reach peak (u=0.29), drag leg reaches far forward (+68 deg hip, -6 deg knee) onto the ball, then sweeps back
-		local dragHipPitch = 68 * reach - 26 * redirect
-		local dragHipYaw = dirSign * (-14 * reach - 24 * redirect)
-		local dragHipRoll = dirSign * (14 * reach + 22 * redirect)
-		local dragKneePitch = -18 + 12 * reach - 42 * redirect
-		local dragFootPitch = -24 * reach + 16 * redirect
-		local dragFootYaw = dirSign * (-18 * reach - 14 * redirect)
-
-		local pelY = groundedPelvisY(supHipPitch, supKneePitch, supHipRoll, 0.08 * reach + 0.06 * redirect)
-		local pelX = dirSign * (0.36 * reach - 0.54 * redirect)
-		-- Forward lunge (-Z) on reach so the boot contacts the ball at Z ~ -2.5 studs, then pulls back
-		local pelZ = -0.06 - 0.40 * reach - 0.26 * redirect
-
-		local pelPitch = -11.5 - 3.5 * reach - 3.5 * redirect
-		local pelYaw = dirSign * (18 * reach + 46 * redirect)
-		local pelRoll = dirSign * (11.5 * reach - 13.0 * redirect)
-
-		local chestPitch = -13.0 - 10.0 * reach - 6.5 * redirect
-		local chestYaw = dirSign * (18 * reach + 36 * redirect)
-		local chestRoll = dirSign * (-9.0 * reach + 11.0 * redirect)
-
-		local headPitch = 20.5 + 8.5 * reach + 5.5 * redirect
-		local headYaw = dirSign * (18 * reach + 24 * redirect)
-		local headRoll = dirSign * (4.5 * reach - 5.5 * redirect)
-
-		return {
-			LowerTorso = { p = Vector3.new(pelX, pelY, pelZ), r = Vector3.new(pelPitch, pelYaw, pelRoll) },
-			UpperTorso = { r = Vector3.new(chestPitch, chestYaw, chestRoll) },
-			Head = { r = Vector3.new(headPitch, headYaw, headRoll) },
-			LeftUpperArm = {
-				r = Vector3.new(
-					if useRightAsDrag then 48 * reach - 42 * redirect else -54 * reach + 38 * redirect,
-					12 * dirSign * reach - 16 * dirSign * redirect,
-					-14 - 26 * reach - 20 * redirect
-				),
-			},
-			LeftLowerArm = { r = Vector3.new(72 + 16 * reach + 12 * redirect, 10 * reach, 0) },
-			LeftHand = { r = Vector3.new(-8 * reach, 0, -6 - 6 * reach) },
-			RightUpperArm = {
-				r = Vector3.new(
-					if useRightAsDrag then -54 * reach + 38 * redirect else 48 * reach - 42 * redirect,
-					12 * dirSign * reach - 16 * dirSign * redirect,
-					14 + 26 * reach + 20 * redirect
-				),
-			},
-			RightLowerArm = { r = Vector3.new(72 + 16 * reach + 12 * redirect, -10 * reach, 0) },
-			RightHand = { r = Vector3.new(-8 * reach, 0, 6 + 6 * reach) },
-			LeftUpperLeg = { r = if useRightAsDrag then Vector3.new(supHipPitch, supHipYaw, supHipRoll) else Vector3.new(dragHipPitch, dragHipYaw, dragHipRoll) },
-			LeftLowerLeg = { r = Vector3.new(if useRightAsDrag then supKneePitch else dragKneePitch, 0, 0) },
-			LeftFoot = { r = if useRightAsDrag then Vector3.new(supFootPitch, supFootYaw, 6) else Vector3.new(dragFootPitch, dragFootYaw, 8) },
-			RightUpperLeg = { r = if useRightAsDrag then Vector3.new(dragHipPitch, dragHipYaw, dragHipRoll) else Vector3.new(supHipPitch, supHipYaw, supHipRoll) },
-			RightLowerLeg = { r = Vector3.new(if useRightAsDrag then dragKneePitch else supKneePitch, 0, 0) },
-			RightFoot = { r = if useRightAsDrag then Vector3.new(dragFootPitch, dragFootYaw, -8) else Vector3.new(supFootPitch, supFootYaw, -6) },
-		}
-	end
-end
-
-local function reverseCutWSPose(u: number): PoseMap
-	-- Phase 1 (lock): Right foot reaches far forward (-Z) onto top of the ball to trap & stop it.
-	-- Phase 2 (pull): Right foot drags the ball straight back through the legs (+Z) while the body pivots toward the new direction.
-	local lock = pulseQ(u, 0.0, 0.28, 0.68)
-	local pull = pulseQ(u, 0.20, 0.634, 1.00)
-
-	-- Left support leg plants deep into the turf and drives into the new direction
-	local lHipPitch = 36 * lock + 56 * pull
-	local lHipYaw = -6 * lock - 12 * pull
-	local lHipRoll = -16.0 * lock - 14.0 * pull
-	local lKneePitch = -18 - 50 * lock - 20 * pull
-	local lFootPitch = 24 * lock - 18 * pull
-	local lFootYaw = -12 * pull
-
-	-- Right leg reaches far forward (+72 deg hip, nearly straight knee) to trap the ball at TouchR (u=0.29),
-	-- then drags straight back (-46 deg hip) through the stride line to push the ball toward the new direction!
-	local rHipPitch = 72 * lock - 46 * pull
-	local rHipYaw = 6 * lock - 14 * pull
-	local rHipRoll = 14.0 * lock + 18.0 * pull
-	local rKneePitch = -18 + 14 * lock - 34 * pull
-	local rFootPitch = -26 * lock + 24 * pull
-	local rFootYaw = 8 * lock - 10 * pull
-
-	local pelY = groundedPelvisY(lHipPitch, lKneePitch, lHipRoll, 0.09 * lock + 0.07 * pull)
-	local pelX = -0.32 * lock + 0.36 * pull
-	-- Pelvis lunges forward (-0.48) on trap so Right boot lands squarely on the ball, then drives straight through (-0.36)
-	local pelZ = -0.06 - 0.44 * lock - 0.32 * pull
-
-	local pelPitch = -11.5 - 5.0 * lock - 5.0 * pull
-	local pelYaw = -14 * lock - 34 * pull
-	local pelRoll = 10.5 * lock - 11.0 * pull
-
-	local chestPitch = -13.0 - 11.0 * lock - 7.5 * pull
-	local chestYaw = -12 * lock - 28 * pull
-	local chestRoll = -8.5 * lock + 9.5 * pull
-
-	local headPitch = 20.5 + 9.5 * lock + 6.5 * pull
-	local headYaw = -12 * lock - 22 * pull
-	local headRoll = 4.0 * lock - 5.0 * pull
-
-	return {
-		LowerTorso = { p = Vector3.new(pelX, pelY, pelZ), r = Vector3.new(pelPitch, pelYaw, pelRoll) },
-		UpperTorso = { r = Vector3.new(chestPitch, chestYaw, chestRoll) },
-		Head = { r = Vector3.new(headPitch, headYaw, headRoll) },
-		LeftUpperArm = { r = Vector3.new(58 * lock - 48 * pull, -14 * lock + 18 * pull, -14 - 30 * lock - 18 * pull) },
-		LeftLowerArm = { r = Vector3.new(72 + 18 * lock + 12 * pull, 12 * lock, 0) },
-		LeftHand = { r = Vector3.new(-10 * lock, 0, -6 - 6 * lock) },
-		RightUpperArm = { r = Vector3.new(-60 * lock + 50 * pull, -14 * lock + 18 * pull, 14 + 30 * lock + 18 * pull) },
-		RightLowerArm = { r = Vector3.new(72 + 18 * lock + 12 * pull, -12 * lock, 0) },
-		RightHand = { r = Vector3.new(-10 * lock, 0, 6 + 6 * lock) },
-		LeftUpperLeg = { r = Vector3.new(lHipPitch, lHipYaw, lHipRoll) },
-		LeftLowerLeg = { r = Vector3.new(lKneePitch, 0, 0) },
-		LeftFoot = { r = Vector3.new(lFootPitch, lFootYaw, 6.5) },
-		RightUpperLeg = { r = Vector3.new(rHipPitch, rHipYaw, rHipRoll) },
-		RightLowerLeg = { r = Vector3.new(rKneePitch, 0, 0) },
-		RightFoot = { r = Vector3.new(rFootPitch, rFootYaw, -6.5) },
-	}
 end
 
 -- Authoring support frame measured from the normalized ROBLOX Boy Height30 rig.
@@ -563,6 +355,97 @@ local function gModeRightStepPose(u: number): PoseMap
 	return gModeGroundStepPose(u, 0, 1)
 end
 
+local function mirrorCutPose(pose: PoseMap): PoseMap
+	local mirrored: PoseMap = {}
+	for name, joint in pairs(pose) do
+		local other = if name:sub(1, 4) == "Left" then "Right" .. name:sub(5)
+			elseif name:sub(1, 5) == "Right" then "Left" .. name:sub(6) else name
+		local p = joint.p
+		mirrored[other] = {
+			p = if p then Vector3.new(-p.X, p.Y, p.Z) else nil,
+			r = Vector3.new(joint.r.X, -joint.r.Y, -joint.r.Z),
+		}
+	end
+	return mirrored
+end
+
+local function makeReferenceCutPose(dirSign: number, turnDegrees: number, duration: number)
+	local plantU = 0.12 / duration
+	local strikeU = (if turnDegrees == 45 then 0.28 elseif turnDegrees == 135 then 0.22 else 0.24) / duration
+	local releaseU = (duration - (if turnDegrees == 180 then 0.14 else 0.12)) / duration
+	return function(u: number): PoseMap
+		local time: number
+		if u < plantU then
+			time = 1.6 + 0.5 * u / plantU
+		elseif u < strikeU then
+			time = 2.1 + 0.2 * (u - plantU) / (strikeU - plantU)
+		elseif u < releaseU then
+			time = 2.3 + 0.6 * (u - strikeU) / (releaseU - strikeU)
+		else
+			time = 2.9 + 0.1 * (u - releaseU) / (1 - releaseU)
+		end
+		local frames = SprintCutReference.Frames
+		local first, second = frames[1], frames[#frames]
+		for index = 1, #frames - 1 do
+			if time <= frames[index + 1].time then
+				first, second = frames[index], frames[index + 1]
+				break
+			end
+		end
+		local alpha = math.clamp((time - first.time) / (second.time - first.time), 0, 1)
+		local pose: PoseMap = {}
+		local turnGain = (turnDegrees - 45) / 135
+		local plant = math.sin(math.pi * math.clamp(u, 0, 1)) ^ 2
+		for index, name in ipairs(SprintCutReference.Parts) do
+			local rotation = first.rotations[index]:Lerp(second.rotations[index], alpha)
+			if name == "LowerTorso" then
+				local look = rotation.LookVector
+				local heading = math.atan2(-look.X, -look.Z)
+				rotation = CFrame.Angles(0, -heading, 0) * rotation
+			end
+			local x, y, z = rotation:ToEulerAnglesXYZ()
+			local r = Vector3.new(math.deg(x), math.deg(y), math.deg(z))
+			if name == "LowerTorso" then
+				r = Vector3.new(math.clamp(r.X * 0.65, -22, 22), -8 * turnGain * plant, math.clamp(r.Z * 0.65, -24, 24))
+			elseif name == "UpperTorso" then
+				r = Vector3.new(math.clamp(r.X * 0.75, -35, 20), r.Y * 0.8 + 8 * turnGain * plant, r.Z * 0.7)
+			elseif name == "Head" then
+				r = Vector3.new(math.clamp(r.X * 0.7, -15, 30), r.Y * 0.7, r.Z * 0.6)
+			elseif name:find("UpperLeg") then
+				local side = if name:sub(1, 4) == "Left" then -1 else 1
+				r = Vector3.new(math.clamp(r.X * 0.85, -55, 70), math.clamp(r.Y * 0.7, -20, 20), side * math.clamp(math.abs(r.Z) * 0.7, 3, 15))
+			elseif name:find("LowerLeg") then
+				r = Vector3.new(math.clamp(r.X * 0.8 - 5 * turnGain * plant, -110, -8), r.Y * 0.5, r.Z * 0.5)
+			elseif name:find("Foot") then
+				r = Vector3.new(math.clamp(r.X * 0.7, -35, 35), math.clamp(r.Y * 0.6, -25, 25), math.clamp(r.Z * 0.6, -15, 15))
+			else
+				r *= 0.85
+			end
+			pose[name] = { r = r }
+		end
+		-- In-place authored weight shift only; original ~30-stud travel and heading are not applied.
+		pose.LowerTorso.p = Vector3.new(-0.10 * plant, -0.08 - 0.06 * turnGain * plant, -0.06 * plant)
+		local base = runDribblePose(u * 0.75 + 0.15)
+		local entry = math.clamp(u / math.max(0.05, plantU), 0, 1)
+		local exit = math.clamp((1 - u) / math.max(0.05, 1 - releaseU), 0, 1)
+		local weight = (entry * entry * (3 - 2 * entry)) * (exit * exit * (3 - 2 * exit))
+		for name, sample in pairs(pose) do
+			local old = base[name]
+			local a = CFrame.Angles(math.rad(old.r.X), math.rad(old.r.Y), math.rad(old.r.Z))
+			local b = CFrame.Angles(math.rad(sample.r.X), math.rad(sample.r.Y), math.rad(sample.r.Z))
+			local x, y, z = a:Lerp(b, weight):ToEulerAnglesXYZ()
+			sample.r = Vector3.new(math.deg(x), math.deg(y), math.deg(z))
+			if name == "LowerTorso" then
+				sample.p = (old.p or Vector3.zero):Lerp(sample.p or Vector3.zero, weight)
+			end
+		end
+		if dirSign < 0 then
+			pose = mirrorCutPose(pose)
+		end
+		return gGroundPose(pose)
+	end
+end
+
 local Definitions: { [string]: ClipDefinition } = {
 	RF02_WalkDribble_R15_v01 = {
 		name = "RF02_WalkDribble_R15_v01",
@@ -606,7 +489,7 @@ local Definitions: { [string]: ClipDefinition } = {
 			{ t = 0.56, name = "ControlRelease", value = "cut_exit_ready" },
 			{ t = 0.68, name = "ClipEnd", value = "one_shot_complete" },
 		},
-		poseAt = makeDiagFrontPose(1),
+		poseAt = makeReferenceCutPose(1, 45, 0.68),
 	},
 	RF02_CutDiagFrontRight_WD_R15_v01 = {
 		name = "RF02_CutDiagFrontRight_WD_R15_v01",
@@ -620,7 +503,7 @@ local Definitions: { [string]: ClipDefinition } = {
 			{ t = 0.56, name = "ControlRelease", value = "cut_exit_ready" },
 			{ t = 0.68, name = "ClipEnd", value = "one_shot_complete" },
 		},
-		poseAt = makeDiagFrontPose(-1),
+		poseAt = makeReferenceCutPose(-1, 45, 0.68),
 	},
 	RF02_CutDiagBackLeft_AS_R15_v01 = {
 		name = "RF02_CutDiagBackLeft_AS_R15_v01",
@@ -635,7 +518,7 @@ local Definitions: { [string]: ClipDefinition } = {
 			{ t = 0.64, name = "ControlRelease", value = "cut_exit_ready" },
 			{ t = 0.76, name = "ClipEnd", value = "one_shot_complete" },
 		},
-		poseAt = makeDiagBackPose(1),
+		poseAt = makeReferenceCutPose(1, 135, 0.76),
 	},
 	RF02_CutDiagBackRight_SD_R15_v01 = {
 		name = "RF02_CutDiagBackRight_SD_R15_v01",
@@ -650,7 +533,7 @@ local Definitions: { [string]: ClipDefinition } = {
 			{ t = 0.64, name = "ControlRelease", value = "cut_exit_ready" },
 			{ t = 0.76, name = "ClipEnd", value = "one_shot_complete" },
 		},
-		poseAt = makeDiagBackPose(-1),
+		poseAt = makeReferenceCutPose(-1, 135, 0.76),
 	},
 	RF02_CutReverse_WS_R15_v01 = {
 		name = "RF02_CutReverse_WS_R15_v01",
@@ -665,7 +548,7 @@ local Definitions: { [string]: ClipDefinition } = {
 			{ t = 0.68, name = "ControlRelease", value = "cut_exit_ready" },
 			{ t = 0.82, name = "ClipEnd", value = "one_shot_complete" },
 		},
-		poseAt = reverseCutWSPose,
+		poseAt = makeReferenceCutPose(1, 180, 0.82),
 	},
 	RF02_GMode_SlowControlLoop_R15_v01 = {
 		name = "RF02_GMode_SlowControlLoop_R15_v01",

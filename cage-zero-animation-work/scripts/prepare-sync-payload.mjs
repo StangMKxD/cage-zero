@@ -6,6 +6,7 @@ const FILES = [
   { disk: 'src/shared/configs/DribbleActionConfigs.luau', studioPath: ['ReplicatedStorage', 'Shared', 'configs', 'DribbleActionConfigs'], className: 'ModuleScript' },
   { disk: 'src/shared/DribbleGeometryHelper.luau', studioPath: ['ReplicatedStorage', 'Shared', 'DribbleGeometryHelper'], className: 'ModuleScript' },
   { disk: 'src/client/character/DribbleClipData.luau', studioPath: ['StarterPlayer', 'StarterPlayerScripts', 'Client', 'character', 'DribbleClipData'], className: 'ModuleScript' },
+  { disk: 'src/client/character/SprintCutReferenceData.luau', studioPath: ['StarterPlayer', 'StarterPlayerScripts', 'Client', 'character', 'SprintCutReferenceData'], className: 'ModuleScript' },
   { disk: 'src/client/character/DribbleAnimationHelper.luau', studioPath: ['StarterPlayer', 'StarterPlayerScripts', 'Client', 'character', 'DribbleAnimationHelper'], className: 'ModuleScript' },
   { disk: 'src/client/character/DribbleAnimationController.luau', studioPath: ['StarterPlayer', 'StarterPlayerScripts', 'Client', 'character', 'DribbleAnimationController'], className: 'ModuleScript' },
   { disk: 'src/client/controllers/DribbleCutController.luau', studioPath: ['StarterPlayer', 'StarterPlayerScripts', 'Client', 'controllers', 'DribbleCutController'], className: 'ModuleScript' },

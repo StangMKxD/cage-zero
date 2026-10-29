@@ -11,8 +11,13 @@
   },
   {
     "disk": "src/client/character/DribbleClipData.luau",
-    "sha256": "23a13013abf3a5d9b5da36bfb833946c53215e53d7dca7d1584105999ad43a69",
-    "bytes": 35865
+    "sha256": "878ea714dd429c1dff88385e1d0f764392e792ae6ebe7b287f29629df649d0d4",
+    "bytes": 28464
+  },
+  {
+    "disk": "src/client/character/SprintCutReferenceData.luau",
+    "sha256": "5f20042f13f0fcca89719ef1c8b0109e2584e8f55cedc89c0f413e6774a413ea",
+    "bytes": 6214
   },
   {
     "disk": "src/client/character/DribbleAnimationHelper.luau",
