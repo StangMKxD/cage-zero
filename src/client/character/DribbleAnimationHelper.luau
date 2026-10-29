@@ -13,7 +13,14 @@ assert(configs ~= nil, "[DribbleAnimationHelper] configs folder missing in Share
 local DribbleActionConfigs = require(configs:WaitForChild("DribbleActionConfigs"))
 local DribbleClipData = require(script.Parent:WaitForChild("DribbleClipData"))
 
-export type DribbleLoopKey = "WalkDribble" | "RunDribble" | "GModeLoop"
+export type DribbleLoopKey =
+	| "WalkDribble"
+	| "RunDribble"
+	| "GModeLoop"
+	| "GoalForward"
+	| "GoalBackward"
+	| "GoalLeft"
+	| "GoalRight"
 export type DribbleCutKey = "FrontLeft" | "FrontRight" | "BackLeft" | "BackRight" | "ReverseLeft" | "ReverseRight" | "GoalReverse"
 export type DribbleClipKey = DribbleLoopKey | DribbleCutKey
 
@@ -21,12 +28,20 @@ export type LoopTrackCache = {
 	WalkDribble: AnimationTrack?,
 	RunDribble: AnimationTrack?,
 	GModeLoop: AnimationTrack?,
+	GoalForward: AnimationTrack?,
+	GoalBackward: AnimationTrack?,
+	GoalLeft: AnimationTrack?,
+	GoalRight: AnimationTrack?,
 }
 
 export type LoopRegistrationSources = {
 	WalkDribble: string,
 	RunDribble: string,
 	GModeLoop: string,
+	GoalForward: string,
+	GoalBackward: string,
+	GoalLeft: string,
+	GoalRight: string,
 }
 
 local cachedStudioTempIds: { [string]: string } = {}
@@ -260,15 +275,31 @@ function DribbleAnimationHelper.LoadLoopTracks(animator: Animator): (LoopTrackCa
 		WalkDribble = nil,
 		RunDribble = nil,
 		GModeLoop = nil,
+		GoalForward = nil,
+		GoalBackward = nil,
+		GoalLeft = nil,
+		GoalRight = nil,
 	}
 	local sources: LoopRegistrationSources = {
 		WalkDribble = "NONE",
 		RunDribble = "NONE",
 		GModeLoop = "NONE",
+		GoalForward = "NONE",
+		GoalBackward = "NONE",
+		GoalLeft = "NONE",
+		GoalRight = "NONE",
 	}
 	local animInstances: { Animation } = {}
 
-	local keys: { DribbleLoopKey } = { "WalkDribble", "RunDribble", "GModeLoop" }
+	local keys: { DribbleLoopKey } = {
+		"WalkDribble",
+		"RunDribble",
+		"GModeLoop",
+		"GoalForward",
+		"GoalBackward",
+		"GoalLeft",
+		"GoalRight",
+	}
 	for _, key in ipairs(keys) do
 		local anim, src = DribbleAnimationHelper.ResolveAnimation(key)
 		sources[key] = src

@@ -85,11 +85,12 @@ function DribbleGeometryHelper.FeasibleFrontTarget(
 	rootPos: Vector3,
 	leadDir: Vector3,
 	isSprinting: boolean,
-	radialOffset: number?
+	radialOffset: number?,
+	minSeparation: number?
 ): (Vector3, number, boolean)
 	local f = safeUnit(horiz(leadDir), Vector3.new(0, 0, -1))
 	local baseD = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
-	local sep = DribbleGeometryHelper.GetCarrierSeparationDistance()
+	local sep = minSeparation or DribbleGeometryHelper.GetCarrierSeparationDistance()
 	local d = math.max(baseD + (radialOffset or 0), sep)
 	local base = math.atan2(f.Z, f.X)
 	local steps = DribbleConfigs.FLANK_ANGLE_STEPS
@@ -122,8 +123,15 @@ end
 -- clearance ring) toward the target, carried with the carrier velocity so it genuinely travels. Because the relative
 -- motion is an arc around the body, the ball never crosses the torso while swinging between back/side/front.
 -- Returns the absolute ball velocity for this step (displacement = velocity * dt before friction/cage).
-function DribbleGeometryHelper.ComputeFrontVelocity(rootPos: Vector3, carrierVel: Vector3, ballPos: Vector3, target: Vector3, dt: number): Vector3
-	local sep = DribbleGeometryHelper.GetCarrierSeparationDistance()
+function DribbleGeometryHelper.ComputeFrontVelocity(
+	rootPos: Vector3,
+	carrierVel: Vector3,
+	ballPos: Vector3,
+	target: Vector3,
+	dt: number,
+	minSeparation: number?
+): Vector3
+	local sep = minSeparation or DribbleGeometryHelper.GetCarrierSeparationDistance()
 	local rel = horiz(ballPos - rootPos)
 	local tRel = horiz(target - rootPos)
 	local rt = math.max(tRel.Magnitude, sep)
@@ -198,9 +206,10 @@ function DribbleGeometryHelper.ResolveBodyCage(
 	vb: Vector3,
 	vp: Vector3,
 	dt: number,
-	facing: Vector3
+	facing: Vector3,
+	minSeparation: number?
 ): (Vector3, Vector3, boolean, boolean)
-	local dT = DribbleGeometryHelper.GetCarrierSeparationDistance()
+	local dT = minSeparation or DribbleGeometryHelper.GetCarrierSeparationDistance()
 	local ballR = DribbleConfigs.BALL_COLLISION_RADIUS
 	local feet = DribbleGeometryHelper.GetFeetY(p1.Y)
 	if math.max(feet, b1.Y - ballR) > math.min(feet + DribbleConfigs.BODY_HEIGHT, b1.Y + ballR) then

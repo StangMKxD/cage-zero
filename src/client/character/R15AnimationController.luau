@@ -390,13 +390,15 @@ function R15AnimationController.Init(_timeoutBudget: number?)
 	localPlayer.CharacterAdded:Connect(onCharacterAdded)
 	localPlayer.CharacterRemoving:Connect(onCharacterRemoving)
 
-	-- RF-F22: Capture local character BEFORE task.spawn to avoid mutable reads inside delayed closure
-	local existingChar = localPlayer.Character
-	if existingChar and existingChar:IsDescendantOf(game) then
-		task.spawn(function()
-			onCharacterAdded(existingChar)
-		end)
-	end
+	task.spawn(function()
+		local deadline = os.clock() + 10.0
+		while (not localPlayer.Character or not localPlayer.Character:IsDescendantOf(game)) and os.clock() < deadline do
+			task.wait()
+		end
+		if localPlayer.Character and localPlayer.Character:IsDescendantOf(game) then
+			onCharacterAdded(localPlayer.Character)
+		end
+	end)
 end
 
 function R15AnimationController.GetAnimator(): Animator?

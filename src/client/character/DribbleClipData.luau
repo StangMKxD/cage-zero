@@ -419,105 +419,183 @@ local function reverseCutWSPose(u: number): PoseMap
 	}
 end
 
-local function gModeSlowLoopPose(u: number): PoseMap
-	local uLoop = if u >= 1 then 0 else u
-	local touchL = pulse(uLoop, 0.06, 0.21875, 0.42)
-	local touchR = pulse(uLoop, 0.56, 0.71875, 0.92)
+-- Authoring support frame measured from the normalized ROBLOX Boy Height30 rig.
+-- This is evaluated while baking clips, not in the per-frame movement controller.
+local G_SUPPORT_CHAINS = {
+	Left = {
+		hip0 = Vector3.new(-0.50000006, -0.387453228, 0.0999825597),
+		hip1 = Vector3.new(-0.0755341053, 0.592273593, 0.0578525662),
+		knee0 = Vector3.new(-0.0262608826, -0.761328697, -0.0509277508),
+		knee1 = Vector3.new(-0.00505596399, 0.489029348, -0.15365231),
+		ankle0 = Vector3.new(-0.00246268511, -0.467684567, 0.0713348314),
+		ankle1 = Vector3.new(0.00442031026, 0.0454355441, 0.255645543),
+	},
+	Right = {
+		hip0 = Vector3.new(0.49999994, -0.387453228, 0.0999634415),
+		hip1 = Vector3.new(0.0755339861, 0.592273414, 0.0578332059),
+		knee0 = Vector3.new(0.0265339613, -0.761112213, -0.0509468839),
+		knee1 = Vector3.new(0.00532895327, 0.489245981, -0.153671652),
+		ankle0 = Vector3.new(0.00232899189, -0.467684567, 0.0713181272),
+		ankle1 = Vector3.new(-0.00455403328, 0.0454352126, 0.255628645),
+	},
+}
 
-	local pelY = -0.105 + 0.018 * cos2p(2 * uLoop, -20) - 0.045 * (touchL + touchR)
-	local pelX = -0.022 * sin2p(uLoop, 0)
-	local pelZ = -0.04 - 0.22 * (touchL + touchR)
-
-	local pelPitch = -7.5 + 2.0 * (touchL + touchR)
-	local pelYaw = -2.5 * cos2p(uLoop, 0)
-	local pelRoll = 1.8 * sin2p(uLoop, 0)
-
-	local chestPitch = -6.5 - 4.0 * (touchL + touchR)
-	local chestYaw = 2.5 * cos2p(uLoop, 0)
-	local chestRoll = -1.5 * sin2p(uLoop, 0)
-	local headPitch = 11.5 + 3.5 * (touchL + touchR)
-
-	local lArmPitch = -14 * cos2p(uLoop, 0) + 8 * touchR
-	local rArmPitch = 14 * cos2p(uLoop, 0) + 8 * touchL
-
-	local lHipPitch = 22 + 8 * cos2p(uLoop, -15) + 28 * touchL
-	local lHipYaw = -8 * touchL
-	local lHipRoll = -4.5 - 4.0 * touchL
-	local lKneePitch = -26 - 12 * (0.5 - 0.5 * cos2p(uLoop, -45)) + 20 * touchL
-	local lFootPitch = 10 - 24 * touchL
-	local lFootYaw = -12 * touchL
-
-	local uR = (uLoop + 0.5) % 1
-	local rHipPitch = 22 + 8 * cos2p(uR, -15) + 28 * touchR
-	local rHipYaw = 8 * touchR
-	local rHipRoll = 4.5 + 4.0 * touchR
-	local rKneePitch = -26 - 12 * (0.5 - 0.5 * cos2p(uR, -45)) + 20 * touchR
-	local rFootPitch = 10 - 24 * touchR
-	local rFootYaw = 12 * touchR
-
-	return {
-		LowerTorso = { p = Vector3.new(pelX, pelY, pelZ), r = Vector3.new(pelPitch, pelYaw, pelRoll) },
-		UpperTorso = { r = Vector3.new(chestPitch, chestYaw, chestRoll) },
-		Head = { r = Vector3.new(headPitch, 0, 0) },
-		LeftUpperArm = { r = Vector3.new(lArmPitch, 0, -16) },
-		LeftLowerArm = { r = Vector3.new(42, 0, 0) },
-		LeftHand = { r = Vector3.new(0, 0, -6) },
-		RightUpperArm = { r = Vector3.new(rArmPitch, 0, 16) },
-		RightLowerArm = { r = Vector3.new(42, 0, 0) },
-		RightHand = { r = Vector3.new(0, 0, 6) },
-		LeftUpperLeg = { r = Vector3.new(lHipPitch, lHipYaw, lHipRoll) },
-		LeftLowerLeg = { r = Vector3.new(lKneePitch, 0, 0) },
-		LeftFoot = { r = Vector3.new(lFootPitch, lFootYaw, 3) },
-		RightUpperLeg = { r = Vector3.new(rHipPitch, rHipYaw, rHipRoll) },
-		RightLowerLeg = { r = Vector3.new(rKneePitch, 0, 0) },
-		RightFoot = { r = Vector3.new(rFootPitch, rFootYaw, -3) },
-	}
+local function gGroundPose(pose: PoseMap): PoseMap
+	local function transform(sample: JointSample): CFrame
+		return CFrame.new(sample.p or Vector3.zero)
+			* CFrame.Angles(math.rad(sample.r.X), math.rad(sample.r.Y), math.rad(sample.r.Z))
+	end
+	local torso = CFrame.new(0, 4.183 - 1.44150245, 0) * transform(pose.LowerTorso)
+		* CFrame.new(0, 0.437955648, -0.0999825597)
+	local bottoms: { number } = {}
+	for _, side in ipairs({ "Left", "Right" }) do
+		local chain = G_SUPPORT_CHAINS[side]
+		local upper = torso * CFrame.new(chain.hip0) * transform(pose[side .. "UpperLeg"]) * CFrame.new(-chain.hip1)
+		local lower = upper * CFrame.new(chain.knee0) * transform(pose[side .. "LowerLeg"]) * CFrame.new(-chain.knee1)
+		local foot = lower * CFrame.new(chain.ankle0) * transform(pose[side .. "Foot"]) * CFrame.new(-chain.ankle1)
+		local halfHeight = math.abs(foot.XVector.Y) * 0.836178064 / 2
+			+ math.abs(foot.YVector.Y) * 0.873450398 / 2
+			+ math.abs(foot.ZVector.Y) * 1.242453933 / 2
+		table.insert(bottoms, foot.Y - halfHeight)
+	end
+	local delta = bottoms[1] - bottoms[2]
+	local supportBottom = 0.5 * (bottoms[1] + bottoms[2] - math.sqrt(delta * delta + 0.01 * 0.01))
+	pose.LowerTorso.p = (pose.LowerTorso.p or Vector3.zero) + Vector3.new(0, 0.015 - supportBottom, 0)
+	return pose
 end
 
-local function gModeSoleDragBackPose(u: number): PoseMap
-	local trap = pulseQ(u, 0.0, 0.270, 0.62)
-	local pull = pulseQ(u, 0.25, 0.649, 0.96)
+local function gWalkingFeet(pose: PoseMap, phase: number, forward: number, lateral: number): PoseMap
+	if forward == 0 and lateral == 0 then
+		return pose
+	end
+	local function transform(sample: JointSample): CFrame
+		return CFrame.new(sample.p or Vector3.zero)
+			* CFrame.Angles(math.rad(sample.r.X), math.rad(sample.r.Y), math.rad(sample.r.Z))
+	end
+	local function sample(frame: CFrame): JointSample
+		local x, y, z = frame:ToEulerAnglesXYZ()
+		return { r = Vector3.new(math.deg(x), math.deg(y), math.deg(z)) }
+	end
+	local function align(from: Vector3, to: Vector3): CFrame
+		local axis = from.Unit:Cross(to.Unit)
+		local dot = math.clamp(from.Unit:Dot(to.Unit), -1, 1)
+		if axis.Magnitude < 1e-6 then
+			return if dot >= 0 then CFrame.identity else CFrame.Angles(math.pi, 0, 0)
+		end
+		return CFrame.fromAxisAngle(axis.Unit, math.acos(dot))
+	end
+	local torso = CFrame.new(0, 4.183 - 1.44150245, 0) * transform(pose.LowerTorso)
+		* CFrame.new(0, 0.437955648, -0.0999825597)
+	for index, side in ipairs({ "Left", "Right" }) do
+		local chain = G_SUPPORT_CHAINS[side]
+		local q = (phase + (index - 1) * 0.5) % 1
+		local halfStep = if lateral ~= 0 then 0.35 else 0.55
+		local offset: number
+		local lift = 0
+		-- 60% planted, 40% low swing; the two feet never swing simultaneously.
+		if q <= 0.6 then
+			offset = halfStep * (1 - 2 * q / 0.6)
+		else
+			local t = (q - 0.6) / 0.4
+			local t2, t3 = t * t, t * t * t
+			local tangent = -2 * halfStep * 0.4 / 0.6
+			offset = -(2 * t3 - 3 * t2 + 1) * halfStep
+				+ (t3 - 2 * t2 + t) * tangent
+				+ (-2 * t3 + 3 * t2) * halfStep
+				+ (t3 - t2) * tangent
+			lift = 0.18 * math.sin(math.pi * t) ^ 2
+		end
+		local sign = if side == "Left" then -1 else 1
+		local footRotation = CFrame.Angles(0, math.rad(sign * 5), 0)
+		local foot = CFrame.new(sign * 0.78 + lateral * offset, 0.873450398 / 2 + 0.02 + lift, -0.05 - forward * offset)
+			* footRotation
+		local hip = torso:PointToWorldSpace(chain.hip0)
+		local ankle = foot:PointToWorldSpace(chain.ankle1)
+		local upperVector, lowerVector = chain.knee0 - chain.hip1, chain.ankle0 - chain.knee1
+		local upperLength, lowerLength = upperVector.Magnitude, lowerVector.Magnitude
+		local reach = ankle - hip
+		local distance = math.clamp(reach.Magnitude, math.abs(upperLength - lowerLength) + 0.001, upperLength + lowerLength - 0.001)
+		local direction = reach.Unit
+		local pole = Vector3.new(0, 0, -1)
+		local bend = (pole - direction * pole:Dot(direction)).Unit
+		local along = (upperLength * upperLength + distance * distance - lowerLength * lowerLength) / (2 * distance)
+		local knee = hip + direction * along + bend * math.sqrt(math.max(0, upperLength * upperLength - along * along))
+		local upper = CFrame.new(hip) * align(upperVector, knee - hip) * CFrame.new(-chain.hip1)
+		local lower = CFrame.new(knee) * align(lowerVector, ankle - knee) * CFrame.new(-chain.knee1)
+		pose[side .. "UpperLeg"] = sample(CFrame.new(-chain.hip0) * torso:Inverse() * upper * CFrame.new(chain.hip1))
+		pose[side .. "LowerLeg"] = sample(CFrame.new(-chain.knee0) * upper:Inverse() * lower * CFrame.new(chain.knee1))
+		pose[side .. "Foot"] = sample(CFrame.new(-chain.ankle0) * lower:Inverse() * foot * CFrame.new(chain.ankle1))
+	end
+	return pose
+end
 
-	-- Left support knee bends deeply into grounded crouch; Right foot reaches onto ball top and drags it back
-	local lHipPitch = 24 + 22 * trap + 44 * pull
-	local lHipRoll = -6.0 - 8.0 * trap - 6.0 * pull
-	local lKneePitch = -28 - 32 * trap - 14 * pull
-	local lFootPitch = 18 + 10 * trap - 22 * pull
+-- Goal-facing duel stance: a wider, crouched base with bent arms and low lateral steps.
+-- Sinusoidal weight transfer and knee flexion keep velocity continuous at loop seams.
+local function gModeGroundStepPose(u: number, forward: number, lateral: number): PoseMap
+	local phase = if u >= 1 then 0 else u
+	local stride = sin2p(phase, 0)
+	local cycle = cos2p(phase, 0)
+	local liftL = 0.5 - 0.5 * cycle
+	local liftR = 0.5 + 0.5 * cycle
+	local moving = math.max(math.abs(forward), math.abs(lateral))
+	local side = math.abs(lateral)
+	local sway = (0.008 + 0.035 * moving + 0.025 * side) * stride
+	local sideRoll = lateral * 6.5 * stride
+	local hipSwing = 16 * forward * stride + 6 * side * cycle
+	local shuffle = 5 * side
+	local hipL = 22 + hipSwing
+	local hipR = 22 - hipSwing
+	local kneeL = -44 - 12 * moving * liftL
+	local kneeR = -44 - 12 * moving * liftR
+	local rollL = -9 + sideRoll
+	local rollR = 9 + sideRoll
+	-- Smooth maximum follows the longer support leg without a hard support switch.
+	local supportYLeft = groundedPelvisY(hipL - 7, kneeL, rollL, 0)
+	local supportYRight = groundedPelvisY(hipR - 7, kneeR, rollR, 0)
+	local heightDelta = supportYLeft - supportYRight
+	local pelvisY = 0.5 * (supportYLeft + supportYRight + math.sqrt(heightDelta * heightDelta + 0.015 * 0.015))
 
-	local rHipPitch = 20 + 48 * trap - 26 * pull
-	local rKneePitch = -26 + 14 * trap - 42 * pull
-	local rFootPitch = 8 - 28 * trap + 16 * pull
+	local pose = gGroundPose({
+		LowerTorso = {
+			p = Vector3.new(sway, pelvisY, -0.035),
+			r = Vector3.new(-7, -1.5 * moving * stride, -1.5 * moving * stride),
+		},
+		UpperTorso = { r = Vector3.new(-9, 3 * moving * stride, 1.5 * moving * stride) },
+		Head = { r = Vector3.new(16, -1.5 * moving * stride, 0) },
+		LeftUpperArm = { r = Vector3.new(14 - 10 * moving * stride, -7, -30 - 3 * moving * cycle) },
+		LeftLowerArm = { r = Vector3.new(58 + 5 * moving * stride, -5, -3) },
+		LeftHand = { r = Vector3.new(-5, 0, -7) },
+		RightUpperArm = { r = Vector3.new(14 + 10 * moving * stride, 7, 30 + 3 * moving * cycle) },
+		RightLowerArm = { r = Vector3.new(58 - 5 * moving * stride, 5, 3) },
+		RightHand = { r = Vector3.new(-5, 0, 7) },
+		LeftUpperLeg = { r = Vector3.new(hipL, -shuffle, rollL) },
+		LeftLowerLeg = { r = Vector3.new(kneeL, 0, 0) },
+		LeftFoot = { r = Vector3.new(29 - 6 * moving * liftL, -2 * side, 4 - sideRoll * 0.5) },
+		RightUpperLeg = { r = Vector3.new(hipR, shuffle, rollR) },
+		RightLowerLeg = { r = Vector3.new(kneeR, 0, 0) },
+		RightFoot = { r = Vector3.new(29 - 6 * moving * liftR, 2 * side, -4 - sideRoll * 0.5) },
+	})
+	return gWalkingFeet(pose, phase, forward, lateral)
+end
 
-	local pelY = groundedPelvisY(lHipPitch, lKneePitch, lHipRoll, 0.08 * trap + 0.06 * pull)
-	local pelX = -0.24 * trap + 0.20 * pull
-	local pelZ = -0.04 - 0.38 * trap - 0.26 * pull
+local function gModeSlowLoopPose(u: number): PoseMap
+	return gModeGroundStepPose(u, 0, 0)
+end
 
-	local pelPitch = -7.5 - 7.0 * trap - 5.0 * pull
-	local pelYaw = -10.0 * trap + 6.5 * pull
-	local pelRoll = 8.5 * trap - 7.0 * pull
+local function gModeForwardStepPose(u: number): PoseMap
+	return gModeGroundStepPose(u, 1, 0)
+end
 
-	local chestPitch = -6.5 - 14.5 * trap - 9.0 * pull
-	local chestYaw = 10.0 * trap - 6.5 * pull
-	local chestRoll = -6.5 * trap + 5.5 * pull
-	local headPitch = 11.5 + 16.5 * trap + 10.0 * pull
+local function gModeBackwardStepPose(u: number): PoseMap
+	return gModeGroundStepPose(u, -1, 0)
+end
 
-	return {
-		LowerTorso = { p = Vector3.new(pelX, pelY, pelZ), r = Vector3.new(pelPitch, pelYaw, pelRoll) },
-		UpperTorso = { r = Vector3.new(chestPitch, chestYaw, chestRoll) },
-		Head = { r = Vector3.new(headPitch, 0, -3.5 * trap) },
-		LeftUpperArm = { r = Vector3.new(44 * trap - 32 * pull, -10 * trap, -16 - 22 * trap - 10 * pull) },
-		LeftLowerArm = { r = Vector3.new(42 + 40 * trap + 28 * pull, 10 * trap, 0) },
-		LeftHand = { r = Vector3.new(-8 * trap, 0, -6 - 4 * trap) },
-		RightUpperArm = { r = Vector3.new(-48 * trap + 34 * pull, 10 * trap, 16 + 22 * trap + 10 * pull) },
-		RightLowerArm = { r = Vector3.new(42 + 40 * trap + 28 * pull, -10 * trap, 0) },
-		RightHand = { r = Vector3.new(-8 * trap, 0, 6 + 4 * trap) },
-		LeftUpperLeg = { r = Vector3.new(lHipPitch, -12 * pull, lHipRoll) },
-		LeftLowerLeg = { r = Vector3.new(lKneePitch, 0, 0) },
-		LeftFoot = { r = Vector3.new(lFootPitch, -14 * pull, 5.5) },
-		RightUpperLeg = { r = Vector3.new(rHipPitch, 14 * trap - 8 * pull, 9.5 + 6 * trap) },
-		RightLowerLeg = { r = Vector3.new(rKneePitch, 0, 0) },
-		RightFoot = { r = Vector3.new(rFootPitch, 16 * trap, -5.5) },
-	}
+local function gModeLeftStepPose(u: number): PoseMap
+	return gModeGroundStepPose(u, 0, -1)
+end
+
+local function gModeRightStepPose(u: number): PoseMap
+	return gModeGroundStepPose(u, 0, 1)
 end
 
 local Definitions: { [string]: ClipDefinition } = {
@@ -652,7 +730,65 @@ local Definitions: { [string]: ClipDefinition } = {
 			{ t = 0.62, name = "ControlRelease", value = "cut_exit_ready" },
 			{ t = 0.74, name = "ClipEnd", value = "one_shot_complete" },
 		},
-		poseAt = gModeSoleDragBackPose,
+		poseAt = gModeBackwardStepPose,
+	},
+	RF02_GMode_SoleRollForward_W_R15_v01 = {
+		name = "RF02_GMode_SoleRollForward_W_R15_v01",
+		duration = 0.64,
+		keyCount = 129,
+		loop = true,
+		priority = Enum.AnimationPriority.Movement,
+		markers = {
+			{ t = 0.0, name = "GForwardEntry", value = "goal_facing_forward_start" },
+			{ t = 0.28, name = "TouchR", value = "g_mode_sole_roll_fwd_right" },
+			{ t = 0.32, name = "GMidForward", value = "goal_facing_forward_mid" },
+			{ t = 0.64, name = "GForwardLoop", value = "loop_seam" },
+		},
+		poseAt = gModeForwardStepPose,
+	},
+	RF02_GMode_SoleRollBackward_S_R15_v01 = {
+		name = "RF02_GMode_SoleRollBackward_S_R15_v01",
+		duration = 0.64,
+		keyCount = 129,
+		loop = true,
+		priority = Enum.AnimationPriority.Movement,
+		markers = {
+			{ t = 0.0, name = "GBackwardEntry", value = "goal_facing_backward_start" },
+			{ t = 0.26, name = "TouchR", value = "g_mode_sole_drag_back_right" },
+			{ t = 0.32, name = "GMidBackward", value = "goal_facing_backward_mid" },
+			{ t = 0.64, name = "GBackwardLoop", value = "loop_seam" },
+		},
+		poseAt = gModeBackwardStepPose,
+	},
+	RF02_GMode_SoleRollLeft_A_R15_v01 = {
+		name = "RF02_GMode_SoleRollLeft_A_R15_v01",
+		duration = 0.96,
+		keyCount = 193,
+		loop = true,
+		priority = Enum.AnimationPriority.Movement,
+		markers = {
+			{ t = 0.0, name = "GLeftEntry", value = "goal_facing_lateral_left_start" },
+			{ t = 0.22, name = "TouchR", value = "g_mode_sole_roll_lateral_right_touch_drag_left" },
+			{ t = 0.48, name = "GMidLeft", value = "goal_facing_lateral_left_mid" },
+			{ t = 0.70, name = "TouchL", value = "g_mode_inside_guide_left" },
+			{ t = 0.96, name = "GLeftLoop", value = "loop_seam" },
+		},
+		poseAt = gModeLeftStepPose,
+	},
+	RF02_GMode_SoleRollRight_D_R15_v01 = {
+		name = "RF02_GMode_SoleRollRight_D_R15_v01",
+		duration = 0.96,
+		keyCount = 193,
+		loop = true,
+		priority = Enum.AnimationPriority.Movement,
+		markers = {
+			{ t = 0.0, name = "GRightEntry", value = "goal_facing_lateral_right_start" },
+			{ t = 0.22, name = "TouchL", value = "g_mode_sole_roll_lateral_left_touch_drag_right" },
+			{ t = 0.48, name = "GMidRight", value = "goal_facing_lateral_right_mid" },
+			{ t = 0.70, name = "TouchR", value = "g_mode_inside_guide_right" },
+			{ t = 0.96, name = "GRightLoop", value = "loop_seam" },
+		},
+		poseAt = gModeRightStepPose,
 	},
 }
 

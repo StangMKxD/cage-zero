@@ -987,8 +987,12 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			-- Reuse the same joint-safe target search, with a close-control radius + bounded marker/cut lead pulse.
 			local baseDistance = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
 			target, flankDeg, infeasible = DribbleGeometryHelper.FeasibleFrontTarget(
-				carrierCand.rootPart.Position, leadDir, isSprinting,
-				(DribbleActionConfigs.GOAL_BALL_DISTANCE - baseDistance) + markerPulse + cutLead)
+				carrierCand.rootPart.Position,
+				leadDir,
+				isSprinting,
+				(DribbleActionConfigs.GOAL_BALL_DISTANCE - baseDistance) + markerPulse + cutLead,
+				DribbleActionConfigs.GOAL_CARRIER_SEPARATION
+			)
 		end
 		local v: Vector3
 		if isCutActive then
@@ -1005,12 +1009,14 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 				v = v.Unit * DribbleConfigs.MAX_BALL_DRIBBLE_SPEED
 			end
 		else
+			local minSep = if goalMode then DribbleActionConfigs.GOAL_CARRIER_SEPARATION else nil
 			v = DribbleGeometryHelper.ComputeFrontVelocity(
 				carrierCand.rootPart.Position,
 				cVel,
 				ballState.position,
 				target,
-				dt * touchSpeedScale
+				dt * touchSpeedScale,
+				minSep
 			)
 		end
 		if touchKickImpulse > 0 then
@@ -1120,6 +1126,8 @@ function BallService.StepPhysics(dt: number)
 			nextPos = Vector3.new(math.clamp(nextPos.X, -mx, mx), nextPos.Y, math.clamp(nextPos.Z, -mz, mz))
 		else
 			local look = hrp.CFrame.LookVector
+			local goalMode = carrierCand.character:GetAttribute("GoalDribbleActive") == true
+			local minSep = if goalMode then DribbleActionConfigs.GOAL_CARRIER_SEPARATION else nil
 			local sepPos, sepVel, _adjusted, infeasible = DribbleGeometryHelper.ResolveBodyCage(
 				p0,
 				p1,
@@ -1128,7 +1136,8 @@ function BallService.StepPhysics(dt: number)
 				nextVel,
 				hrp.AssemblyLinearVelocity,
 				clampedDt,
-				Vector3.new(look.X, 0, look.Z)
+				Vector3.new(look.X, 0, look.Z),
+				minSep
 			)
 			nextPos = sepPos
 			nextVel = sepVel

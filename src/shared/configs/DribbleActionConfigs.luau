@@ -19,7 +19,8 @@ export type DribbleClipSpec = {
 local DribbleActionConfigs = {}
 
 DribbleActionConfigs.GOAL_SPEED = 8.0
-DribbleActionConfigs.GOAL_BALL_DISTANCE = 2.55
+DribbleActionConfigs.GOAL_BALL_DISTANCE = 1.95
+DribbleActionConfigs.GOAL_CARRIER_SEPARATION = 1.85
 DribbleActionConfigs.GOAL_INTENT_TIMEOUT = 0.5
 DribbleActionConfigs.INTENT_INTERVAL = 0.1
 DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG = 120
@@ -74,6 +75,10 @@ DribbleActionConfigs.PublishedIds = table.freeze({
 	WalkDribble = nil :: string?,
 	RunDribble = nil :: string?,
 	GModeLoop = nil :: string?,
+	GoalForward = nil :: string?,
+	GoalBackward = nil :: string?,
+	GoalLeft = nil :: string?,
+	GoalRight = nil :: string?,
 	FrontLeft = nil :: string?,
 	FrontRight = nil :: string?,
 	BackLeft = nil :: string?,
@@ -210,6 +215,50 @@ DribbleActionConfigs.Clips = table.freeze({
 		ExpectedMarkerCount = 5,
 		ControlReleaseTime = 0.62,
 	}) :: DribbleClipSpec,
+
+	GoalForward = table.freeze({
+		ClipName = "RF02_GMode_SoleRollForward_W_R15_v01",
+		ExpectedKeyframeCount = 129,
+		ExpectedDuration = 0.64,
+		DurationTolerance = 0.05,
+		ExpectedLoop = true,
+		ExpectedPriority = Enum.AnimationPriority.Movement,
+		ExpectedDrivenJoints = 15,
+		ExpectedMarkerCount = 4,
+	}) :: DribbleClipSpec,
+
+	GoalBackward = table.freeze({
+		ClipName = "RF02_GMode_SoleRollBackward_S_R15_v01",
+		ExpectedKeyframeCount = 129,
+		ExpectedDuration = 0.64,
+		DurationTolerance = 0.05,
+		ExpectedLoop = true,
+		ExpectedPriority = Enum.AnimationPriority.Movement,
+		ExpectedDrivenJoints = 15,
+		ExpectedMarkerCount = 4,
+	}) :: DribbleClipSpec,
+
+	GoalLeft = table.freeze({
+		ClipName = "RF02_GMode_SoleRollLeft_A_R15_v01",
+		ExpectedKeyframeCount = 193,
+		ExpectedDuration = 0.96,
+		DurationTolerance = 0.05,
+		ExpectedLoop = true,
+		ExpectedPriority = Enum.AnimationPriority.Movement,
+		ExpectedDrivenJoints = 15,
+		ExpectedMarkerCount = 5,
+	}) :: DribbleClipSpec,
+
+	GoalRight = table.freeze({
+		ClipName = "RF02_GMode_SoleRollRight_D_R15_v01",
+		ExpectedKeyframeCount = 193,
+		ExpectedDuration = 0.96,
+		DurationTolerance = 0.05,
+		ExpectedLoop = true,
+		ExpectedPriority = Enum.AnimationPriority.Movement,
+		ExpectedDrivenJoints = 15,
+		ExpectedMarkerCount = 5,
+	}) :: DribbleClipSpec,
 })
 
 local recognizedClipNames: { [string]: boolean } = {
@@ -222,6 +271,10 @@ local recognizedClipNames: { [string]: boolean } = {
 	RF02_CutReverse_WS_R15_v01 = true,
 	RF02_GMode_SlowControlLoop_R15_v01 = true,
 	RF02_GMode_SoleDragBack_WS_R15_v01 = true,
+	RF02_GMode_SoleRollForward_W_R15_v01 = true,
+	RF02_GMode_SoleRollBackward_S_R15_v01 = true,
+	RF02_GMode_SoleRollLeft_A_R15_v01 = true,
+	RF02_GMode_SoleRollRight_D_R15_v01 = true,
 }
 
 function DribbleActionConfigs.IsRecognizedClipName(clipName: string): boolean
@@ -229,7 +282,12 @@ function DribbleActionConfigs.IsRecognizedClipName(clipName: string): boolean
 end
 
 function DribbleActionConfigs.IsGoalModeClipName(clipName: string): boolean
-	return clipName == "RF02_GMode_SlowControlLoop_R15_v01" or clipName == "RF02_GMode_SoleDragBack_WS_R15_v01"
+	return clipName == "RF02_GMode_SlowControlLoop_R15_v01"
+		or clipName == "RF02_GMode_SoleDragBack_WS_R15_v01"
+		or clipName == "RF02_GMode_SoleRollForward_W_R15_v01"
+		or clipName == "RF02_GMode_SoleRollBackward_S_R15_v01"
+		or clipName == "RF02_GMode_SoleRollLeft_A_R15_v01"
+		or clipName == "RF02_GMode_SoleRollRight_D_R15_v01"
 end
 
 function DribbleActionConfigs.IsStudioFallbackAllowed(): boolean

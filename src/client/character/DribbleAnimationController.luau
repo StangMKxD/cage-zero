@@ -33,11 +33,19 @@ local currentTracks: DribbleAnimationHelper.LoopTrackCache = {
 	WalkDribble = nil,
 	RunDribble = nil,
 	GModeLoop = nil,
+	GoalForward = nil,
+	GoalBackward = nil,
+	GoalLeft = nil,
+	GoalRight = nil,
 }
 local currentSources: DribbleAnimationHelper.LoopRegistrationSources = {
 	WalkDribble = "NONE",
 	RunDribble = "NONE",
 	GModeLoop = "NONE",
+	GoalForward = "NONE",
+	GoalBackward = "NONE",
+	GoalLeft = "NONE",
+	GoalRight = "NONE",
 }
 local currentAnimInstances: { Animation } = {}
 local activeConnections: { RBXScriptConnection } = {}
@@ -136,6 +144,24 @@ local function updateDribblePlayback(thisGen: number)
 		return
 	end
 
+	local function stopAllGoalLoops(fadeSec: number)
+		local goalKeys: { DribbleAnimationHelper.DribbleLoopKey } = {
+			"GoalForward",
+			"GoalBackward",
+			"GoalLeft",
+			"GoalRight",
+			"GModeLoop",
+		}
+		for _, key in ipairs(goalKeys) do
+			local tr = currentTracks[key]
+			if tr and tr.IsPlaying then
+				pcall(function()
+					tr:Stop(fadeSec)
+				end)
+			end
+		end
+	end
+
 	-- One-shot directional/reverse cut takes priority and locks movement until completion.
 	-- Keep underlying RunDribble (or GModeLoop in goal mode) playing under Action-priority cuts
 	-- and keep base locomotion muted so there is zero 1-frame snap to R15AnimationController!
@@ -149,21 +175,37 @@ local function updateDribblePlayback(thisGen: number)
 			if currentTracks.RunDribble and currentTracks.RunDribble.IsPlaying then
 				currentTracks.RunDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
 			end
-			local gTrack = currentTracks.GModeLoop
+			local keepKey: DribbleAnimationHelper.DribbleLoopKey = if currentTracks.GoalBackward then "GoalBackward" else "GModeLoop"
+			local goalKeys: { DribbleAnimationHelper.DribbleLoopKey } = {
+				"GoalForward",
+				"GoalBackward",
+				"GoalLeft",
+				"GoalRight",
+				"GModeLoop",
+			}
+			for _, key in ipairs(goalKeys) do
+				if key ~= keepKey then
+					local tr = currentTracks[key]
+					if tr and tr.IsPlaying then
+						pcall(function()
+							tr:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+						end)
+					end
+				end
+			end
+			local gTrack = currentTracks[keepKey]
 			if gTrack then
 				if not gTrack.IsPlaying then
 					gTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
 				end
 				gTrack:AdjustSpeed(1.0)
 			end
-			activeLoopKey = "GModeLoop"
+			activeLoopKey = keepKey
 		else
 			if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
 				currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
 			end
-			if currentTracks.GModeLoop and currentTracks.GModeLoop.IsPlaying then
-				currentTracks.GModeLoop:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
-			end
+			stopAllGoalLoops(DribbleActionConfigs.LOOP_FADE_SEC)
 			local runTrack = currentTracks.RunDribble
 			if runTrack then
 				if not runTrack.IsPlaying then
@@ -185,13 +227,13 @@ local function updateDribblePlayback(thisGen: number)
 		or (currentRunningSpeed > LocomotionConfigs.Playback.SpeedStationaryThreshold)
 		or (horizVel > 1.0)
 
-	if not isMoving then
+	local goalMode = (char:GetAttribute("GoalDribbleActive") == true)
+	if not isMoving and not goalMode then
 		stopAllDribbleLoops(DribbleActionConfigs.LOOP_FADE_SEC)
 		char:SetAttribute("ActiveDribbleClip", "")
 		return
 	end
 
-	local goalMode = (char:GetAttribute("GoalDribbleActive") == true)
 	local isSprinting = (char:GetAttribute("IsSprinting") == true)
 		or (not goalMode and hum.WalkSpeed >= LocomotionConfigs.Playback.SprintSpeedThreshold)
 
@@ -204,13 +246,105 @@ local function updateDribblePlayback(thisGen: number)
 		if currentTracks.RunDribble and currentTracks.RunDribble.IsPlaying then
 			currentTracks.RunDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
 		end
-		local gTrack = currentTracks.GModeLoop
-		if gTrack then
-			if not gTrack.IsPlaying then
-				gTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
+
+		local targetGoalKey: DribbleAnimationHelper.DribbleLoopKey = "GoalForward"
+		local localMove = Vector3.zero
+		if rootPart and hum.MoveDirection.Magnitude > 0.05 then
+			localMove = rootPart.CFrame:VectorToObjectSpace(hum.MoveDirection)
+		elseif rootPart and horizVel > 0.5 then
+			localMove = rootPart.CFrame:VectorToObjectSpace(rootPart.AssemblyLinearVelocity)
+		end
+
+		local isW = false
+		local isS = false
+		local isA = false
+		local isD = false
+		pcall(function()
+			local uis = game:GetService("UserInputService")
+			isW = uis:IsKeyDown(Enum.KeyCode.W) or uis:IsKeyDown(Enum.KeyCode.Up)
+			isS = uis:IsKeyDown(Enum.KeyCode.S) or uis:IsKeyDown(Enum.KeyCode.Down)
+			isA = uis:IsKeyDown(Enum.KeyCode.A) or uis:IsKeyDown(Enum.KeyCode.Left)
+			isD = uis:IsKeyDown(Enum.KeyCode.D) or uis:IsKeyDown(Enum.KeyCode.Right)
+		end)
+
+		if isA and not isD then
+			-- Moving Left (A, AW, AS) in Goal Mode routes to GoalLeft (Right-Foot Opposite Sole Roll)
+			targetGoalKey = "GoalLeft"
+		elseif isD and not isA then
+			-- Moving Right (D, WD, SD) in Goal Mode routes to GoalRight (Left-Foot Opposite Sole Roll)
+			targetGoalKey = "GoalRight"
+		elseif isS and not isW then
+			-- Moving Backward (S) in Goal Mode routes to GoalBackward (Sole Drag Pullback)
+			targetGoalKey = "GoalBackward"
+		elseif isW and not isS then
+			-- Moving Forward (W) in Goal Mode routes to GoalForward
+			targetGoalKey = "GoalForward"
+		elseif localMove.Magnitude > 0.05 then
+			local angle = math.atan2(localMove.X, -localMove.Z)
+			local deadzone = math.pi * 0.18 -- ~32.4 deg sector around straight forward/backward
+			if math.abs(angle) <= deadzone then
+				targetGoalKey = "GoalForward"
+			elseif math.abs(angle) >= (math.pi - deadzone) then
+				targetGoalKey = "GoalBackward"
+			elseif angle < 0 then
+				-- Left hemisphere: all diagonal front-left, pure left, and back-left
+				targetGoalKey = "GoalLeft"
+			else
+				-- Right hemisphere: all diagonal front-right, pure right, and back-right
+				targetGoalKey = "GoalRight"
 			end
-			local refSpeed = if horizVel > 1.0 then horizVel else DribbleActionConfigs.GOAL_BASE_SPEED
-			gTrack:AdjustSpeed(math.clamp(refSpeed / DribbleActionConfigs.GOAL_BASE_SPEED, 0.75, 1.25))
+		else
+			targetGoalKey = "GModeLoop"
+		end
+
+		local allGoalKeys: { DribbleAnimationHelper.DribbleLoopKey } = {
+			"GoalForward",
+			"GoalBackward",
+			"GoalLeft",
+			"GoalRight",
+			"GModeLoop",
+		}
+
+		local playedAny = false
+		local previousGoalTrack = if table.find(allGoalKeys, activeLoopKey)
+			then (currentTracks :: { [string]: AnimationTrack? })[activeLoopKey]
+			else nil
+		local gaitPhase = if previousGoalTrack and previousGoalTrack.IsPlaying and previousGoalTrack.Length > 0
+			then (previousGoalTrack.TimePosition / previousGoalTrack.Length) % 1
+			else nil
+		for _, gKey in ipairs(allGoalKeys) do
+			local tr = currentTracks[gKey]
+			if gKey == targetGoalKey then
+				if tr then
+					if not tr.IsPlaying then
+						tr:Play(DribbleActionConfigs.LOOP_FADE_SEC)
+						if gaitPhase and tr.Length > 0 then
+							tr.TimePosition = gaitPhase * tr.Length
+						end
+					end
+					local refSpeed = if horizVel > 1.0 then horizVel else DribbleActionConfigs.GOAL_BASE_SPEED
+					tr:AdjustSpeed(math.clamp(refSpeed / DribbleActionConfigs.GOAL_BASE_SPEED, 0.75, 1.25))
+					tr:AdjustWeight(1.0, DribbleActionConfigs.LOOP_FADE_SEC)
+					activeLoopKey = targetGoalKey
+					local clipSpec = (DribbleActionConfigs.Clips :: { [string]: DribbleActionConfigs.DribbleClipSpec })[targetGoalKey]
+					if clipSpec then
+						char:SetAttribute("ActiveDribbleClip", clipSpec.ClipName)
+					end
+					playedAny = true
+				end
+			else
+				if tr and tr.IsPlaying then
+					tr:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+				end
+			end
+		end
+
+		if not playedAny and currentTracks.GModeLoop then
+			local fallbackTrack = currentTracks.GModeLoop
+			if not fallbackTrack.IsPlaying then
+				fallbackTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			fallbackTrack:AdjustSpeed(1.0)
 			activeLoopKey = "GModeLoop"
 			char:SetAttribute("ActiveDribbleClip", DribbleActionConfigs.Clips.GModeLoop.ClipName)
 		end
@@ -218,9 +352,7 @@ local function updateDribblePlayback(thisGen: number)
 		if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
 			currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
 		end
-		if currentTracks.GModeLoop and currentTracks.GModeLoop.IsPlaying then
-			currentTracks.GModeLoop:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
-		end
+		stopAllGoalLoops(DribbleActionConfigs.LOOP_FADE_SEC)
 		local runTrack = currentTracks.RunDribble
 		if runTrack then
 			if not runTrack.IsPlaying then
@@ -235,9 +367,7 @@ local function updateDribblePlayback(thisGen: number)
 		if currentTracks.RunDribble and currentTracks.RunDribble.IsPlaying then
 			currentTracks.RunDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
 		end
-		if currentTracks.GModeLoop and currentTracks.GModeLoop.IsPlaying then
-			currentTracks.GModeLoop:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
-		end
+		stopAllGoalLoops(DribbleActionConfigs.LOOP_FADE_SEC)
 		local walkTrack = currentTracks.WalkDribble
 		if walkTrack then
 			if not walkTrack.IsPlaying then
@@ -267,11 +397,19 @@ local function invalidateCharacterState()
 		WalkDribble = nil,
 		RunDribble = nil,
 		GModeLoop = nil,
+		GoalForward = nil,
+		GoalBackward = nil,
+		GoalLeft = nil,
+		GoalRight = nil,
 	}
 	currentSources = {
 		WalkDribble = "NONE",
 		RunDribble = "NONE",
 		GModeLoop = "NONE",
+		GoalForward = "NONE",
+		GoalBackward = "NONE",
+		GoalLeft = "NONE",
+		GoalRight = "NONE",
 	}
 	currentCharacter = nil
 	currentHumanoid = nil
@@ -310,8 +448,18 @@ end
 
 local function onCharacterAdded(character: Model)
 	local localPlayer = Players.LocalPlayer
-	if not localPlayer or localPlayer.Character ~= character or not character:IsDescendantOf(game) then
+	if not localPlayer then
 		return
+	end
+
+	if not character:IsDescendantOf(game) or localPlayer.Character ~= character then
+		local deadline = os.clock() + 3.0
+		while (not character:IsDescendantOf(game) or localPlayer.Character ~= character) and os.clock() < deadline do
+			task.wait()
+		end
+		if not character:IsDescendantOf(game) or localPlayer.Character ~= character then
+			return
+		end
 	end
 
 	characterGeneration += 1
@@ -366,6 +514,10 @@ local function onCharacterAdded(character: Model)
 	attachLoopMarkers(thisGen, character, "WalkDribble", tracks.WalkDribble)
 	attachLoopMarkers(thisGen, character, "RunDribble", tracks.RunDribble)
 	attachLoopMarkers(thisGen, character, "GModeLoop", tracks.GModeLoop)
+	attachLoopMarkers(thisGen, character, "GoalForward", tracks.GoalForward)
+	attachLoopMarkers(thisGen, character, "GoalBackward", tracks.GoalBackward)
+	attachLoopMarkers(thisGen, character, "GoalLeft", tracks.GoalLeft)
+	attachLoopMarkers(thisGen, character, "GoalRight", tracks.GoalRight)
 
 	table.insert(
 		activeConnections,
@@ -425,6 +577,12 @@ end
 
 function DribbleAnimationController.Init(_timeoutBudget: number?)
 	if isInitialized then
+		local lp = Players.LocalPlayer
+		if lp and lp.Character and (not currentAnimator or not currentCharacter) then
+			task.spawn(function()
+				onCharacterAdded(lp.Character :: Model)
+			end)
+		end
 		return
 	end
 	isInitialized = true
@@ -435,12 +593,15 @@ function DribbleAnimationController.Init(_timeoutBudget: number?)
 	table.insert(globalConnections, localPlayer.CharacterAdded:Connect(onCharacterAdded))
 	table.insert(globalConnections, localPlayer.CharacterRemoving:Connect(onCharacterRemoving))
 
-	local existingChar = localPlayer.Character
-	if existingChar and existingChar:IsDescendantOf(game) then
-		task.spawn(function()
-			onCharacterAdded(existingChar)
-		end)
-	end
+	task.spawn(function()
+		local deadline = os.clock() + 10.0
+		while not localPlayer.Character and os.clock() < deadline do
+			task.wait()
+		end
+		if localPlayer.Character then
+			onCharacterAdded(localPlayer.Character)
+		end
+	end)
 end
 
 function DribbleAnimationController.Cleanup()
@@ -474,6 +635,22 @@ function DribbleAnimationController.GetGModeLoopTrack(): AnimationTrack?
 	return currentTracks.GModeLoop
 end
 
+function DribbleAnimationController.GetGoalForwardTrack(): AnimationTrack?
+	return currentTracks.GoalForward
+end
+
+function DribbleAnimationController.GetGoalBackwardTrack(): AnimationTrack?
+	return currentTracks.GoalBackward
+end
+
+function DribbleAnimationController.GetGoalLeftTrack(): AnimationTrack?
+	return currentTracks.GoalLeft
+end
+
+function DribbleAnimationController.GetGoalRightTrack(): AnimationTrack?
+	return currentTracks.GoalRight
+end
+
 function DribbleAnimationController.GetActiveLoopKey(): string
 	return activeLoopKey
 end
@@ -483,6 +660,10 @@ function DribbleAnimationController.GetRegistrationSources(): DribbleAnimationHe
 		WalkDribble = currentSources.WalkDribble,
 		RunDribble = currentSources.RunDribble,
 		GModeLoop = currentSources.GModeLoop,
+		GoalForward = currentSources.GoalForward,
+		GoalBackward = currentSources.GoalBackward,
+		GoalLeft = currentSources.GoalLeft,
+		GoalRight = currentSources.GoalRight,
 	}
 end
 

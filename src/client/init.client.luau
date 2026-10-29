@@ -44,7 +44,7 @@ remaining = TOTAL_BOOTSTRAP_BUDGET - (os.clock() - bootstrapStart)
 assert(remaining > 0, "[Client.Init] Bootstrap deadline exhausted before R15AnimationController.Init")
 R15AnimationController.Init(remaining)
 
-local DribbleAnimModule = CharacterFolder:FindFirstChild("DribbleAnimationController")
+local DribbleAnimModule = CharacterFolder:WaitForChild("DribbleAnimationController", remaining) :: ModuleScript?
 if DribbleAnimModule and DribbleAnimModule:IsA("ModuleScript") then
 	require(DribbleAnimModule).Init(remaining)
 end

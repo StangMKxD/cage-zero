@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("configs"):WaitForChild("DribbleConfigs"))
+local DribbleActionConfigs = require(Shared:WaitForChild("configs"):WaitForChild("DribbleActionConfigs"))
 local Geometry = require(Shared:WaitForChild("DribbleGeometryHelper"))
 local Constants = require(Shared:WaitForChild("Constants"))
 local Controller = {}
@@ -55,8 +56,10 @@ function Controller.Step()
 	-- carrier frame, then check the *current* root/cage again after translation.
 	local rebased = root.CFrame * pose
 	local target = Vector3.new(rebased.X, authoritative.Y, rebased.Z)
+	local isGoalMode = char:GetAttribute("GoalDribbleActive") == true
+	local minSep = if isGoalMode then DribbleActionConfigs.GOAL_CARRIER_SEPARATION else nil
 	local safe = Geometry.ResolveBodyCage(root.Position, root.Position, target, target,
-		Vector3.zero, Vector3.zero, 0, root.CFrame.LookVector)
+		Vector3.zero, Vector3.zero, 0, root.CFrame.LookVector, minSep)
 	ball.CFrame = CFrame.new(safe) * rebased.Rotation
 	displayedBall = ball
 end
