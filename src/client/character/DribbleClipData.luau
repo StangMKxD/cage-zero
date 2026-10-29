@@ -76,68 +76,6 @@ local function pulseQ(u: number, u0: number, um: number, u1: number): number
 	return s4 * (35 - 84 * s + 70 * s2 - 20 * s2 * s)
 end
 
-local function walkDribblePose(u: number): PoseMap
-	local uLoop = if u >= 1 then 0 else u
-	local touchL = pulse(uLoop, 0.06, 0.1875, 0.34)
-	local touchR = pulse(uLoop, 0.56, 0.6875, 0.84)
-
-	local pelY = -0.065 + 0.022 * cos2p(2 * uLoop, -25) - 0.055 * (touchL + touchR)
-	local pelX = -0.015 * sin2p(uLoop, 0)
-	local pelZ = -0.18 * (touchL + touchR) - 0.02
-
-	local pelPitch = -5.5 - 1.2 * cos2p(2 * uLoop, 0)
-	local pelYaw = -4.5 * cos2p(uLoop, 0)
-	local pelRoll = 1.6 * sin2p(uLoop, 0)
-
-	local chestPitch = -5.0 - 3.5 * (touchL + touchR)
-	local chestYaw = 6.2 * cos2p(uLoop, 0)
-	local chestRoll = -1.4 * sin2p(uLoop, 0)
-
-	local headPitch = 8.5 + 3.5 * (touchL + touchR)
-	local headYaw = -1.7 * cos2p(uLoop, 0)
-	local headRoll = -0.2 * sin2p(uLoop, 0)
-
-	local lArmPitch = -22 * cos2p(uLoop, 0) + 10 * touchR
-	local rArmPitch = 22 * cos2p(uLoop, 0) + 10 * touchL
-	local lElbow = 28 + 10 * sin2p(uLoop, 15)
-	local rElbow = 28 - 10 * sin2p(uLoop, 15)
-
-	local lHipPitch = 25 * cos2p(uLoop, -18) + 28 * touchL
-	local lHipYaw = -5.5 * touchL + 1.5 * sin2p(uLoop, 0)
-	local lHipRoll = -1.8 - 2.2 * touchL
-	local lKneePitch = -12 - 18 * (0.5 - 0.5 * cos2p(uLoop, -55)) - 14 * pulse(uLoop, 0.52, 0.78, 0.98) + 14 * touchL
-	local lFootPitch = 7 * cos2p(uLoop, 10) - 22 * touchL
-	local lFootYaw = -12 * touchL
-	local lFootRoll = 1.0 + 3.5 * touchL
-
-	local uR = (uLoop + 0.5) % 1
-	local rHipPitch = 25 * cos2p(uR, -18) + 28 * touchR
-	local rHipYaw = 5.5 * touchR - 1.5 * sin2p(uLoop, 0)
-	local rHipRoll = 1.8 + 2.2 * touchR
-	local rKneePitch = -12 - 18 * (0.5 - 0.5 * cos2p(uR, -55)) - 14 * pulse(uR, 0.52, 0.78, 0.98) + 14 * touchR
-	local rFootPitch = 7 * cos2p(uR, 10) - 22 * touchR
-	local rFootYaw = 12 * touchR
-	local rFootRoll = -1.0 - 3.5 * touchR
-
-	return {
-		LowerTorso = { p = Vector3.new(pelX, pelY, pelZ), r = Vector3.new(pelPitch, pelYaw, pelRoll) },
-		UpperTorso = { r = Vector3.new(chestPitch, chestYaw, chestRoll) },
-		Head = { r = Vector3.new(headPitch, headYaw, headRoll) },
-		LeftUpperArm = { r = Vector3.new(lArmPitch, 3.0 * cos2p(uLoop, 0), -12.5) },
-		LeftLowerArm = { r = Vector3.new(lElbow, 0, 0) },
-		LeftHand = { r = Vector3.new(-3 * cos2p(uLoop, 0), 0, -5) },
-		RightUpperArm = { r = Vector3.new(rArmPitch, 3.0 * cos2p(uLoop, 0), 12.5) },
-		RightLowerArm = { r = Vector3.new(rElbow, 0, 0) },
-		RightHand = { r = Vector3.new(3 * cos2p(uLoop, 0), 0, 5) },
-		LeftUpperLeg = { r = Vector3.new(lHipPitch, lHipYaw, lHipRoll) },
-		LeftLowerLeg = { r = Vector3.new(lKneePitch, 0, 0) },
-		LeftFoot = { r = Vector3.new(lFootPitch, lFootYaw, lFootRoll) },
-		RightUpperLeg = { r = Vector3.new(rHipPitch, rHipYaw, rHipRoll) },
-		RightLowerLeg = { r = Vector3.new(rKneePitch, 0, 0) },
-		RightFoot = { r = Vector3.new(rFootPitch, rFootYaw, rFootRoll) },
-	}
-end
-
 local function runDribblePose(u: number): PoseMap
 	local uLoop = if u >= 1 then 0 else u
 	local touchL = pulse(uLoop, 0.05, 0.1875, 0.33)
@@ -527,6 +465,33 @@ local function gWalkingFeet(pose: PoseMap, phase: number, forward: number, later
 		pose[side .. "Foot"] = sample(CFrame.new(-chain.ankle0) * lower:Inverse() * foot * CFrame.new(chain.ankle1))
 	end
 	return pose
+end
+
+-- Walking shares the accepted run-dribble choreography and marker phases.
+-- Reduce the pose amplitudes and ground the softer stance at the slower walk cadence.
+local function walkDribblePose(u: number): PoseMap
+	local pose = runDribblePose(u)
+	for name, joint in pairs(pose) do
+		local r = joint.r
+		if name == "LowerTorso" then
+			local p = joint.p or Vector3.zero
+			joint.p = Vector3.new(p.X * 0.55, p.Y * 0.65, p.Z * 0.45)
+			joint.r = Vector3.new(r.X * 0.55, r.Y * 0.5, r.Z * 0.6)
+		elseif name == "UpperTorso" or name == "Head" then
+			joint.r = r * 0.55
+		elseif name:find("UpperArm") then
+			joint.r = Vector3.new(r.X * 0.48, r.Y * 0.5, r.Z * 0.85)
+		elseif name:find("LowerArm") then
+			joint.r = Vector3.new(36 + (r.X - 72) * 0.35, r.Y * 0.4, r.Z * 0.6)
+		elseif name:find("UpperLeg") then
+			joint.r = Vector3.new(r.X * 0.62, r.Y * 0.6, r.Z * 0.85)
+		elseif name:find("LowerLeg") then
+			joint.r = r * 0.65
+		else
+			joint.r = r * 0.6
+		end
+	end
+	return gGroundPose(pose)
 end
 
 -- Goal-facing duel stance: a wider, crouched base with bent arms and low lateral steps.

@@ -4,6 +4,8 @@
 
 # RF-02 live task board
 
+> **Normal walk dribble 2026-10-29:** Owner authorized prior checkpoint commit2ab782d, then clarified same run-dribble system with softer animation. Root implemented Walk pose as reduced-amplitude Run choreography; other12clips unchanged in21,780samples. One module/one sequence synced; actual walk16/run32 and8Walk TouchL/R callbacks→server confirmed, no observed carrier loss. DONE_BY_IMPL / READY_FOR_OWNER_PLAYTEST; new work uncommitted, see [walk report001](../assets/walk-dribble-soft-report-001.md). No push/publish/closure.
+
 > **Latest G walking refinement 2026-10-29:** Owner accepts upper body/leg silhouette, requests low slow stepping instead of waving. Root personally authored stance/swing foot paths and baked leg IK into five moving G clips; upper body unchanged in 19,239 sampled comparisons. Actual after-render219 settled directional frames: support foot present every frame, both feet lifted0, low lift up to0.1994, speed8/no carrier loss. DONE_BY_IMPL / READY_FOR_OWNER_PLAYTEST, see [report003](../assets/g-ground-control-report-003.md). No commit/publish/closure.
 
 > **Latest G visual refinement 2026-10-29:** Owner requested wider/lower duel stance, bent forward arms, more lateral steps and smooth transitions. Root implemented personally: six G clips + gait-phase continuity, exact two-module disk/Edit parity, actual Play speed8/release32 smoke, returned Edit. DONE_BY_IMPL / READY_FOR_OWNER_PLAYTEST; rendered blend floor intersections disclosed, no independent signoff. See [report002](../assets/g-ground-control-report-002.md). Ball distance preserved; no commit/publish/closure.
