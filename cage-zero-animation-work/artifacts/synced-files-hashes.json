@@ -1,8 +1,123 @@
 [
   {
+    "disk": "src/client/character/JogForwardClipData.luau",
+    "sha256": "c4acdbafce4b9d9293bd92ff81d6ec3e09b3251d170def74f2ab2821c47ad5de",
+    "bytes": 51008
+  },
+  {
+    "disk": "src/client/character/FastRunClipData.luau",
+    "sha256": "75b64242f548fcef01f4566f613bd3c797a2d0d8baaedc340cdc528b0621eebb",
+    "bytes": 64517
+  },
+  {
+    "disk": "src/client/character/ShotChargeClipData.luau",
+    "sha256": "a2a72ae7032e4c7a6772084918b8d0b117b580429bd2ea8afaf3e5a5cb05ee2f",
+    "bytes": 3170
+  },
+  {
+    "disk": "src/shared/SprintSpeedRules.luau",
+    "sha256": "e74f05d9a9b10bc9e2b6b9b942db5a1de2a100b623067a516ce18f87e90872af",
+    "bytes": 2919
+  },
+  {
+    "disk": "src/shared/configs/GroundTurnConfigs.luau",
+    "sha256": "7080c30218cc02d3218863cdc0afce5caac3392699a422c77500ba0ec0fc11cd",
+    "bytes": 271
+  },
+  {
+    "disk": "src/shared/configs/SprintConfigs.luau",
+    "sha256": "8f98fec6b829f5998c9cf2b602e7fc02a40850a9d7dd7a89ada0820f1d271616",
+    "bytes": 1804
+  },
+  {
+    "disk": "src/shared/DribbleControlRules.luau",
+    "sha256": "a90b9d659802ed35fc5dc7b51b6ab29cafd71fe500467b5d4fe4a2e4dbd50fa8",
+    "bytes": 2123
+  },
+  {
+    "disk": "src/client/controllers/SprintController.luau",
+    "sha256": "2efe8863b73abe911561b4fe165d5f2bd5258a8b9baa2761f9639a46019275ef",
+    "bytes": 11468
+  },
+  {
+    "disk": "src/client/controllers/AirMovementController.luau",
+    "sha256": "1130166d326a13f51d12d0346ac601835417abdcece8eca07d22dab67947d7b3",
+    "bytes": 22126
+  },
+  {
+    "disk": "src/server/services/SprintService.luau",
+    "sha256": "0076c6effa273e650647ad0f7d2100258e527a6fe28957a08384560f15873335",
+    "bytes": 11622
+  },
+  {
+    "disk": "src/shared/R15PoseSupport.luau",
+    "sha256": "eb7a0bf8d51f26ba07b0f26999b7e7df6a18384aeb981b6f8d0ab5734c92713c",
+    "bytes": 3033
+  },
+  {
+    "disk": "src/shared/JumpAnimationTiming.luau",
+    "sha256": "ddc55d943f26bebf66b49a52ecc7614ca227a7b1d1cbf0b178c34c0f0a3259ca",
+    "bytes": 893
+  },
+  {
+    "disk": "src/client/character/JumpReferenceData.luau",
+    "sha256": "98d9712a3bd5e663f559fa103c020cb4b219e939729683c466644190fb7ef697",
+    "bytes": 33972
+  },
+  {
+    "disk": "src/client/character/JumpClipData.luau",
+    "sha256": "23d6e7b10908838a7f19e4d03a54b8a55934f36c5abce2b1677e7d0cba7d593b",
+    "bytes": 3125
+  },
+  {
+    "disk": "src/client/character/R15LocomotionHelper.luau",
+    "sha256": "ddb009aaed7f3898df5e308060b5a804a0ab2baf0839e5bc931bffe455ade3f2",
+    "bytes": 7440
+  },
+  {
+    "disk": "src/client/character/R15AnimationController.luau",
+    "sha256": "cec43800e26a0068102b12220091c52f6b0cb79fff4ef5617c49f5858362cd1f",
+    "bytes": 17614
+  },
+  {
+    "disk": "src/shared/configs/R15LocomotionConfigs.luau",
+    "sha256": "80cb9e7a2e359a1c568bd7b68b0d729b3dd985edea66b62cbe88da4519ac0b6e",
+    "bytes": 4355
+  },
+  {
+    "disk": "src/shared/ShotReferenceData.luau",
+    "sha256": "afca6ac4079dde54e94ca3e50576689766c7b4fde8f76b4bb885ee8509164066",
+    "bytes": 23587
+  },
+  {
+    "disk": "src/shared/ShotModel.luau",
+    "sha256": "30ba5777186405442b51f14551205a839daf0655ba2dcc9de0e011497cde8b9b",
+    "bytes": 1349
+  },
+  {
+    "disk": "src/shared/ShotRules.luau",
+    "sha256": "07ce101a3d500d706c5bbab445215c179546887806a6f50e36afd8e54a4d16e3",
+    "bytes": 1389
+  },
+  {
+    "disk": "src/shared/configs/ShotConfigs.luau",
+    "sha256": "c5f474d6986e9da3a95b53524435fe49a85eab7ae41877c057226c687201fe6b",
+    "bytes": 828
+  },
+  {
+    "disk": "src/client/controllers/ShotController.luau",
+    "sha256": "27738d37e423fb8a9d0fac16cd2f02cfb055ea6d657449fe71468734f5d6c624",
+    "bytes": 10724
+  },
+  {
+    "disk": "src/shared/DribbleCutTimeline.luau",
+    "sha256": "e0f7b924fcd489890a507c9768de2e1ded83a9c2c41451cefaa60de882860611",
+    "bytes": 2599
+  },
+  {
     "disk": "src/shared/configs/DribbleActionConfigs.luau",
-    "sha256": "62fc0773d148005b5ac9db287155e8d2afa55b70356ec6258d764988bbe07acc",
-    "bytes": 10296
+    "sha256": "34d5e7b1bd93529b60f6d6f79259b8a52bfac6c88d817e03657ca36414f5aa56",
+    "bytes": 10917
   },
   {
     "disk": "src/shared/DribbleGeometryHelper.luau",
@@ -11,28 +126,33 @@
   },
   {
     "disk": "src/client/character/DribbleClipData.luau",
-    "sha256": "878ea714dd429c1dff88385e1d0f764392e792ae6ebe7b287f29629df649d0d4",
-    "bytes": 28464
+    "sha256": "c4de6fef9df29929dd395d61525485c22d3a96f674fc359cc15538a3cc1a1af3",
+    "bytes": 30010
   },
   {
     "disk": "src/client/character/SprintCutReferenceData.luau",
-    "sha256": "5f20042f13f0fcca89719ef1c8b0109e2584e8f55cedc89c0f413e6774a413ea",
-    "bytes": 6214
+    "sha256": "2c670bb2d918addb19775444b3c5fda68af01bd7b9f00f0d9c8584e88d9aace3",
+    "bytes": 23647
+  },
+  {
+    "disk": "src/client/character/WalkDribbleReferenceData.luau",
+    "sha256": "272655b9e2394f7c9bdcf5714d5a8fc67f0ad347cdc38811d8b0486a4b1695ed",
+    "bytes": 34532
   },
   {
     "disk": "src/client/character/DribbleAnimationHelper.luau",
-    "sha256": "ff2dc2905d41a4a4d444309933f3c45aa5e4af10081d940670a4cd273dcad8fb",
-    "bytes": 12802
+    "sha256": "0984215393f78ddda4e980bcd15c6a97f04c58f16c8007aea9240df1f42815ec",
+    "bytes": 15120
   },
   {
     "disk": "src/client/character/DribbleAnimationController.luau",
-    "sha256": "9ba84080aea7efa7e0f5756ef5b35eb6310ef5f5745ec3e8120e95261ff1a3df",
-    "bytes": 21873
+    "sha256": "adb3574b21c1d9eee4bc481dcad9f3aab3f6bb8abf74716f39facb5d41c3c4d1",
+    "bytes": 22342
   },
   {
     "disk": "src/client/controllers/DribbleCutController.luau",
-    "sha256": "dd20ba973ef20231bef1a9bf669c51a38eccbbfd1b1597ccee66ba133e6dcefd",
-    "bytes": 6951
+    "sha256": "685c49c091cecd2903a31cb4383f3fdd844146220dc9f1b73517e98bdf36478b",
+    "bytes": 11835
   },
   {
     "disk": "src/client/controllers/DribblePresentationController.luau",
@@ -41,17 +161,17 @@
   },
   {
     "disk": "src/client/controllers/MovementHeadingPreviewController.luau",
-    "sha256": "e3b2bdd1ad363debacdca957a1382eb1eb6429359798673e0b552e32373aedbd",
-    "bytes": 27726
+    "sha256": "23609944f4d5f216ec09228d2788e8704356664861cd777544a6c35bd4192b56",
+    "bytes": 32926
   },
   {
     "disk": "src/client/init.client.luau",
-    "sha256": "aa8b0a364d69a73ac3f31c6e78b134386101faa5a56edff1a2e04a060a5efca0",
-    "bytes": 5596
+    "sha256": "a7085b08c130f648a86220afca22e88584ca392145ea4ba083fd3176201956f7",
+    "bytes": 5664
   },
   {
     "disk": "src/server/services/BallService.luau",
-    "sha256": "52cc1197afab0fcaa9aca80345ba6c911134246b13989de38f600f4cd6b2cd84",
-    "bytes": 55018
+    "sha256": "2519b510c67f3f830f68c33f96531968178d624afb70884406366c79f2462b95",
+    "bytes": 70960
   }
 ]

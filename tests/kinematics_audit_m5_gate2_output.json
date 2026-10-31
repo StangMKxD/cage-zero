@@ -1,0 +1,927 @@
+{
+  "standing-idle-02": {
+    "name": "Standing Idle 02",
+    "type": "loop",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [
+          [
+            1,
+            157
+          ]
+        ],
+        "RightFoot": [
+          [
+            1,
+            157
+          ]
+        ]
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": -0.04273984448066237,
+      "mode": "loop_inplace",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 157,
+      "duration": 5.2,
+      "loop": true,
+      "seam_max_pos_delta": 0.0,
+      "seam_max_rot_delta": 0.0,
+      "lt_range": {
+        "dx": 0.0,
+        "dy_vert": 0.1791,
+        "dz": 0.0,
+        "peak_vert": 0.1534,
+        "trough_vert": -0.0257
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 52.46,
+      "worst_track": "LowerTorso[axis_0][t=0.967]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_StandingIdle02Target",
+      "action": "StandingIdle02_R15_FromMixamo",
+      "frames": 157,
+      "contact_drift": {
+        "LeftFoot": [
+          {
+            "interval": [
+              1,
+              157
+            ],
+            "max_drift_studs": 1.053e-05,
+            "passed_0_02_threshold": true
+          }
+        ],
+        "RightFoot": [
+          {
+            "interval": [
+              1,
+              157
+            ],
+            "max_drift_studs": 1.202e-05,
+            "passed_0_02_threshold": true
+          }
+        ]
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null,
+        "passed_seam_closure": true
+      },
+      "net_lt_displacement": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "dz": 0.0,
+        "horiz_drift": 0.0
+      }
+    }
+  },
+  "strike-foward-jog": {
+    "name": "Strike Foward Jog",
+    "type": "loop",
+    "verdict": "REQUEST_CHANGES",
+    "failures": [
+      "Euler jump > 180 deg in recipe: delta=364.34 on LeftUpperArm[axis_2][t=1.3]"
+    ],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [],
+    "plant_metadata": {
+      "stride_studs": 8.212425342490834,
+      "contact_intervals": {
+        "LeftFoot": [
+          [
+            11,
+            16
+          ]
+        ],
+        "RightFoot": [
+          [
+            1,
+            4
+          ],
+          [
+            38,
+            40
+          ]
+        ]
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "loop_y",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 40,
+      "duration": 1.3,
+      "loop": true,
+      "seam_max_pos_delta": 0.0,
+      "seam_max_rot_delta": 0.0,
+      "lt_range": {
+        "dx": 0.0,
+        "dy_vert": 1.2619,
+        "dz": 0.0,
+        "peak_vert": 0.8357,
+        "trough_vert": -0.4262
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 364.34,
+      "worst_track": "LeftUpperArm[axis_2][t=1.3]",
+      "smooth_euler_pass": false,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_StrikeFowardJogTarget",
+      "action": "StrikeFowardJog_R15_FromMixamo",
+      "frames": 40,
+      "contact_drift": {
+        "LeftFoot": [
+          {
+            "interval": [
+              11,
+              16
+            ],
+            "max_drift_studs": 1.329e-05,
+            "passed_0_02_threshold": true
+          }
+        ],
+        "RightFoot": [
+          {
+            "interval": [
+              1,
+              4
+            ],
+            "max_drift_studs": 1.797e-05,
+            "passed_0_02_threshold": true
+          },
+          {
+            "interval": [
+              38,
+              40
+            ],
+            "max_drift_studs": 1.35e-06,
+            "passed_0_02_threshold": true
+          }
+        ]
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.088469,
+        "worst_rot_bone": "LeftFoot",
+        "passed_seam_closure": true
+      },
+      "net_lt_displacement": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "dz": 0.0,
+        "horiz_drift": 0.0
+      }
+    }
+  },
+  "goalkeeper-sidestep": {
+    "name": "Goalkeeper Sidestep",
+    "type": "loop",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [],
+    "plant_metadata": {
+      "stride_studs": -3.3069949640421608,
+      "contact_intervals": {
+        "LeftFoot": [
+          [
+            1,
+            6
+          ]
+        ],
+        "RightFoot": [
+          [
+            1,
+            2
+          ],
+          [
+            13,
+            17
+          ]
+        ]
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": -0.7999915139020293,
+      "mode": "loop_x",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 17,
+      "duration": 0.5333333333333333,
+      "loop": true,
+      "seam_max_pos_delta": 0.0,
+      "seam_max_rot_delta": 0.0,
+      "lt_range": {
+        "dx": 0.0,
+        "dy_vert": 1.2492,
+        "dz": 0.0,
+        "peak_vert": 0.4475,
+        "trough_vert": -0.8017
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 99.27,
+      "worst_track": "RightFoot[axis_2][t=0.067]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_GoalkeeperSidestepTarget",
+      "action": "GoalkeeperSidestep_R15_FromMixamo",
+      "frames": 17,
+      "contact_drift": {
+        "LeftFoot": [
+          {
+            "interval": [
+              1,
+              6
+            ],
+            "max_drift_studs": 2.68e-06,
+            "passed_0_02_threshold": true
+          }
+        ],
+        "RightFoot": [
+          {
+            "interval": [
+              1,
+              2
+            ],
+            "max_drift_studs": 5.41e-06,
+            "passed_0_02_threshold": true
+          },
+          {
+            "interval": [
+              13,
+              17
+            ],
+            "max_drift_studs": 2.69e-06,
+            "passed_0_02_threshold": true
+          }
+        ]
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.079129,
+        "worst_rot_bone": "LeftLowerLeg",
+        "passed_seam_closure": true
+      },
+      "net_lt_displacement": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "dz": 0.0,
+        "horiz_drift": 0.0
+      }
+    }
+  },
+  "standing-jump": {
+    "name": "Standing Jump",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 74,
+      "duration": 2.466666666666667,
+      "loop": false,
+      "seam_max_pos_delta": 1.29e-06,
+      "seam_max_rot_delta": 1.611e-05,
+      "lt_range": {
+        "dx": 0.1233,
+        "dy_vert": 2.4213,
+        "dz": 0.5235,
+        "peak_vert": 1.4317,
+        "trough_vert": -0.9896
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 26.97,
+      "worst_track": "RightFoot[axis_0][t=0.8]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_StandingJumpTarget",
+      "action": "StandingJump_R15_FromMixamo",
+      "frames": 74,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "dz": 1e-06,
+        "horiz_drift": 0.0
+      }
+    }
+  },
+  "soccer-pass": {
+    "name": "Soccer Pass",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 49,
+      "duration": 1.6333333333333333,
+      "loop": false,
+      "seam_max_pos_delta": 9.7e-07,
+      "seam_max_rot_delta": 5.383e-05,
+      "lt_range": {
+        "dx": 0.5608,
+        "dy_vert": 0.4024,
+        "dz": 0.6754,
+        "peak_vert": 0.1653,
+        "trough_vert": -0.2371
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 45.78,
+      "worst_track": "LeftHand[axis_2][t=1]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_SoccerPassTarget",
+      "action": "SoccerPass_R15_FromMixamo",
+      "frames": 49,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 0.0,
+        "dy": 0.0,
+        "dz": 0.0,
+        "horiz_drift": 0.0
+      }
+    }
+  },
+  "soccer-tackle": {
+    "name": "Soccer Tackle",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 54,
+      "duration": 1.8,
+      "loop": false,
+      "seam_max_pos_delta": 12.16331774,
+      "seam_max_rot_delta": 2.80957922,
+      "lt_range": {
+        "dx": 0.6948,
+        "dy_vert": 2.014,
+        "dz": 12.1616,
+        "peak_vert": 0.2683,
+        "trough_vert": -1.7456
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 72.16,
+      "worst_track": "LeftHand[axis_0][t=0.067]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_SoccerTackleTarget",
+      "action": "SoccerTackle_R15_FromMixamo",
+      "frames": 54,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 0.04566,
+        "dy": 12.161621,
+        "dz": 0.197897,
+        "horiz_drift": 12.161707
+      }
+    }
+  },
+  "soccer-trip": {
+    "name": "Soccer Trip",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 49,
+      "duration": 1.6333333333333333,
+      "loop": false,
+      "seam_max_pos_delta": 11.33807937,
+      "seam_max_rot_delta": 6.1735102,
+      "lt_range": {
+        "dx": 3.2471,
+        "dy_vert": 1.9166,
+        "dz": 10.7499,
+        "peak_vert": 0.1533,
+        "trough_vert": -1.7633
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 91.57,
+      "worst_track": "LeftHand[axis_0][t=0.233]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": false,
+      "worst_angle": 577.48
+    },
+    "blend_audit": {
+      "armature": "StudioR15_SoccerTripTarget",
+      "action": "SoccerTrip_R15_FromMixamo",
+      "frames": 49,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 3.183739,
+        "dy": 10.749932,
+        "dz": 1.689617,
+        "horiz_drift": 11.211478
+      }
+    }
+  },
+  "turn-back-running": {
+    "name": "TurnBackRunning",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 50,
+      "duration": 1.6666666666666667,
+      "loop": false,
+      "seam_max_pos_delta": 7.33830239,
+      "seam_max_rot_delta": 5.01919252,
+      "lt_range": {
+        "dx": 0.6403,
+        "dy_vert": 0.7891,
+        "dz": 7.3413,
+        "peak_vert": 0.3939,
+        "trough_vert": -0.3952
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 90.43,
+      "worst_track": "LeftHand[axis_0][t=0.533]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": false,
+      "worst_angle": 442.91
+    },
+    "blend_audit": {
+      "armature": "StudioR15_TurnbackrunningTarget",
+      "action": "Turnbackrunning_R15_FromMixamo",
+      "frames": 50,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 0.27152,
+        "dy": 7.333277,
+        "dz": 0.00335,
+        "horiz_drift": 7.338302
+      }
+    }
+  },
+  "scissor-kick": {
+    "name": "Scissor Kick",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 84,
+      "duration": 2.8,
+      "loop": false,
+      "seam_max_pos_delta": 0.88596706,
+      "seam_max_rot_delta": 4.85778983,
+      "lt_range": {
+        "dx": 1.4555,
+        "dy_vert": 2.4718,
+        "dz": 0.8548,
+        "peak_vert": 0.835,
+        "trough_vert": -1.6367
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 38.48,
+      "worst_track": "LeftHand[axis_2][t=2.667]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_ScissorKickTarget",
+      "action": "ScissorKick_R15_FromMixamo",
+      "frames": 84,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 0.520949,
+        "dy": 0.716623,
+        "dz": 1e-06,
+        "horiz_drift": 0.885967
+      }
+    }
+  },
+  "goalkeeper-scoop": {
+    "name": "Goalkeeper Scoop",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 79,
+      "duration": 2.6333333333333333,
+      "loop": false,
+      "seam_max_pos_delta": 10.80219349,
+      "seam_max_rot_delta": 2.06371883,
+      "lt_range": {
+        "dx": 2.0262,
+        "dy_vert": 0.7291,
+        "dz": 10.7167,
+        "peak_vert": 0.2402,
+        "trough_vert": -0.489
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 34.88,
+      "worst_track": "LeftHand[axis_0][t=0.167]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_GoalkeeperScoopTarget",
+      "action": "GoalkeeperScoop_R15_FromMixamo",
+      "frames": 79,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 1.352971,
+        "dy": 10.716653,
+        "dz": 0.101022,
+        "horiz_drift": 10.801721
+      }
+    }
+  },
+  "goalkeeper-catch": {
+    "name": "Goalkeeper Catch",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 82,
+      "duration": 2.7333333333333334,
+      "loop": false,
+      "seam_max_pos_delta": 11.36679125,
+      "seam_max_rot_delta": 2.06371889,
+      "lt_range": {
+        "dx": 2.0688,
+        "dy_vert": 2.391,
+        "dz": 11.1931,
+        "peak_vert": 2.0479,
+        "trough_vert": -0.3431
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 45.5,
+      "worst_track": "LeftHand[axis_2][t=1.0]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_GoalkeeperCatchTarget",
+      "action": "GoalkeeperCatch_R15_FromMixamo",
+      "frames": 82,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 1.976905,
+        "dy": 11.193126,
+        "dz": 0.098644,
+        "horiz_drift": 11.366363
+      }
+    }
+  },
+  "goalkeeper-diving-save": {
+    "name": "Goalkeeper Diving Save",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 98,
+      "duration": 3.2666666666666666,
+      "loop": false,
+      "seam_max_pos_delta": 7.90188511,
+      "seam_max_rot_delta": 2.06371671,
+      "lt_range": {
+        "dx": 9.0901,
+        "dy_vert": 2.7969,
+        "dz": 2.7994,
+        "peak_vert": 0.8924,
+        "trough_vert": -1.9045
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 95.53,
+      "worst_track": "LeftHand[axis_0][t=1.3]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_GoalkeeperDivingSaveTarget",
+      "action": "GoalkeeperDivingSave_R15_FromMixamo",
+      "frames": 98,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 7.391427,
+        "dy": 2.792215,
+        "dz": 0.100723,
+        "horiz_drift": 7.901244
+      }
+    }
+  },
+  "goalkeeper-overhand-throw": {
+    "name": "Goalkeeper Overhand Throw",
+    "type": "oneshot",
+    "verdict": "APPROVE",
+    "failures": [],
+    "audit_json_ok": true,
+    "audit_json_errors": [],
+    "audit_json_warnings": [
+      "Loop seam was not checked because no loop range was supplied",
+      "Foot/contact drift was not checked because no contact intervals were supplied"
+    ],
+    "plant_metadata": {
+      "stride_studs": 0.0,
+      "contact_intervals": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "scene_units_per_stud": 1.0,
+      "max_pelvis_reach_adjustment": 0.0,
+      "mode": "oneshot",
+      "leg_scale": 2.6340783381598905
+    },
+    "keyframes_audit": {
+      "frame_count": 86,
+      "duration": 2.8666666666666667,
+      "loop": false,
+      "seam_max_pos_delta": 10.40427509,
+      "seam_max_rot_delta": 2.06371816,
+      "lt_range": {
+        "dx": 0.4352,
+        "dy_vert": 0.5895,
+        "dz": 10.4034,
+        "peak_vert": 0.4285,
+        "trough_vert": -0.161
+      }
+    },
+    "recipe_audit": {
+      "track_count": 15,
+      "max_frame_delta_deg": 75.03,
+      "worst_track": "LeftHand[axis_0][t=0.633]",
+      "smooth_euler_pass": true,
+      "all_angles_bounded": true,
+      "worst_angle": 0.0
+    },
+    "blend_audit": {
+      "armature": "StudioR15_GoalkeeperOverhandThrowTarget",
+      "action": "GoalkeeperOverhandThrow_R15_FromMixamo",
+      "frames": 86,
+      "contact_drift": {
+        "LeftFoot": [],
+        "RightFoot": []
+      },
+      "contact_drift_all_passed": true,
+      "seam_results": null,
+      "net_lt_displacement": {
+        "dx": 0.09236,
+        "dy": 10.403375,
+        "dz": 0.101024,
+        "horiz_drift": 10.403785
+      }
+    }
+  }
+}

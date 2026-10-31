@@ -1,4 +1,166 @@
 --!strict
+-- E passes; mouse buttons shoot. Release predicts the swing immediately; server owns contact and ball velocity.
+local Players=game:GetService("Players")
+local RS=game:GetService("ReplicatedStorage")
+local Run=game:GetService("RunService")
+local UIS=game:GetService("UserInputService")
+local Provider=game:GetService("KeyframeSequenceProvider")
+local Shared=RS:WaitForChild("Shared")
+local Config=require(Shared.configs.ShotConfigs)
+local Actions=require(Shared.configs.FootballActionConfigs)
+local Rules=require(Shared.ShotRules)
+local Timing=require(Shared.FootballActionRules)
+local Animation=require(Shared.FootballAnimation)
+local player=Players.LocalPlayer
+local Controller={}
+local initialized=false
+local serial=0
+local char: Model?=nil
+local held: any=nil
+local kind="Shot"
+local curveSide=1
+local beganAt=0
+local lastAimSent=0
+local shownId: number?=nil
+local tracks={}
+local ids={}
+local chargeTrack: AnimationTrack?=nil
+local releaseTrack: AnimationTrack?=nil
+local connections={}
+local generation=0
+local label: TextLabel?=nil
+local function remote(): RemoteEvent return RS.CageZeroRemotes.BallActionRequest end
+local function stopCharge()
+ for _,set in tracks do for _,key in {"standing","moving"} do if set[key] then set[key]:Stop(0.04) end end end
+ chargeTrack=nil
+end
+local function cancel()
+ if char and (held or char:GetAttribute("ShotActive")) then remote():FireServer({action=kind,phase="Cancel",id=serial}) end
+ held=nil;stopCharge()
+ if releaseTrack then releaseTrack:Stop(0.1) end
+ if char then char:SetAttribute("ShotCharging",false);char:SetAttribute("ShotActive",false) end
+end
+local function updateCharge(restart: boolean)
+ if not char then return end
+ local hum=char:FindFirstChildOfClass("Humanoid");local root=hum and hum.RootPart
+ local moving=hum and (hum.MoveDirection.Magnitude>0.1 or root and Vector3.new(root.AssemblyLinearVelocity.X,0,root.AssemblyLinearVelocity.Z).Magnitude>1.5)
+ local set=tracks[kind];local nextTrack=set and set[if moving then "moving" else "standing"]
+ if not nextTrack or (not restart and nextTrack==chargeTrack and nextTrack.IsPlaying) then return end
+ local phase=if restart or not chargeTrack then 0 else math.min(chargeTrack.TimePosition,Actions.ChargeEntrySec)
+ if chargeTrack then chargeTrack:Stop(0.12) end
+ chargeTrack=nextTrack;nextTrack:Play(0.12,1,if phase>=Actions.ChargeEntrySec then 0 else 1);nextTrack.TimePosition=phase
+end
+local function releaseVisual(stamp: number?)
+ stopCharge()
+ if not char then return end
+ releaseTrack=tracks[kind] and tracks[kind].release
+ if releaseTrack then
+  char:SetAttribute("ShotActive",true);releaseTrack:Play(0.06)
+  if stamp then releaseTrack.TimePosition=math.clamp(workspace:GetServerTimeNow()-stamp,0,Timing.Duration(kind)) end
+ end
+end
+local function bind(character: Model)
+ cancel();generation+=1;local gen=generation
+ for _,c in connections do c:Disconnect() end;table.clear(connections)
+ for _,set in tracks do for _,t in set do t:Destroy() end end;table.clear(tracks)
+ releaseTrack=nil;chargeTrack=nil
+ char=character;shownId=nil
+ local hum=character:WaitForChild("Humanoid",10)
+ local animator=hum and hum:WaitForChild("Animator",5)
+ if not animator or generation~=gen then return end
+ for _,action in {"Shot","Pass"} do
+  local config=Actions[action]
+  if not ids[action] then
+   if not Run:IsStudio() then warn("[Football] Published animation IDs required");return end
+   local options={
+    release={start=config.HoldAt,finish=config.EndSource,rate=config.Rate,loop=false,priority=Enum.AnimationPriority.Action2},
+    standing={finish=config.HoldAt,rate=config.HoldAt/Actions.ChargeEntrySec,loop=false,priority=Enum.AnimationPriority.Action2},
+    moving={finish=config.HoldAt,rate=config.HoldAt/Actions.ChargeEntrySec,loop=false,priority=Enum.AnimationPriority.Action2,movingCharge=true},
+   }
+   ids[action]={}
+   for name,opt in options do local seq=Animation.Build(action,opt);seq.Name=action.."_"..name
+    ids[action][name]=Provider:RegisterKeyframeSequence(seq);seq:Destroy() end
+  end
+  tracks[action]={}
+  for name,id in ids[action] do local a=Instance.new("Animation");a.AnimationId=id;a.Name=action.."_"..name
+   local t=animator:LoadAnimation(a);a:Destroy();t.Priority=Enum.AnimationPriority.Action2;t.Looped=false;tracks[action][name]=t end
+ end
+ table.insert(connections,hum.Died:Connect(cancel))
+ table.insert(connections,character:GetAttributeChangedSignal("ServerShotPhase"):Connect(function()
+  if char~=character or character:GetAttribute("ServerShotId")~=serial then return end
+  local phase=character:GetAttribute("ServerShotPhase")
+  if phase=="Windup" and shownId~=serial then
+   shownId=serial;kind=character:GetAttribute("ServerShotKind") or kind
+   releaseVisual(character:GetAttribute("ServerShotStart"))
+  elseif phase=="Cancelled" or phase=="Rejected" then cancel()
+
+  end
+ end))
+end
+local function inputKey(input: InputObject): any
+ return if input.UserInputType==Enum.UserInputType.Keyboard then input.KeyCode else input.UserInputType
+end
+function Controller.Init()
+ if initialized then return end;initialized=true
+ local gui=Instance.new("ScreenGui");gui.Name="ShotChargeHUD";gui.ResetOnSpawn=false;gui.Parent=player:WaitForChild("PlayerGui")
+ local text=Instance.new("TextLabel");text.Size=UDim2.fromOffset(220,30);text.Position=UDim2.new(0.5,-110,0.75,0)
+ text.BackgroundTransparency=0.2;text.BackgroundColor3=Color3.fromRGB(18,22,28);text.TextColor3=Color3.fromRGB(255,230,140);text.TextSize=18;text.Visible=false;text.Parent=gui;label=text
+ player.CharacterAdded:Connect(function(c) task.spawn(bind,c) end);if player.Character then task.spawn(bind,player.Character) end
+ UIS.InputBegan:Connect(function(input,processed)
+  if not processed and not UIS:GetFocusedTextBox() and held==Enum.UserInputType.MouseButton2 then
+   if input.KeyCode==Enum.KeyCode.A then curveSide=-1 elseif input.KeyCode==Enum.KeyCode.D then curveSide=1 end
+   return
+  end
+  if processed or UIS:GetFocusedTextBox() or held then return end
+  local key=inputKey(input)
+  if key~=Enum.KeyCode.E and key~=Enum.UserInputType.MouseButton1 and key~=Enum.UserInputType.MouseButton2 then return end
+  local hum=char and char:FindFirstChildOfClass("Humanoid")
+  if not char or not hum or hum.Health<=0 or hum.FloorMaterial==Enum.Material.Air or char:GetAttribute("ShotActive")==true then return end
+  kind=if key==Enum.KeyCode.E then "Pass" else "Shot"
+  curveSide=if UIS:IsKeyDown(Enum.KeyCode.A) then -1 else 1
+  if not tracks[kind] then return end
+  serial+=1;held=key;beganAt=os.clock();lastAimSent=0;char:SetAttribute("ShotCharging",true);updateCharge(true)
+  local camera=workspace.CurrentCamera
+  remote():FireServer({action=kind,phase="Begin",id=serial,aim=camera and Rules.Aim(camera.CFrame.LookVector)})
+ end)
+ UIS.InputEnded:Connect(function(input)
+  if not held or inputKey(input)~=held then return end
+  local curve=if held==Enum.UserInputType.MouseButton2 then curveSide else 0
+  held=nil
+  local camera=workspace.CurrentCamera;local aim=camera and Rules.Aim(camera.CFrame.LookVector)
+  if not char or not aim or UIS:GetFocusedTextBox() then cancel();return end
+  char:SetAttribute("ShotCharging",false);char:SetAttribute("ShotVisualAim",aim)
+  shownId=serial;releaseVisual(nil)
+  remote():FireServer({action=kind,phase="Release",id=serial,aim=aim,curve=curve})
+ end)
+ UIS.WindowFocusReleased:Connect(cancel)
+ Run.PreAnimation:Connect(function()
+  if held and chargeTrack and chargeTrack.IsPlaying and chargeTrack.TimePosition>=Actions.ChargeEntrySec then
+   chargeTrack.TimePosition=Actions.ChargeEntrySec;chargeTrack:AdjustSpeed(0)
+  end
+ end)
+ Run.RenderStepped:Connect(function()
+  if held and char then updateCharge(false) end
+  if held and char and workspace.CurrentCamera then
+   local aim=Rules.Aim(workspace.CurrentCamera.CFrame.LookVector)
+   if aim then
+    char:SetAttribute("ShotChargeAim",aim)
+    local now=os.clock()
+    if now-lastAimSent>=0.1 then lastAimSent=now;remote():FireServer({action=kind,phase="Aim",id=serial,aim=aim}) end
+   end
+  end
+  if held and (not char or os.clock()-beganAt>Config.ChargeTimeoutSec) then cancel() end
+  if char and char:GetAttribute("ShotActive")==true and releaseTrack and not releaseTrack.IsPlaying then char:SetAttribute("ShotActive",false) end
+  text.Visible=held~=nil
+  if held then text.Text=string.format("%s %d%%",if kind=="Pass" then "ส่ง" else "ยิง",math.clamp((os.clock()-beganAt)/Timing.MaxChargeSec(kind),0,1)*100) end
+ end)
+end
+return Controller
+
+
+--[============[
+Previous behavior retained at Owner request (immediate release / no reverse action).
+--!strict
 -- E passes; mouse buttons shoot. Server owns charge time, waiting, contact and ball velocity.
 local Players=game:GetService("Players")
 local RS=game:GetService("ReplicatedStorage")
@@ -405,3 +567,5 @@ Original complete source is also in the external backup.
 ]====]
 
 ]========]
+
+]============]

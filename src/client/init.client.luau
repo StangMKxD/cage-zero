@@ -59,7 +59,8 @@ if remaining > 0 then
 		-- CameraShiftLockController preserved as inert reference; not initialized (normal camera temporarily)
 
 		require(ControllersFolder:WaitForChild("ShotController")).Init()
-		require(ControllersFolder:WaitForChild("ReverseTurnAnimationController")).Init()
+		-- Reverse-turn playback removed by Owner; normal locomotion owns direction.
+		require(ControllersFolder:WaitForChild("KickHitboxDebugController")).Init()
 
 		local InputCtrlModule = ControllersFolder:FindFirstChild("InputController")
 		local dribblePresentation = ControllersFolder:FindFirstChild("DribblePresentationController")

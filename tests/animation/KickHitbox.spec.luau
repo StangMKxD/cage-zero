@@ -1,0 +1,35 @@
+--!strict
+return function(Hitbox,Config)
+	local count=0
+	local function check(ok,name) assert(ok,name);count+=1 end
+	local root=CFrame.new(10,4.2,20)*CFrame.Angles(0,math.rad(73),0)
+	local center=root:PointToWorldSpace(Config.Center)
+	local central=Hitbox.Evaluate(root,center)
+	check(central~=nil and math.abs(central.quality-1)<1e-5 and math.abs(central.powerScale-1)<1e-5 and math.abs(central.deflectionDegrees)<1e-4,"center full power")
+	local half=Config.Size/2
+	local left=Hitbox.Evaluate(root,root:PointToWorldSpace(Config.Center+Vector3.new(-half.X,0,0)))
+	local right=Hitbox.Evaluate(root,root:PointToWorldSpace(Config.Center+Vector3.new(half.X,0,0)))
+	check(left~=nil and right~=nil,"edge inclusive")
+	check(left.powerScale<central.powerScale and right.powerScale<central.powerScale,"edge weaker")
+	check(left.deflectionDegrees<0 and right.deflectionDegrees>0,"mirrored mishit direction")
+	check(math.abs(left.powerScale-right.powerScale)<1e-5,"mirror strength")
+	check(Hitbox.Evaluate(root,root:PointToWorldSpace(Vector3.new(0,-2,2)))==nil,"behind rejected")
+	check(Hitbox.Evaluate(root,root:PointToWorldSpace(Config.Center+Vector3.new(half.X+0.01,0,0)))==nil,"side outside")
+	check(Hitbox.Evaluate(root,root:PointToWorldSpace(Config.Center+Vector3.new(0,half.Y+0.01,0)))==nil,"above outside")
+	check(Hitbox.Evaluate(root,root:PointToWorldSpace(Config.Center+Vector3.new(0,0,-half.Z-0.01)))==nil,"forward outside")
+	check(Hitbox.Evaluate(root,Vector3.new(0/0,1,1))==nil,"nan ball rejected")
+	check(Hitbox.Evaluate(root,Vector3.new(math.huge,1,1))==nil,"infinite ball rejected")
+	local velocity=Vector3.new(0,0,-100)
+	check((Hitbox.ApplyMishit(velocity,central)-velocity).Magnitude<1e-5,"center direction unchanged")
+	local mis=Hitbox.ApplyMishit(velocity,right)
+	check(mis.X>0 and mis.Magnitude<100,"right mishit weakens and deviates")
+	check(math.abs(mis.Magnitude-100*right.powerScale)<1e-3,"strength uses configured scale")
+	local aim=Vector3.new(1,0,0)
+	local aimedFrame=Hitbox.Frame(root,aim)
+	check(aimedFrame.LookVector:Dot(aim)>0.99999,"owned setup frame follows aim")
+	local aimedCenter=root.Position+Hitbox.Heading(root,aim):VectorToWorldSpace(Config.Center)
+	check((aimedFrame.Position-aimedCenter).Magnitude<1e-4,"aimed frame keeps right-foot offset")
+	local aimedContact=Hitbox.Evaluate(root,aimedFrame.Position,aim)
+	check(aimedContact and aimedContact.quality>0.99999,"aimed center remains sweet spot")
+	return count
+end

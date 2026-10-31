@@ -1,0 +1,797 @@
+{
+  "milestone": "Milestone M2 (Outfield & Transition Animations)",
+  "verdict": "REFUTED",
+  "total_tests": 116,
+  "passed": 100,
+  "failed": 16,
+  "clip_details": {
+    "FastRun": {
+      "peak_left": 0.9986,
+      "peak_right": 0.9932,
+      "min_left": -0.3146,
+      "min_right": -0.2042,
+      "left_upper_peak": 0.9688,
+      "right_upper_peak": 0.9692,
+      "total_frames": 17
+    },
+    "JogForward": {
+      "peak_left": 0.9953,
+      "peak_right": 0.9977,
+      "min_left": 0.1541,
+      "min_right": 0.12,
+      "left_upper_peak": 0.9954,
+      "right_upper_peak": 0.9916,
+      "total_frames": 26
+    },
+    "ScissorKick": {
+      "peak_left": 0.9985,
+      "peak_right": 0.9386,
+      "min_left": -0.9662,
+      "min_right": -0.9917,
+      "left_upper_peak": 0.9104,
+      "right_upper_peak": 0.8982,
+      "total_frames": 84
+    },
+    "SoccerPass": {
+      "peak_left": 0.9971,
+      "peak_right": 0.9746,
+      "min_left": 0.905,
+      "min_right": 0.1488,
+      "left_upper_peak": 0.9936,
+      "right_upper_peak": 0.9917,
+      "total_frames": 49
+    },
+    "SoccerTackle": {
+      "peak_left": 0.992,
+      "peak_right": 0.9415,
+      "min_left": 0.0078,
+      "min_right": 0.187,
+      "left_upper_peak": 0.9909,
+      "right_upper_peak": 0.9121,
+      "total_frames": 54
+    },
+    "SoccerTrip": {
+      "peak_left": 0.9651,
+      "peak_right": 0.9399,
+      "min_left": -0.9111,
+      "min_right": -0.9592,
+      "left_upper_peak": 0.9887,
+      "right_upper_peak": 0.9892,
+      "total_frames": 49
+    },
+    "StandingIdle02": {
+      "peak_left": 0.7648,
+      "peak_right": 0.2066,
+      "min_left": 0.669,
+      "min_right": 0.0217,
+      "left_upper_peak": 0.6532,
+      "right_upper_peak": 0.537,
+      "total_frames": 157
+    },
+    "StandingJump": {
+      "peak_left": 0.998,
+      "peak_right": 0.9981,
+      "min_left": 0.8075,
+      "min_right": 0.8318,
+      "left_upper_peak": 0.9966,
+      "right_upper_peak": 0.9721,
+      "total_frames": 74
+    },
+    "TurnBackRunning": {
+      "peak_left": 0.9938,
+      "peak_right": 0.9243,
+      "min_left": -0.7866,
+      "min_right": -0.8844,
+      "left_upper_peak": 0.9223,
+      "right_upper_peak": 0.9317,
+      "total_frames": 50
+    },
+    "StrikeFowardJog": {
+      "peak_left": 0.9948,
+      "peak_right": 0.9787,
+      "min_left": 0.5074,
+      "min_right": -0.0915,
+      "left_upper_peak": 0.9183,
+      "right_upper_peak": 0.998,
+      "total_frames": 40
+    }
+  },
+  "findings": [
+    {
+      "section": "C1_KneeDots",
+      "test": "FastRun_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9986, Right=0.9932, min=0.9932 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "FastRun_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.2507, Right=0.8183 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "JogForward_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9953, Right=0.9977, min=0.9953 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "JogForward_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.5678, Right=0.8404 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "ScissorKick_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9985, Right=0.9386, min=0.9386 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "ScissorKick_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.9889, Right=0.8926 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "SoccerPass_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9971, Right=0.9746, min=0.9746 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "SoccerPass_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.9825, Right=0.9746 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "SoccerTackle_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9920, Right=0.9415, min=0.9415 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "SoccerTackle_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.8337, Right=0.6195 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "SoccerTrip_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9651, Right=0.9399, min=0.9399 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "SoccerTrip_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.8332, Right=0.6195 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "StandingIdle02_peak_knee_front_dot",
+      "passed": false,
+      "details": "Peak Left=0.7648, Right=0.2066, min=0.2066 (gate >= 0.6)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "StandingIdle02_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.7543, Right=0.1602 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "StandingJump_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9980, Right=0.9981, min=0.9980 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "StandingJump_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.9823, Right=0.9771 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "TurnBackRunning_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9938, Right=0.9243, min=0.9243 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "TurnBackRunning_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.9938, Right=0.9125 (both must be > 0.0)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "StrikeFowardJog_peak_knee_front_dot",
+      "passed": true,
+      "details": "Peak Left=0.9948, Right=0.9787, min=0.9787 (gate >= 0.7)"
+    },
+    {
+      "section": "C1_KneeDots",
+      "test": "StrikeFowardJog_frame1_knee_alignment",
+      "passed": true,
+      "details": "Frame 1 Left=0.6147, Right=0.8307 (both must be > 0.0)"
+    },
+    {
+      "section": "C2_StandingIdle02",
+      "test": "standing_idle_peak_knee_front_dot_above_060",
+      "passed": false,
+      "details": "LeftLowerLeg peak=0.7648, RightLowerLeg peak=0.2066 (both >= 0.60)"
+    },
+    {
+      "section": "C2_StandingIdle02",
+      "test": "no_180_degree_knee_twist_relative_to_thigh",
+      "passed": false,
+      "details": "Upper/Lower Leg alignment Left min=0.1883, Right min=0.2708 (MUST be > 0.20, not ~ -1.0)"
+    },
+    {
+      "section": "C2_StandingIdle02",
+      "test": "standing_idle_knees_remain_forward_throughout_cycle",
+      "passed": false,
+      "details": "LeftLowerLeg min=0.6690, RightLowerLeg min=0.0217 (both maintain forward orientation > 0.40)"
+    },
+    {
+      "section": "C3_TackleTrip",
+      "test": "soccer_tackle_lowertorso_location_curves_present",
+      "passed": true,
+      "details": "LowerTorso location curves in .blend = 3 (expected 3)"
+    },
+    {
+      "section": "C3_TackleTrip",
+      "test": "soccer_tackle_horizontal_slide_trajectory",
+      "passed": true,
+      "details": "SoccerTackle LowerTorso Y displacement = 16.4894 studs (> 0.50 studs)"
+    },
+    {
+      "section": "C3_TackleTrip",
+      "test": "soccer_tackle_vertical_drop_into_slide",
+      "passed": true,
+      "details": "SoccerTackle LowerTorso Z vertical range = 2.6294 studs (> 0.20 studs)"
+    },
+    {
+      "section": "C3_TackleTrip",
+      "test": "soccer_tackle_non_root_location_fcurves_strictly_zero",
+      "passed": true,
+      "details": "Found 0 non-root location curves in .blend"
+    },
+    {
+      "section": "C3_TackleTrip",
+      "test": "soccer_trip_lowertorso_location_curves_present",
+      "passed": true,
+      "details": "LowerTorso location curves in .blend = 3 (expected 3)"
+    },
+    {
+      "section": "C3_TackleTrip",
+      "test": "soccer_trip_vertical_fall_drop",
+      "passed": true,
+      "details": "SoccerTrip vertical drop from start to ground = 2.8120 studs (> 0.50 studs)"
+    },
+    {
+      "section": "C3_TackleTrip",
+      "test": "soccer_trip_non_root_location_fcurves_strictly_zero",
+      "passed": true,
+      "details": "Found 0 non-root location curves in .blend"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "FastRun_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "FastRun_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "JogForward_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "JogForward_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "ScissorKick_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "ScissorKick_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "SoccerPass_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "SoccerPass_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "SoccerTackle_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "SoccerTackle_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "SoccerTrip_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "SoccerTrip_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "StandingIdle02_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "StandingIdle02_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "StandingJump_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "StandingJump_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "TurnBackRunning_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "TurnBackRunning_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "StrikeFowardJog_keyframes_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root location leak count = 0"
+    },
+    {
+      "section": "C3_NonRootZero",
+      "test": "StrikeFowardJog_recipe_json_non_root_strictly_zero",
+      "passed": true,
+      "details": "Non-root position leak count = 0"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "FastRun_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 0.09286499 studs (bone=LowerTorso, frame=3) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "JogForward_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 0.27630562 studs (bone=LowerTorso, frame=17) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "ScissorKick_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 3.01848893 studs (bone=LowerTorso, frame=53) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "SoccerPass_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 1.10957226 studs (bone=LowerTorso, frame=16) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "SoccerTackle_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 16.48964265 studs (bone=LowerTorso, frame=54) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "SoccerTrip_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 15.44494235 studs (bone=LowerTorso, frame=48) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "StandingIdle02_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 0.15810831 studs (bone=LowerTorso, frame=126) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "StandingJump_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 1.81050112 studs (bone=LowerTorso, frame=33) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "TurnBackRunning_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 9.95120249 studs (bone=LowerTorso, frame=50) (gate <= 0.0002)"
+    },
+    {
+      "section": "C4_PivotDeviation",
+      "test": "StrikeFowardJog_max_joint_pivot_deviation",
+      "passed": false,
+      "details": "Max deviation = 0.83086259 studs (bone=LowerTorso, frame=24) (gate <= 0.0002)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "FastRun_loop_seam_closed",
+      "passed": true,
+      "details": "Loop first vs last frame L1 diff = 0.00000000 (expected < 1e-4)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "JogForward_loop_seam_closed",
+      "passed": true,
+      "details": "Loop first vs last frame L1 diff = 0.00000000 (expected < 1e-4)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "ScissorKick_oneshot_recovery_preserved",
+      "passed": true,
+      "details": "One-shot first vs recovery frame L1 diff = 42.3555 (expected > 0.50)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "SoccerPass_oneshot_recovery_preserved",
+      "passed": false,
+      "details": "One-shot first vs recovery frame L1 diff = 0.0001 (expected > 0.50)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "SoccerTackle_oneshot_recovery_preserved",
+      "passed": true,
+      "details": "One-shot first vs recovery frame L1 diff = 39.4685 (expected > 0.50)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "SoccerTrip_oneshot_recovery_preserved",
+      "passed": true,
+      "details": "One-shot first vs recovery frame L1 diff = 89.0540 (expected > 0.50)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "StandingIdle02_loop_seam_closed",
+      "passed": true,
+      "details": "Loop first vs last frame L1 diff = 0.00000000 (expected < 1e-4)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "StandingJump_oneshot_recovery_preserved",
+      "passed": false,
+      "details": "One-shot first vs recovery frame L1 diff = 0.0001 (expected > 0.50)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "TurnBackRunning_oneshot_recovery_preserved",
+      "passed": true,
+      "details": "One-shot first vs recovery frame L1 diff = 63.8106 (expected > 0.50)"
+    },
+    {
+      "section": "C5_SeamBranching",
+      "test": "StrikeFowardJog_loop_seam_closed",
+      "passed": true,
+      "details": "Loop first vs last frame L1 diff = 0.00000000 (expected < 1e-4)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "FastRun_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "FastRun_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 17 (expected 17, raw frames=17, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "FastRun_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 0.533], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "JogForward_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "JogForward_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 26 (expected 26, raw frames=26, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "JogForward_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 0.833], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "ScissorKick_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "ScissorKick_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 84 (expected 84, raw frames=84, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "ScissorKick_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 2.767], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerPass_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerPass_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 49 (expected 49, raw frames=49, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerPass_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 1.6], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerTackle_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerTackle_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 54 (expected 54, raw frames=54, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerTackle_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 1.767], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerTrip_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerTrip_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 49 (expected 49, raw frames=49, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "SoccerTrip_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 1.6], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StandingIdle02_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StandingIdle02_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 128 (expected 128, raw frames=157, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StandingIdle02_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 5.2], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StandingJump_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StandingJump_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 74 (expected 74, raw frames=74, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StandingJump_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 2.433], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "TurnBackRunning_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "TurnBackRunning_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 50 (expected 50, raw frames=50, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "TurnBackRunning_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 1.633], strictly increasing: True"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StrikeFowardJog_track_count_15",
+      "passed": true,
+      "details": "Track count = 15 (expected 15)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StrikeFowardJog_key_count_budget",
+      "passed": true,
+      "details": "Track keys = 40 (expected 40, raw frames=40, budget <= 128)"
+    },
+    {
+      "section": "C6_RecipeSubsampling",
+      "test": "StrikeFowardJog_timestamp_monotonicity",
+      "passed": true,
+      "details": "Times range [0.0, 1.3], strictly increasing: True"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Fast Run.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=822FDC9D28AC97C53FAC37717F20A51A286B44FD389B135119467EC794E912AB vs Expected=822FDC9D28AC97C53FAC37717F20A51A286B44FD389B135119467EC794E912AB"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Jog Forward.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=836EF89582F9382598D0B2EDD82F57D3CB8C29DC136A512E45D5637A70C4C2EF vs Expected=836EF89582F9382598D0B2EDD82F57D3CB8C29DC136A512E45D5637A70C4C2EF"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Scissor Kick.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=5E43F565ECE6768118C83BF6A4C7C5A08ECEE4AA6B112BA1C5591065F13687B4 vs Expected=5E43F565ECE6768118C83BF6A4C7C5A08ECEE4AA6B112BA1C5591065F13687B4"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Soccer Pass.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=B10D8ADCC2726A30DCC6BB691FD3DB7D943272780397C87397745806DB71156B vs Expected=B10D8ADCC2726A30DCC6BB691FD3DB7D943272780397C87397745806DB71156B"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Soccer Tackle.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=E2BDC6A031D770C35F2BF6CED4EFCF15A1BA9154ADF5596B0092215CC9942CD0 vs Expected=E2BDC6A031D770C35F2BF6CED4EFCF15A1BA9154ADF5596B0092215CC9942CD0"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Soccer Trip.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=508CEEB3EA6D41B95F71F611616040B586AEEC77901C3AC53540481AF349616A vs Expected=508CEEB3EA6D41B95F71F611616040B586AEEC77901C3AC53540481AF349616A"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Standing Idle 02.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=B5C38648952D1A547801200BEFB9B3E7FC2F3FEA1E6F46CB215D12D37551CDBF vs Expected=B5C38648952D1A547801200BEFB9B3E7FC2F3FEA1E6F46CB215D12D37551CDBF"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Standing Jump.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=5BDF56BB036EC76CFB53BCAD13F06A7D24FE2C4A0B32A04798F3E5B865D9811E vs Expected=5BDF56BB036EC76CFB53BCAD13F06A7D24FE2C4A0B32A04798F3E5B865D9811E"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "TurnBackRunning.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=EB02912E98FDBAECB7950D2FB8DAF9C6BCE7E32E9B9727C56DDF4B0FFBD52460 vs Expected=EB02912E98FDBAECB7950D2FB8DAF9C6BCE7E32E9B9727C56DDF4B0FFBD52460"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "Strike Foward Jog.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=271B484652B91ED6945CAE0361008E425CDB524CC403206A6C5DCA94BF02E4EC vs Expected=271B484652B91ED6945CAE0361008E425CDB524CC403206A6C5DCA94BF02E4EC"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "goal/Goalkeeper Catch.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=52160C2135CDA64B59E65D1CA0B8C29855328B8623127310CCD741AE54C4C9B8 vs Expected=52160C2135CDA64B59E65D1CA0B8C29855328B8623127310CCD741AE54C4C9B8"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "goal/Goalkeeper Diving Save.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=56062B57A3A2DC8DBA02C643B97ED13132B9CA8FEFE0CE1DE89E2AAB8BED4F54 vs Expected=56062B57A3A2DC8DBA02C643B97ED13132B9CA8FEFE0CE1DE89E2AAB8BED4F54"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "goal/Goalkeeper Overhand Throw.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=659A864774D08DC7BA7A39C07CF167CA54C63004F339F34D2C370D567DFAF54D vs Expected=659A864774D08DC7BA7A39C07CF167CA54C63004F339F34D2C370D567DFAF54D"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "goal/Goalkeeper Scoop.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=F0E88F910B52A68EE094E502D2F5B5A92D2DEA17E5B31F8189A819BA2293B584 vs Expected=F0E88F910B52A68EE094E502D2F5B5A92D2DEA17E5B31F8189A819BA2293B584"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "goal/Goalkeeper Sidestep.fbx_sha256_unmodified",
+      "passed": true,
+      "details": "Hash=8D33AD568E618651D95F244DD2FF643975DC2A22F3C65D3C382C60A51825402F vs Expected=8D33AD568E618651D95F244DD2FF643975DC2A22F3C65D3C382C60A51825402F"
+    },
+    {
+      "section": "C7_Integrity",
+      "test": "git_status_src_protected_files_intact",
+      "passed": true,
+      "details": "Found 33 dirty files in src/ (strictly expected 33)"
+    }
+  ]
+}

@@ -17,7 +17,7 @@ function Rules.Aim(value: any): Vector3?
 	if magnitude < 0.5 or magnitude > 1.5 then return nil end
 	local unit = value / magnitude
 	-- Ground kick permits low shots and deliberate loft; no backward vertical singularity.
-	if unit.Y < -0.95 or unit.Y > 0.8 then return nil end
+	if unit.Y < -0.98 or unit.Y > 0.98 then return nil end
 	return unit
 end
 

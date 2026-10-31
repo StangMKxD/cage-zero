@@ -1,0 +1,469 @@
+{
+  "standing-idle-02": {
+    "name": "Standing Idle 02",
+    "type": "loop",
+    "keyframes": {
+      "name": "RF02_StandingIdle02Mixamo_R15_v01",
+      "loop": true,
+      "duration": 5.2,
+      "frame_count": 157,
+      "seam_max_pos_diff": 0.0,
+      "seam_max_rot_diff": 0.0,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [
+            [
+              1,
+              157
+            ]
+          ],
+          "RightFoot": [
+            [
+              1,
+              157
+            ]
+          ]
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": -0.04273984448066237,
+        "mode": "loop_inplace",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 157,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "strike-foward-jog": {
+    "name": "Strike Foward Jog",
+    "type": "loop",
+    "keyframes": {
+      "name": "RF02_StrikeFowardJogMixamo_R15_v01",
+      "loop": true,
+      "duration": 1.3,
+      "frame_count": 40,
+      "seam_max_pos_diff": 0.0,
+      "seam_max_rot_diff": 0.0,
+      "plant_metadata": {
+        "stride_studs": 8.212425342490834,
+        "contact_intervals": {
+          "LeftFoot": [
+            [
+              11,
+              16
+            ]
+          ],
+          "RightFoot": [
+            [
+              1,
+              4
+            ],
+            [
+              38,
+              40
+            ]
+          ]
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "loop_y",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 40,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "goalkeeper-sidestep": {
+    "name": "Goalkeeper Sidestep",
+    "type": "loop",
+    "keyframes": {
+      "name": "RF02_GoalkeeperSidestepMixamo_R15_v01",
+      "loop": true,
+      "duration": 0.5333333333333333,
+      "frame_count": 17,
+      "seam_max_pos_diff": 0.0,
+      "seam_max_rot_diff": 0.0,
+      "plant_metadata": {
+        "stride_studs": -3.3069949640421608,
+        "contact_intervals": {
+          "LeftFoot": [
+            [
+              1,
+              6
+            ]
+          ],
+          "RightFoot": [
+            [
+              1,
+              2
+            ],
+            [
+              13,
+              17
+            ]
+          ]
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": -0.7999915139020293,
+        "mode": "loop_x",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 17,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "standing-jump": {
+    "name": "Standing Jump",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "StandingJump",
+      "loop": false,
+      "duration": 2.466666666666667,
+      "frame_count": 74,
+      "seam_max_pos_diff": 1.2869343417595165e-06,
+      "seam_max_rot_diff": 1.6110000000148922e-05,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 74,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "soccer-pass": {
+    "name": "Soccer Pass",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "SoccerPass",
+      "loop": false,
+      "duration": 1.6333333333333333,
+      "frame_count": 49,
+      "seam_max_pos_diff": 9.681425514871248e-07,
+      "seam_max_rot_diff": 5.382999999994486e-05,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 49,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "soccer-tackle": {
+    "name": "Soccer Tackle",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "SoccerTackle",
+      "loop": false,
+      "duration": 1.8,
+      "frame_count": 54,
+      "seam_max_pos_diff": 12.163317739047637,
+      "seam_max_rot_diff": 2.8095792200000003,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 54,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "soccer-trip": {
+    "name": "Soccer Trip",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "SoccerTrip",
+      "loop": false,
+      "duration": 1.6333333333333333,
+      "frame_count": 49,
+      "seam_max_pos_diff": 11.338079374009402,
+      "seam_max_rot_diff": 6.1735102,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 49,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "turn-back-running": {
+    "name": "TurnBackRunning",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "TurnBackRunning",
+      "loop": false,
+      "duration": 1.6666666666666667,
+      "frame_count": 50,
+      "seam_max_pos_diff": 7.338302390918199,
+      "seam_max_rot_diff": 5.01919252,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 50,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "scissor-kick": {
+    "name": "Scissor Kick",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "ScissorKick",
+      "loop": false,
+      "duration": 2.8,
+      "frame_count": 84,
+      "seam_max_pos_diff": 0.8859670629523213,
+      "seam_max_rot_diff": 4.85778983,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 84,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "goalkeeper-scoop": {
+    "name": "Goalkeeper Scoop",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "GoalkeeperScoop",
+      "loop": false,
+      "duration": 2.6333333333333333,
+      "frame_count": 79,
+      "seam_max_pos_diff": 10.802193487555199,
+      "seam_max_rot_diff": 2.06371883,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 79,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "goalkeeper-catch": {
+    "name": "Goalkeeper Catch",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "GoalkeeperCatch",
+      "loop": false,
+      "duration": 2.7333333333333334,
+      "frame_count": 82,
+      "seam_max_pos_diff": 11.366791250529547,
+      "seam_max_rot_diff": 2.06371889,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 82,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "goalkeeper-diving-save": {
+    "name": "Goalkeeper Diving Save",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "GoalkeeperDivingSave",
+      "loop": false,
+      "duration": 3.2666666666666666,
+      "frame_count": 98,
+      "seam_max_pos_diff": 7.901885114500678,
+      "seam_max_rot_diff": 2.06371671,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 98,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  },
+  "goalkeeper-overhand-throw": {
+    "name": "Goalkeeper Overhand Throw",
+    "type": "oneshot",
+    "keyframes": {
+      "name": "GoalkeeperOverhandThrow",
+      "loop": false,
+      "duration": 2.8666666666666667,
+      "frame_count": 86,
+      "seam_max_pos_diff": 10.404275092637972,
+      "seam_max_rot_diff": 2.06371816,
+      "plant_metadata": {
+        "stride_studs": 0.0,
+        "contact_intervals": {
+          "LeftFoot": [],
+          "RightFoot": []
+        },
+        "scene_units_per_stud": 1.0,
+        "max_pelvis_reach_adjustment": 0.0,
+        "mode": "oneshot",
+        "leg_scale": 2.6340783381598905
+      }
+    },
+    "blend": {
+      "frame_start": 1,
+      "frame_end": 86,
+      "seam_data": {
+        "max_location_diff": 0.0,
+        "worst_loc_bone": null,
+        "max_rotation_diff_degrees": 0.0,
+        "worst_rot_bone": null
+      }
+    }
+  }
+}

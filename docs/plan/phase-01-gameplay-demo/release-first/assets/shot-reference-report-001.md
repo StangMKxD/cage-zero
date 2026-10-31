@@ -1,0 +1,18 @@
+# Ground shooting reference integration
+
+2026-10-29 · Root personally implements under Owner's direct instruction to do shooting before passing. DONE_BY_IMPL / READY_FOR_OWNER_PLAYTEST; no independent acceptance, commit, push or publish.
+
+- Source: `C:/Users/Stang/OneDrive/Desktop/stang/cage-zero-dev/animation/shot.md`, SHA256 `4aab3c1f739e212eaff0801224adefc8f31460663e57599325ae6322637da4ba`. Full61frames/2s/15joint rotations retained; horizontal root travel removed and support height adapted to the normalized rig. Action2/non-loop. Studio temporary registration; published ID remains an Owner asset step.
+- LMB hold/release: straight manual3D shot. RMB hold/release: curve right; A held at release selects left. Server measures charge0–1.2s, speed46–112stud/s. Charge HUD, planted preparation/facing, full shot followthrough, focus/death/respawn cleanup. Passing and aerial finish are not completed by this ground-shot increment.
+- BallService remains the only physics writer. Ball rolls into a bounded right-foot setup via existing body/cage constraints. Server samples authored right-foot OBB against real ball at0.30–0.3667s; no contact means whiff, possession loss cancels. Validated contact releases possession once, records last touch and applies finite bounded velocity. Curve uses bounded rotation before the existing cage solver; no target selection/homing. Shooter recapture delay0.6s. IDs/order/cooldown/character/ground/carrier/finite aim/spin checked server-side; normal dribble markers and cut/lob conflict suppressed during shooting.
+
+## Actual verification
+
+- Shot.spec:947 checks, including all915 source joint/frame rotations, key count/one-shot/markers, finite aim/charge bounds, real contact/whiff geometry. Fresh Studio Luau requires compiled server module; Rojo local build succeeded. This is not a full strict typecheck.
+- ShotIntent.spec:22 checks on uninitialized isolated BallService clone + grounded live character; no extra Heartbeat/ball writer. Covers no carrier, missing begin, invalid IDs/NaN/spin/magnitude, overlap, wrong IDs/cancel, release replay, cut/dribble suppression and cooldown. Diagnostic attributes restored.
+- Existing cut timeline366 checks passed. Cut intent27 checks passed with live grounded Humanoid/root and isolated attribute proxy. First combined run failed at Trap because live SprintService overwrote the fixture's IsSprinting flag during task.wait; assertions/windows unchanged, fixture attributes isolated on rerun. Not counted as live multiplayer coverage.
+- Actual MCP mouse input: straight shots accepted, Action2 track length2/loopfalse, weight1 in followthrough, completes/unlocks. Observed server contact delays0.316–0.318s. Different charge levels accepted; final curve-right full charge power1, initial horizontal velocity approximately(2.58,-109.13), then(16.63,-91.63) by1s: correct rightward bend. Initial curve sign was reversed and corrected/retested. Rapid off-heading preparation previously whiffed; charge now plants/faces and sets up before release while preserving contact rejection.
+- Death during charge produced Cancelled/activefalse; new character health100, HUD hidden. Real mouse shot after respawn completed with contact delay0.3174s. Existing console plugin BlenderAnimations Packages error and asset203785492 mismatch remain unrelated.
+- First ScreenCapture attempt was unavailable during the Play/Edit transition; a later fixed-camera pose capture showed the reference contact/followthrough (other poses occluded). Numerical pose/track/contact checks do not replace Owner visual acceptance. Separate left-curve real-input run and multi-client latency coverage not performed.
+
+No WSL used: Windows PowerShell, Node.js, Rojo and Roblox Studio MCP.

@@ -74,9 +74,7 @@ local function setSprintState(player: Player, shouldSprint: boolean, forward: nu
 
 		local speedState = speedStates[player] or SprintSpeedRules.New()
 		speedStates[player] = speedState
-		local oldSequence=speedState.reverseSeq
 		SprintSpeedRules.SetDirection(speedState, forward or 0, lateral or 0, os.clock())
-		if speedState.reverseSeq>oldSequence then character:SetAttribute("SprintReverseStarted",workspace:GetServerTimeNow()) end
 		humanoid.WalkSpeed = speedState.speed
 		character:SetAttribute("SprintForward", forward == 1)
 		character:SetAttribute("SprintTurnUntil", speedState.penaltyUntil)
@@ -267,10 +265,6 @@ function SprintService.Init()
 				if char:GetAttribute("GoalDribbleActive") == true or char:GetAttribute("ServerShotPhase") == "Charging" then
 					setSprintState(player, false)
 				else
-					local root=hum.RootPart
-					local oldSequence=state.reverseSeq
-					if root then SprintSpeedRules.ObserveFacing(state,root.CFrame.LookVector,now) end
-					if state.reverseSeq>oldSequence then char:SetAttribute("SprintReverseStarted",workspace:GetServerTimeNow()) end
 					hum.WalkSpeed = SprintSpeedRules.Advance(state, now, dt)
 				end
 			end

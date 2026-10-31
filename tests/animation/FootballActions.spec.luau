@@ -16,7 +16,8 @@ return function(Shared)
 		check(not seq.Loop and math.abs(frames[#frames].Time-R.Duration(kind))<1e-5,"release range")
 		seq:Destroy()
 	end
-	check(R.Velocity("Pass",Vector3.new(0,0.7,-0.7).Unit,100).Y==2,"ground pass")
+	local passAim=Vector3.new(0,0.7,-0.7).Unit
+	check(R.Velocity("Pass",passAim,100).Unit:Dot(passAim)>0.99999,"pass follows full aim")
 	check(R.Velocity("Pass",Vector3.new(0,0,-1),100).Magnitude<R.Velocity("Shot",Vector3.new(0,0,-1),100).Magnitude,"pass power distinct")
 	for _,key in {"Shot","Pass","Turn","WalkDribble","Run"} do
 		local data=Reference[key]
@@ -30,12 +31,16 @@ return function(Shared)
 		end
 	end
 	local s=Sprint.New();Sprint.SetDirection(s,1,0,0);Sprint.SetDirection(s,0,1,0.05)
-	check(s.reverseSeq==0,"90 degree does not animate")
-	Sprint.SetDirection(s,0,-1,0.1);check(s.reverseSeq==1,"A/D opposites animate")
+	check(s.penaltyUntil>0.05,"ordinary90 degree slowdown retained")
+	Sprint.SetDirection(s,0,-1,0.1);check(s.speed==32 and s.penaltyUntil==0,"opposite direction has no special penalty")
 	local w=Sprint.New();Sprint.SetDirection(w,1,0,0);Sprint.SetDirection(w,-1,0,0.05)
-	check(w.reverseSeq==1,"W/S opposites animate")
-	local mouse=Sprint.New();Sprint.ObserveFacing(mouse,Vector3.new(0,0,-1),1)
-	Sprint.ObserveFacing(mouse,Vector3.new(1,0,0),1.1);check(mouse.reverseSeq==0,"small mouse turn")
-	Sprint.ObserveFacing(mouse,Vector3.new(0,0,1),1.2);check(mouse.reverseSeq==1,"sharp mouse turn")
+	check(w.speed==32 and w.penaltyUntil==0,"W/S reverse action removed")
+	check(Sprint.ObserveFacing==nil,"mouse reverse trigger removed")
+	local root=CFrame.new(0,4.2,0)
+	local behind=root:PointToWorldSpace(Vector3.new(0,-3,2))
+	check(R.Contact(root,behind,false,8)==nil,"free ball behind player rejected")
+	local owned=R.Contact(root,behind,true,8)
+	check(owned and owned.quality==1 and owned.powerScale==1 and owned.deflectionDegrees==0,"carrier ignores hitbox/mishit")
+	check(R.Contact(root,root.Position+Vector3.new(0,0,50),true,8)==nil,"carrier still bounded")
 	return count
 end

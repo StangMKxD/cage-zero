@@ -1,0 +1,290 @@
+{
+  "timestamp": "2026-10-30T13:47:22Z",
+  "total": 40,
+  "passed": 40,
+  "failed": 0,
+  "errors": 0,
+  "elapsed_seconds": 6.659104347229004,
+  "records": [
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_all_15_clips_feature_coverage",
+      "name": "test_tier1_all_15_clips_feature_coverage",
+      "status": "PASS",
+      "elapsed": 0.9702737331390381,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_fast_run",
+      "name": "test_tier1_fast_run",
+      "status": "PASS",
+      "elapsed": 0.04002022743225098,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_goalkeeper_catch",
+      "name": "test_tier1_goalkeeper_catch",
+      "status": "PASS",
+      "elapsed": 0.07889914512634277,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_goalkeeper_diving_save",
+      "name": "test_tier1_goalkeeper_diving_save",
+      "status": "PASS",
+      "elapsed": 0.17828822135925293,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_goalkeeper_overhand_throw",
+      "name": "test_tier1_goalkeeper_overhand_throw",
+      "status": "PASS",
+      "elapsed": 0.09198713302612305,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_goalkeeper_scoop",
+      "name": "test_tier1_goalkeeper_scoop",
+      "status": "PASS",
+      "elapsed": 0.06342816352844238,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_goalkeeper_sidestep",
+      "name": "test_tier1_goalkeeper_sidestep",
+      "status": "PASS",
+      "elapsed": 0.009732723236083984,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_jog_forward",
+      "name": "test_tier1_jog_forward",
+      "status": "PASS",
+      "elapsed": 0.01997685432434082,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_reference_fast_run",
+      "name": "test_tier1_reference_fast_run",
+      "status": "PASS",
+      "elapsed": 0.010283231735229492,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_scissor_kick",
+      "name": "test_tier1_scissor_kick",
+      "status": "PASS",
+      "elapsed": 0.03389310836791992,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_soccer_pass",
+      "name": "test_tier1_soccer_pass",
+      "status": "PASS",
+      "elapsed": 0.02490854263305664,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_soccer_tackle",
+      "name": "test_tier1_soccer_tackle",
+      "status": "PASS",
+      "elapsed": 0.019669294357299805,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_soccer_trip",
+      "name": "test_tier1_soccer_trip",
+      "status": "PASS",
+      "elapsed": 0.023909807205200195,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_standing_idle_02",
+      "name": "test_tier1_standing_idle_02",
+      "status": "PASS",
+      "elapsed": 0.057880401611328125,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_standing_jump",
+      "name": "test_tier1_standing_jump",
+      "status": "PASS",
+      "elapsed": 0.030805110931396484,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_strike_foward_jog",
+      "name": "test_tier1_strike_foward_jog",
+      "status": "PASS",
+      "elapsed": 0.015846729278564453,
+      "message": ""
+    },
+    {
+      "test": "tier1_feature_coverage.TestTier1FeatureCoverage.test_tier1_turn_back_running",
+      "name": "test_tier1_turn_back_running",
+      "status": "PASS",
+      "elapsed": 0.01953434944152832,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_goalkeeper_sidestep_in_place_extraction",
+      "name": "test_tier2_goalkeeper_sidestep_in_place_extraction",
+      "status": "PASS",
+      "elapsed": 0.004828214645385742,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_loop_invariants_all_15",
+      "name": "test_tier2_loop_invariants_all_15",
+      "status": "PASS",
+      "elapsed": 0.1551342010498047,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_loop_seam_closure_5_loops",
+      "name": "test_tier2_loop_seam_closure_5_loops",
+      "status": "PASS",
+      "elapsed": 0.04668879508972168,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_non_root_translation_fcurves_zero_all_15",
+      "name": "test_tier2_non_root_translation_fcurves_zero_all_15",
+      "status": "PASS",
+      "elapsed": 0.22051024436950684,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_recovery_frames_preserved_10_oneshots",
+      "name": "test_tier2_recovery_frames_preserved_10_oneshots",
+      "status": "PASS",
+      "elapsed": 0.12137198448181152,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_reference_fast_run_loop_invariant",
+      "name": "test_tier2_reference_fast_run_loop_invariant",
+      "status": "PASS",
+      "elapsed": 0.0054607391357421875,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_scissor_kick_preserves_vertical_leap",
+      "name": "test_tier2_scissor_kick_preserves_vertical_leap",
+      "status": "PASS",
+      "elapsed": 0.017931699752807617,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_soccer_trip_preserves_vertical_drop",
+      "name": "test_tier2_soccer_trip_preserves_vertical_drop",
+      "status": "PASS",
+      "elapsed": 0.011509418487548828,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_strike_foward_jog_in_place_extraction",
+      "name": "test_tier2_strike_foward_jog_in_place_extraction",
+      "status": "PASS",
+      "elapsed": 0.008381366729736328,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_turn_back_running_preserves_heading_rotation",
+      "name": "test_tier2_turn_back_running_preserves_heading_rotation",
+      "status": "PASS",
+      "elapsed": 0.010689258575439453,
+      "message": ""
+    },
+    {
+      "test": "tier2_boundary_corner_cases.TestTier2BoundaryCornerCases.test_tier2_v3_knee_front_dot_invariants_all_15",
+      "name": "test_tier2_v3_knee_front_dot_invariants_all_15",
+      "status": "PASS",
+      "elapsed": 3.743171691894531e-05,
+      "message": ""
+    },
+    {
+      "test": "tier3_invariants_integrity.TestTier3InvariantsIntegrity.test_tier3_reference_outputs_preservation",
+      "name": "test_tier3_reference_outputs_preservation",
+      "status": "PASS",
+      "elapsed": 0.00021529197692871094,
+      "message": ""
+    },
+    {
+      "test": "tier3_invariants_integrity.TestTier3InvariantsIntegrity.test_tier3_source_mixamo_fbx_integrity_all_15",
+      "name": "test_tier3_source_mixamo_fbx_integrity_all_15",
+      "status": "PASS",
+      "elapsed": 0.051268815994262695,
+      "message": ""
+    },
+    {
+      "test": "tier3_invariants_integrity.TestTier3InvariantsIntegrity.test_tier3_strict_scope_33_protected_files_in_src",
+      "name": "test_tier3_strict_scope_33_protected_files_in_src",
+      "status": "PASS",
+      "elapsed": 0.03198885917663574,
+      "message": ""
+    },
+    {
+      "test": "tier3_invariants_integrity.TestTier3InvariantsIntegrity.test_tier3_strict_scope_src_unmodified",
+      "name": "test_tier3_strict_scope_src_unmodified",
+      "status": "PASS",
+      "elapsed": 0.07428765296936035,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_all_15_animations_rig_and_continuity",
+      "name": "test_tier4_all_15_animations_rig_and_continuity",
+      "status": "PASS",
+      "elapsed": 3.8611974716186523,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_distinct_destinations_payload_specs",
+      "name": "test_tier4_distinct_destinations_payload_specs",
+      "status": "PASS",
+      "elapsed": 0.2958517074584961,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_owner_visual_inspection_prerequisites",
+      "name": "test_tier4_owner_visual_inspection_prerequisites",
+      "status": "PASS",
+      "elapsed": 0.007873058319091797,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_reference_fast_run_rig_compatibility",
+      "name": "test_tier4_reference_fast_run_rig_compatibility",
+      "status": "PASS",
+      "elapsed": 0.005092144012451172,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_reference_fast_run_rotation_continuity",
+      "name": "test_tier4_reference_fast_run_rotation_continuity",
+      "status": "PASS",
+      "elapsed": 0.02667522430419922,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_reference_fast_run_timestamps_monotonicity",
+      "name": "test_tier4_reference_fast_run_timestamps_monotonicity",
+      "status": "PASS",
+      "elapsed": 0.008382320404052734,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_studio_rig_json_authentic_specification",
+      "name": "test_tier4_studio_rig_json_authentic_specification",
+      "status": "PASS",
+      "elapsed": 5.888938903808594e-05,
+      "message": ""
+    },
+    {
+      "test": "tier4_real_world_scenarios.TestTier4RealWorldScenarios.test_tier4_v3_manifest_validation",
+      "name": "test_tier4_v3_manifest_validation",
+      "status": "PASS",
+      "elapsed": 0.0004911422729492188,
+      "message": ""
+    }
+  ]
+}

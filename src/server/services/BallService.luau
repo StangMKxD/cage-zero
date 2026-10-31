@@ -29,6 +29,7 @@ local ShotRules = require(Shared:WaitForChild("ShotRules"))
 local ShotModel = require(Shared:WaitForChild("ShotModel"))
 local FootballActions=require(Shared.configs.FootballActionConfigs)
 local FootballRules=require(Shared.FootballActionRules)
+local KickHitbox=require(Shared.KickHitbox)
 
 local Services = script.Parent
 local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
@@ -96,7 +97,7 @@ local lastGoalStartByPlayer: {[number]: number} = {}
 local dribbleTouchIntents: {[number]: {character: Model, foot: string, clip: string, startTime: number, expires: number}} = {}
 local lastDribbleTouchByPlayer: {[number]: number} = {}
 type ShotIntent = {character: Model, id: number, phase: string, began: number,
-	start: number, charge: number, aim: Vector3, curve: number, checked: number, userId: number, kind: string, released: number}
+	start: number, charge: number, aim: Vector3, curve: number, checked: number, userId: number, kind: string, released: number, lastAim: number}
 local shots: {[number]: ShotIntent} = {}
 local lastShotIds: {[number]: number} = {}
 local lastShotStart: {[number]: number} = {}
@@ -550,13 +551,6 @@ local function ballAvailable(uid: number): boolean
  return ballState.state=="Free" or (ballState.state=="Possessed" and ballState.possessorUserId==uid)
 end
 
-local function readyToKick(root: BasePart, shot): boolean
- if not ballAvailable(shot.userId) then return false end
- local config=FootballActions[shot.kind]
- local foot=ShotModel.FootFrame(root.CFrame,config.ContactSource,"Right",shot.kind)
- return ShotRules.Touches(foot,ballState.position,Constants.BALL_RADIUS)
-end
-
 local function startKick(shot, now: number)
  shot.phase,shot.start,shot.checked="Windup",now,FootballRules.ContactAt(shot.kind)
  dribbleTouchIntents[shot.userId]=nil
@@ -581,12 +575,21 @@ function BallService.HandleShotIntent(player: Player, payload: any): boolean
  local hum=char:FindFirstChildOfClass("Humanoid");local root=char:FindFirstChild("HumanoidRootPart")
  if not hum or hum.Health<=0 or not root or not root:IsA("BasePart")
   or hum.FloorMaterial==Enum.Material.Air or BallService.IsFreeBallOnly() then return false end
- if payload.phase=="Begin" then
+ if payload.phase=="Aim" then
+  if not shot or shot.id~=payload.id or shot.character~=char or shot.kind~=kind or shot.phase~="Charging"
+   or now-shot.lastAim<0.08 then return false end
+  local aim=ShotRules.Aim(payload.aim)
+  if not aim then return false end
+  shot.aim,shot.lastAim=aim,now
+  char:SetAttribute("ServerShotAim",aim)
+  return true
+ elseif payload.phase=="Begin" then
   if shot or payload.id<=(lastShotIds[uid] or 0) or now-(lastShotStart[uid] or -math.huge)<ShotConfig.CooldownSec then return false end
   lastShotIds[uid],lastShotStart[uid]=payload.id,now
   shots[uid]={character=char,userId=uid,kind=kind,id=payload.id,phase="Charging",began=now,start=0,
-   charge=0,aim=root.CFrame.LookVector,curve=0,checked=0,released=0}
+   charge=0,aim=ShotRules.Aim(payload.aim) or root.CFrame.LookVector,curve=0,checked=0,released=0,lastAim=0}
   char:SetAttribute("ServerShotId",payload.id);char:SetAttribute("ServerShotKind",kind)
+  char:SetAttribute("ServerShotAim",shots[uid].aim)
   char:SetAttribute("ServerShotPhase","Charging")
   return true
  elseif payload.phase=="Release" then
@@ -594,11 +597,9 @@ function BallService.HandleShotIntent(player: Player, payload: any): boolean
   if not shot or shot.kind~=kind or shot.id~=payload.id or shot.character~=char or shot.phase~="Charging"
    or now-shot.began>ShotConfig.ChargeTimeoutSec or not aim
    or (payload.curve~=-1 and payload.curve~=0 and payload.curve~=1) or kind=="Pass" and payload.curve~=0 then return false end
-  shot.charge=math.clamp(now-shot.began,0,ShotConfig.MaxChargeSec)
+  shot.charge=math.clamp(now-shot.began,0,FootballRules.MaxChargeSec(kind))
   shot.aim,shot.curve,shot.released=aim,payload.curve,now
-  if readyToKick(root,shot) then startKick(shot,now) else
-   shot.phase="WaitingBall";char:SetAttribute("ServerShotPhase","WaitingBall")
-  end
+  startKick(shot,now) -- Never wait for a ball before swinging.
   return true
  end
  return false
@@ -612,27 +613,36 @@ local function stepShots(now: number)
    or not char:IsDescendantOf(workspace) or hum.FloorMaterial==Enum.Material.Air then endShot(uid,"Cancelled")
   elseif shot.phase=="Charging" then
    if now-shot.began>ShotConfig.ChargeTimeoutSec then endShot(uid,"Cancelled") end
-  elseif shot.phase=="WaitingBall" then
-   if readyToKick(root,shot) then startKick(shot,now)
-   elseif now-shot.released>=FootballActions.ReleaseWaitSec then
-    shot.phase="Whiff";shot.start=now;char:SetAttribute("ServerShotPhase","Whiff")
-   end
   elseif shot.phase=="Windup" then
    local elapsed=now-shot.start;local contact=FootballRules.ContactAt(shot.kind);local contactEnd=FootballRules.ContactEnd(shot.kind)
    if not ballAvailable(uid) then endShot(uid,"Cancelled")
    elseif elapsed>=contact then
-    local touched=false;local upper=math.min(elapsed,contactEnd)
+    local owned=ballState.state=="Possessed" and ballState.possessorUserId==uid
+    local contactInfo=FootballRules.Contact(root.CFrame,ballState.position,owned,DribbleConfigs.LOOSE_BALL_DISTANCE)
+    local touched=contactInfo~=nil;local upper=math.min(elapsed,contactEnd)
     -- Sweep the authored interval once even if one slow server tick skips its end.
     -- Previous elapsed<=contactEnd+0.1 discarded valid contact on frame stalls.
+    -- Front volume is the sole range gate; authored times still schedule the strike.
+    -- Previous foot sweep is retained below as a comment for reference.
+    --[========[
     if shot.checked<=contactEnd then
      local samples=math.max(1,math.ceil((upper-shot.checked)*120))
      for i=0,samples do local t=shot.checked+(upper-shot.checked)*i/samples
       if ShotRules.Touches(ShotModel.FootFrame(root.CFrame,FootballRules.SourceTime(shot.kind,t),"Right",shot.kind),ballState.position,Constants.BALL_RADIUS) then touched=true;break end
      end
     end
+    ]========]
     shot.checked=upper
     if touched then
-     ballState.velocity=FootballRules.Velocity(shot.kind,shot.aim,shot.charge)
+     ballState.velocity=FootballRules.Velocity(shot.kind,shot.aim,shot.charge,shot.curve)
+     if not owned and shot.kind=="Shot" and contactInfo then ballState.velocity=KickHitbox.ApplyMishit(ballState.velocity,contactInfo) end
+     if contactInfo then
+      char:SetAttribute("LastKickUsedHitbox",not owned)
+      char:SetAttribute("LastKickPoint",contactInfo.point)
+      char:SetAttribute("LastKickQuality",contactInfo.quality)
+      char:SetAttribute("LastKickPowerScale",if shot.kind=="Shot" then contactInfo.powerScale else 1)
+      char:SetAttribute("LastKickDeflection",if shot.kind=="Shot" then contactInfo.deflectionDegrees else 0)
+     end
      ballState.possessorUserId=nil;ballState.state="Free";ballState.lastKickerUserId=uid;ballState.lastKickTime=now
      ballState.inFlightAction=if shot.kind=="Pass" then "Pass" elseif shot.curve==0 then "DirectShoot" else "CurveShoot"
      currentDribblePhase="Free";controlledCarrierRoot=nil;dribbleTouchIntents[uid]=nil
@@ -641,7 +651,8 @@ local function stepShots(now: number)
      lastTouchInfo.touchId+=1;lastTouchInfo.touchCount+=1
      lastTouchInfo.ownerUserId,lastTouchInfo.touchTime,lastTouchInfo.action=uid,now,shot.kind
      shot.phase="Struck";char:SetAttribute("ServerShotContactTime",workspace:GetServerTimeNow())
-     char:SetAttribute("ServerShotPower",shot.charge/ShotConfig.MaxChargeSec);char:SetAttribute("ServerShotPhase","Struck")
+     char:SetAttribute("LastKickCurve",shot.curve)
+     char:SetAttribute("ServerShotPower",shot.charge/FootballRules.MaxChargeSec(shot.kind));char:SetAttribute("ServerShotPhase","Struck")
     elseif elapsed>=contactEnd then shot.phase="Whiff";char:SetAttribute("ServerShotPhase","Whiff") end
    end
   elseif now-shot.start>=FootballRules.Duration(shot.kind) then endShot(uid,"Complete") end
@@ -1016,38 +1027,23 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 				DribbleActionConfigs.GOAL_CARRIER_SEPARATION
 			)
 		end
-		local shot = shots[currentCarrierId]
-  local settingUp = shot and shot.character == carrierCand.character and (shot.phase == "Windup" or shot.phase == "Charging" or shot.phase == "WaitingBall")
-  if settingUp then
-   local contactFoot = ShotModel.FootFrame(carrierCand.rootPart.CFrame,FootballActions[shot.kind].ContactSource,"Right",shot.kind)
-   local offset = contactFoot.Position-carrierCand.rootPart.Position
-   target = Vector3.new(carrierCand.rootPart.Position.X+offset.X,Constants.BALL_RADIUS,carrierCand.rootPart.Position.Z+offset.Z)
-   touchKickImpulse, markerPulse, touchSpeedScale = 0,0,1
-  end
-  local v: Vector3
+		-- Owner update: arrange only the ball already possessed by this player.
+		-- Loose/foreign balls never enter this carrier branch and are never pulled in.
+		local shot=shots[currentCarrierId]
+		local settingUp=shot and shot.character==carrierCand.character and (shot.phase=="Charging" or shot.phase=="Windup")
 		if settingUp then
-			-- Preserve the existing bounded shot setup approach.
-			local toTarget = Vector3.new(target.X - ballState.position.X, 0, target.Z - ballState.position.Z)
-			local linearGain = (ShotConfig.BallSetupTrackGain or 9.5) * math.min(touchSpeedScale, 1.35)
-			local maxRel = ShotConfig.BallSetupMaxRelativeSpeed or 28.0
-			local relVel = toTarget * linearGain
-			if relVel.Magnitude > maxRel then
-				relVel = relVel.Unit * maxRel
-			end
-			v = Vector3.new(cVel.X, 0, cVel.Z) + relVel
-			if v.Magnitude > DribbleConfigs.MAX_BALL_DRIBBLE_SPEED then
-				v = v.Unit * DribbleConfigs.MAX_BALL_DRIBBLE_SPEED
-			end
-		else
-			local minSep = if goalMode then DribbleActionConfigs.GOAL_CARRIER_SEPARATION else nil
-			v = DribbleGeometryHelper.ComputeFrontVelocity(
-				carrierCand.rootPart.Position,
-				cVel,
-				ballState.position,
-				target,
-				dt * touchSpeedScale,
-				minSep
-			)
+			local point=KickHitbox.Frame(carrierCand.rootPart.CFrame,shot.aim).Position
+			target=Vector3.new(point.X,Constants.BALL_RADIUS,point.Z)
+			touchKickImpulse,markerPulse,touchSpeedScale=0,0,1
+		end
+		local minSep = if goalMode then DribbleActionConfigs.GOAL_CARRIER_SEPARATION else nil
+		local v = DribbleGeometryHelper.ComputeFrontVelocity(
+			carrierCand.rootPart.Position,cVel,ballState.position,target,dt*touchSpeedScale,minSep)
+		if settingUp then
+			local relative=Vector3.new(target.X-ballState.position.X,0,target.Z-ballState.position.Z)*ShotConfig.BallSetupTrackGain
+			if relative.Magnitude>ShotConfig.BallSetupMaxRelativeSpeed then relative=relative.Unit*ShotConfig.BallSetupMaxRelativeSpeed end
+			v=Vector3.new(cVel.X,0,cVel.Z)+relative
+			if v.Magnitude>DribbleConfigs.MAX_BALL_DRIBBLE_SPEED then v=v.Unit*DribbleConfigs.MAX_BALL_DRIBBLE_SPEED end
 		end
 		if touchKickImpulse > 0 then
 			local toTarget = Vector3.new(target.X - ballState.position.X, 0, target.Z - ballState.position.Z)
@@ -1097,13 +1093,14 @@ function BallService.StepPhysics(dt: number)
 	-- 2. Physical flight, Cage collision, and Turf rolling friction
 	local r = Constants.BALL_RADIUS
 	local isOnRamp = CagePhysicsService.IsPositionOnElevatingRamp(ballState.position)
-	local onGround = not isOnRamp and (ballState.position.Y <= r + 0.08) and (math.abs(ballState.velocity.Y) < 3.0)
+	local directedDownPass=ballState.state=="Free" and ballState.inFlightAction=="Pass" and ballState.velocity.Y < -0.05
+	local onGround = not isOnRamp and not directedDownPass and (ballState.position.Y <= r + 0.08) and (math.abs(ballState.velocity.Y) < 3.0)
 
 	local currentVel = ballState.velocity
  if ballState.state == "Free" and now < shotCurveUntil and shotCurve ~= 0 then
   local horizontal = Vector3.new(currentVel.X,0,currentVel.Z)
   if horizontal.Magnitude > 1 then
-   local rotated = CFrame.Angles(0,-shotCurve*ShotConfig.CurveAcceleration/horizontal.Magnitude*clampedDt,0):VectorToWorldSpace(horizontal)
+   local rotated = FootballRules.CurveVelocity(horizontal,shotCurve,clampedDt)
    currentVel=Vector3.new(rotated.X,currentVel.Y,rotated.Z)
   end
  elseif ballState.state == "Possessed" then shotCurve,shotCurveUntil=0,0 end
@@ -1133,7 +1130,8 @@ function BallService.StepPhysics(dt: number)
 			nextVel = Vector3.new(nextVel.X, 0, nextVel.Z)
 		end
 
-		local rollFriction = Constants.GROUND_ROLLING_FRICTION
+		local rollFriction = if ballState.state=="Free" and ballState.inFlightAction=="Pass"
+			then FootballActions.Pass.GroundFriction else Constants.GROUND_ROLLING_FRICTION
 		local frictionDecel = math.max(0.0, 1.0 - (rollFriction * clampedDt))
 		nextVel = Vector3.new(nextVel.X * frictionDecel, nextVel.Y, nextVel.Z * frictionDecel)
 
@@ -1869,3 +1867,48 @@ end
 
 
 ]========]
+
+--[============[
+Removed waiting and shot setup retained.
+  elseif shot.phase=="WaitingBall" then
+   if readyToKick(root,shot) then startKick(shot,now)
+   elseif now-shot.released>=FootballActions.ReleaseWaitSec then
+    shot.phase="Whiff";shot.start=now;char:SetAttribute("ServerShotPhase","Whiff")
+   end
+
+		local shot = shots[currentCarrierId]
+  local settingUp = shot and shot.character == carrierCand.character and (shot.phase == "Windup" or shot.phase == "Charging" or shot.phase == "WaitingBall")
+  if settingUp then
+   -- Checkpoint22c3731 aimed setup at the authored foot. The visible volume now
+   -- owns range/quality, so normal possession settles at its horizontal sweet spot.
+   local offset = KickHitbox.Frame(carrierCand.rootPart.CFrame).Position-carrierCand.rootPart.Position
+   target = Vector3.new(carrierCand.rootPart.Position.X+offset.X,Constants.BALL_RADIUS,carrierCand.rootPart.Position.Z+offset.Z)
+   touchKickImpulse, markerPulse, touchSpeedScale = 0,0,1
+  end
+  local v: Vector3
+		if settingUp then
+			-- Preserve the existing bounded shot setup approach.
+			local toTarget = Vector3.new(target.X - ballState.position.X, 0, target.Z - ballState.position.Z)
+			local linearGain = (ShotConfig.BallSetupTrackGain or 9.5) * math.min(touchSpeedScale, 1.35)
+			local maxRel = ShotConfig.BallSetupMaxRelativeSpeed or 28.0
+			local relVel = toTarget * linearGain
+			if relVel.Magnitude > maxRel then
+				relVel = relVel.Unit * maxRel
+			end
+			v = Vector3.new(cVel.X, 0, cVel.Z) + relVel
+			if v.Magnitude > DribbleConfigs.MAX_BALL_DRIBBLE_SPEED then
+				v = v.Unit * DribbleConfigs.MAX_BALL_DRIBBLE_SPEED
+			end
+		else
+			local minSep = if goalMode then DribbleActionConfigs.GOAL_CARRIER_SEPARATION else nil
+			v = DribbleGeometryHelper.ComputeFrontVelocity(
+				carrierCand.rootPart.Position,
+				cVel,
+				ballState.position,
+				target,
+				dt * touchSpeedScale,
+				minSep
+			)
+		end
+
+]============]

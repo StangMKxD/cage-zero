@@ -1,0 +1,774 @@
+{
+  "project": "CAGE ZERO v3 Canonical R15 Animation Batch",
+  "version": "v3",
+  "total_clips": 15,
+  "source_directory": "C:\\Users\\Stang\\OneDrive\\Desktop\\stang\\cage-zero-dev\\animation-mixamo",
+  "output_directory": "outputagy/v3",
+  "clips": [
+    {
+      "id": 1,
+      "name": "Fast Run",
+      "slug": "fast-run",
+      "clip_name": "FastRun",
+      "action_name": "FastRun_R15_v03",
+      "category": "Outfield",
+      "priority": "Movement",
+      "source_fbx": "Fast Run.fbx",
+      "source_file": "Fast Run.fbx",
+      "source_sha256": "822FDC9D28AC97C53FAC37717F20A51A286B44FD389B135119467EC794E912AB",
+      "source_current_sha256": "822FDC9D28AC97C53FAC37717F20A51A286B44FD389B135119467EC794E912AB",
+      "source_untouched": true,
+      "loop": true,
+      "loop_type": "loop_y",
+      "frames": 17,
+      "frame_count": 17,
+      "duration": 0.5333,
+      "duration_seconds": 0.5333,
+      "gif_frames": 16,
+      "gif_path": "outputagy/v3/FastRun_R15_v03.gif",
+      "gif_size_bytes": 1513562,
+      "gif_sha256": "805320CAB15A59288813F7E54EC920DF60122CB84D7D94010A6B4D78E0A033D1",
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9932,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9986,
+          "RightLowerLeg": 0.9932
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9932,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Jog Forward",
+      "slug": "jog-forward",
+      "clip_name": "JogForward",
+      "action_name": "JogForward_R15_v03",
+      "category": "Outfield",
+      "priority": "Movement",
+      "source_fbx": "Jog Forward.fbx",
+      "source_file": "Jog Forward.fbx",
+      "source_sha256": "836EF89582F9382598D0B2EDD82F57D3CB8C29DC136A512E45D5637A70C4C2EF",
+      "source_current_sha256": "836EF89582F9382598D0B2EDD82F57D3CB8C29DC136A512E45D5637A70C4C2EF",
+      "source_untouched": true,
+      "loop": true,
+      "loop_type": "loop_y",
+      "frames": 26,
+      "frame_count": 26,
+      "duration": 0.8333,
+      "duration_seconds": 0.8333,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/JogForward_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9953,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9953,
+          "RightLowerLeg": 0.9977
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 2.7e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9953,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 2.7e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Standing Idle 02",
+      "slug": "standing-idle-02",
+      "clip_name": "StandingIdle02",
+      "action_name": "StandingIdle02_R15_v03",
+      "category": "Outfield",
+      "priority": "Movement",
+      "source_fbx": "Standing Idle 02.fbx",
+      "source_file": "Standing Idle 02.fbx",
+      "source_sha256": "B5C38648952D1A547801200BEFB9B3E7FC2F3FEA1E6F46CB215D12D37551CDBF",
+      "source_current_sha256": "B5C38648952D1A547801200BEFB9B3E7FC2F3FEA1E6F46CB215D12D37551CDBF",
+      "source_untouched": true,
+      "loop": true,
+      "loop_type": "loop_y",
+      "frames": 157,
+      "frame_count": 157,
+      "duration": 5.2,
+      "duration_seconds": 5.2,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/StandingIdle02_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.1378,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.7648,
+          "RightLowerLeg": 0.2066
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.4e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.1378,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.4e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 4,
+      "name": "Strike Foward Jog",
+      "slug": "strike-foward-jog",
+      "clip_name": "StrikeFowardJog",
+      "action_name": "StrikeFowardJog_R15_v03",
+      "category": "Outfield",
+      "priority": "Movement",
+      "source_fbx": "Strike Foward Jog.fbx",
+      "source_file": "Strike Foward Jog.fbx",
+      "source_sha256": "271B484652B91ED6945CAE0361008E425CDB524CC403206A6C5DCA94BF02E4EC",
+      "source_current_sha256": "271B484652B91ED6945CAE0361008E425CDB524CC403206A6C5DCA94BF02E4EC",
+      "source_untouched": true,
+      "loop": true,
+      "loop_type": "loop_y",
+      "frames": 40,
+      "frame_count": 40,
+      "duration": 1.3,
+      "duration_seconds": 1.3,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/StrikeFowardJog_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9787,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9948,
+          "RightLowerLeg": 0.9787
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.4e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9787,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.4e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 5,
+      "name": "Goalkeeper Sidestep",
+      "slug": "goalkeeper-sidestep",
+      "clip_name": "GoalkeeperSidestep",
+      "action_name": "GoalkeeperSidestep_R15_v03",
+      "category": "Goalkeeper",
+      "priority": "Movement",
+      "source_fbx": "goal\\Goalkeeper Sidestep.fbx",
+      "source_file": "goal\\Goalkeeper Sidestep.fbx",
+      "source_sha256": "8D33AD568E618651D95F244DD2FF643975DC2A22F3C65D3C382C60A51825402F",
+      "source_current_sha256": "8D33AD568E618651D95F244DD2FF643975DC2A22F3C65D3C382C60A51825402F",
+      "source_untouched": true,
+      "loop": true,
+      "loop_type": "loop_x",
+      "frames": 17,
+      "frame_count": 17,
+      "duration": 0.5333,
+      "duration_seconds": 0.5333,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/GoalkeeperSidestep_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9079,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9079,
+          "RightLowerLeg": 0.9951
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.4e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9079,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.4e-07,
+        "root_translation_preserved": true,
+        "seam_closed": true,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 6,
+      "name": "Scissor Kick",
+      "slug": "scissor-kick",
+      "clip_name": "ScissorKick",
+      "action_name": "ScissorKick_R15_v03",
+      "category": "Outfield",
+      "priority": "Action",
+      "source_fbx": "Scissor Kick.fbx",
+      "source_file": "Scissor Kick.fbx",
+      "source_sha256": "5E43F565ECE6768118C83BF6A4C7C5A08ECEE4AA6B112BA1C5591065F13687B4",
+      "source_current_sha256": "5E43F565ECE6768118C83BF6A4C7C5A08ECEE4AA6B112BA1C5591065F13687B4",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 84,
+      "frame_count": 84,
+      "duration": 2.8,
+      "duration_seconds": 2.8,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/ScissorKick_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9386,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9985,
+          "RightLowerLeg": 0.9386
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 5.5e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9386,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 5.5e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 7,
+      "name": "Soccer Pass",
+      "slug": "soccer-pass",
+      "clip_name": "SoccerPass",
+      "action_name": "SoccerPass_R15_v03",
+      "category": "Outfield",
+      "priority": "Action",
+      "source_fbx": "Soccer Pass.fbx",
+      "source_file": "Soccer Pass.fbx",
+      "source_sha256": "B10D8ADCC2726A30DCC6BB691FD3DB7D943272780397C87397745806DB71156B",
+      "source_current_sha256": "B10D8ADCC2726A30DCC6BB691FD3DB7D943272780397C87397745806DB71156B",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 49,
+      "frame_count": 49,
+      "duration": 1.6333,
+      "duration_seconds": 1.6333,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/SoccerPass_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.974,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9971,
+          "RightLowerLeg": 0.974
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.6e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.974,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 3.6e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 8,
+      "name": "Soccer Tackle",
+      "slug": "soccer-tackle",
+      "clip_name": "SoccerTackle",
+      "action_name": "SoccerTackle_R15_v03",
+      "category": "Outfield",
+      "priority": "Action",
+      "source_fbx": "Soccer Tackle.fbx",
+      "source_file": "Soccer Tackle.fbx",
+      "source_sha256": "E2BDC6A031D770C35F2BF6CED4EFCF15A1BA9154ADF5596B0092215CC9942CD0",
+      "source_current_sha256": "E2BDC6A031D770C35F2BF6CED4EFCF15A1BA9154ADF5596B0092215CC9942CD0",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 54,
+      "frame_count": 54,
+      "duration": 1.8,
+      "duration_seconds": 1.8,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/SoccerTackle_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9232,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.992,
+          "RightLowerLeg": 0.9232
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.91e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9232,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.91e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 9,
+      "name": "Soccer Trip",
+      "slug": "soccer-trip",
+      "clip_name": "SoccerTrip",
+      "action_name": "SoccerTrip_R15_v03",
+      "category": "Outfield",
+      "priority": "Action",
+      "source_fbx": "Soccer Trip.fbx",
+      "source_file": "Soccer Trip.fbx",
+      "source_sha256": "508CEEB3EA6D41B95F71F611616040B586AEEC77901C3AC53540481AF349616A",
+      "source_current_sha256": "508CEEB3EA6D41B95F71F611616040B586AEEC77901C3AC53540481AF349616A",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 49,
+      "frame_count": 49,
+      "duration": 1.6333,
+      "duration_seconds": 1.6333,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/SoccerTrip_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9399,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9651,
+          "RightLowerLeg": 0.9399
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.09e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9399,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.09e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 10,
+      "name": "Standing Jump",
+      "slug": "standing-jump",
+      "clip_name": "StandingJump",
+      "action_name": "StandingJump_R15_v03",
+      "category": "Outfield",
+      "priority": "Action",
+      "source_fbx": "Standing Jump.fbx",
+      "source_file": "Standing Jump.fbx",
+      "source_sha256": "5BDF56BB036EC76CFB53BCAD13F06A7D24FE2C4A0B32A04798F3E5B865D9811E",
+      "source_current_sha256": "5BDF56BB036EC76CFB53BCAD13F06A7D24FE2C4A0B32A04798F3E5B865D9811E",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 74,
+      "frame_count": 74,
+      "duration": 2.4667,
+      "duration_seconds": 2.4667,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/StandingJump_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.998,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.998,
+          "RightLowerLeg": 0.9981
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 2.9e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.998,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 2.9e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 11,
+      "name": "TurnBackRunning",
+      "slug": "turn-back-running",
+      "clip_name": "TurnBackRunning",
+      "action_name": "TurnBackRunning_R15_v03",
+      "category": "Outfield",
+      "priority": "Action",
+      "source_fbx": "TurnBackRunning.fbx",
+      "source_file": "TurnBackRunning.fbx",
+      "source_sha256": "EB02912E98FDBAECB7950D2FB8DAF9C6BCE7E32E9B9727C56DDF4B0FFBD52460",
+      "source_current_sha256": "EB02912E98FDBAECB7950D2FB8DAF9C6BCE7E32E9B9727C56DDF4B0FFBD52460",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 50,
+      "frame_count": 50,
+      "duration": 1.6667,
+      "duration_seconds": 1.6667,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/TurnBackRunning_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9243,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9922,
+          "RightLowerLeg": 0.9243
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 9.6e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9243,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 9.6e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 12,
+      "name": "Goalkeeper Catch",
+      "slug": "goalkeeper-catch",
+      "clip_name": "GoalkeeperCatch",
+      "action_name": "GoalkeeperCatch_R15_v03",
+      "category": "Goalkeeper",
+      "priority": "Action",
+      "source_fbx": "goal\\Goalkeeper Catch.fbx",
+      "source_file": "goal\\Goalkeeper Catch.fbx",
+      "source_sha256": "52160C2135CDA64B59E65D1CA0B8C29855328B8623127310CCD741AE54C4C9B8",
+      "source_current_sha256": "52160C2135CDA64B59E65D1CA0B8C29855328B8623127310CCD741AE54C4C9B8",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 82,
+      "frame_count": 82,
+      "duration": 2.7333,
+      "duration_seconds": 2.7333,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/GoalkeeperCatch_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9958,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9977,
+          "RightLowerLeg": 0.9958
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.91e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9958,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.91e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 13,
+      "name": "Goalkeeper Diving Save",
+      "slug": "goalkeeper-diving-save",
+      "clip_name": "GoalkeeperDivingSave",
+      "action_name": "GoalkeeperDivingSave_R15_v03",
+      "category": "Goalkeeper",
+      "priority": "Action",
+      "source_fbx": "goal\\Goalkeeper Diving Save.fbx",
+      "source_file": "goal\\Goalkeeper Diving Save.fbx",
+      "source_sha256": "56062B57A3A2DC8DBA02C643B97ED13132B9CA8FEFE0CE1DE89E2AAB8BED4F54",
+      "source_current_sha256": "56062B57A3A2DC8DBA02C643B97ED13132B9CA8FEFE0CE1DE89E2AAB8BED4F54",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 98,
+      "frame_count": 98,
+      "duration": 3.2667,
+      "duration_seconds": 3.2667,
+      "gif_frames": 98,
+      "gif_path": "outputagy/v3/GoalkeeperDivingSave_R15_v03.gif",
+      "gif_size_bytes": 8594104,
+      "gif_sha256": "5726C08A78C07069BF596830AEE1B76C164CA952C01DCA6D968483F279CA63DD",
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.989,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.989,
+          "RightLowerLeg": 0.9997
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.07e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.989,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.07e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 14,
+      "name": "Goalkeeper Overhand Throw",
+      "slug": "goalkeeper-overhand-throw",
+      "clip_name": "GoalkeeperOverhandThrow",
+      "action_name": "GoalkeeperOverhandThrow_R15_v03",
+      "category": "Goalkeeper",
+      "priority": "Action",
+      "source_fbx": "goal\\Goalkeeper Overhand Throw.fbx",
+      "source_file": "goal\\Goalkeeper Overhand Throw.fbx",
+      "source_sha256": "659A864774D08DC7BA7A39C07CF167CA54C63004F339F34D2C370D567DFAF54D",
+      "source_current_sha256": "659A864774D08DC7BA7A39C07CF167CA54C63004F339F34D2C370D567DFAF54D",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 86,
+      "frame_count": 86,
+      "duration": 2.8667,
+      "duration_seconds": 2.8667,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/GoalkeeperOverhandThrow_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9936,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9951,
+          "RightLowerLeg": 0.9936
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 9.9e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9936,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 9.9e-07,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    },
+    {
+      "id": 15,
+      "name": "Goalkeeper Scoop",
+      "slug": "goalkeeper-scoop",
+      "clip_name": "GoalkeeperScoop",
+      "action_name": "GoalkeeperScoop_R15_v03",
+      "category": "Goalkeeper",
+      "priority": "Action",
+      "source_fbx": "goal\\Goalkeeper Scoop.fbx",
+      "source_file": "goal\\Goalkeeper Scoop.fbx",
+      "source_sha256": "F0E88F910B52A68EE094E502D2F5B5A92D2DEA17E5B31F8189A819BA2293B584",
+      "source_current_sha256": "F0E88F910B52A68EE094E502D2F5B5A92D2DEA17E5B31F8189A819BA2293B584",
+      "source_untouched": true,
+      "loop": false,
+      "loop_type": "oneshot",
+      "frames": 79,
+      "frame_count": 79,
+      "duration": 2.6333,
+      "duration_seconds": 2.6333,
+      "gif_frames": null,
+      "gif_path": "outputagy/v3/GoalkeeperScoop_R15_v03.gif",
+      "gif_size_bytes": null,
+      "gif_sha256": null,
+      "applied_corrections": {
+        "rest_basis_diagnosis": "Rig_and_Attachments_Template canonical armature mapping with vertex transform xform = m_arm_rest @ m_studio_rest.inverted()",
+        "leg_roll_decision": "Preserved knee bending axis aligned to forward Z with knee_front_dot >= 0.70",
+        "root_motion_mapping": "Extracted root translation curves mapped to HumanoidRootNode",
+        "non_root_translation_zeroing": "All non-root bone location channels zeroed (0 curves)",
+        "seam_closure": "Duplicate closing frame omitted for loops; all recovery frames preserved for one-shots"
+      },
+      "programmatic_audit": {
+        "knee_front_dot": 0.9974,
+        "knee_front_dots": {
+          "LeftLowerLeg": 0.9998,
+          "RightLowerLeg": 0.9974
+        },
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.91e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      },
+      "audit": {
+        "knee_front_dot": 0.9974,
+        "non_root_location_curves": 0,
+        "max_pivot_deviation": 1.91e-06,
+        "root_translation_preserved": true,
+        "seam_closed": false,
+        "status": "PASS"
+      }
+    }
+  ]
+}

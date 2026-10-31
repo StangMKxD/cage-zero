@@ -1,4 +1,10 @@
 --!strict
+-- Owner removed the reverse action; old implementation remains below.
+return table.freeze({Init=function() end})
+
+--[============[
+Previous behavior retained at Owner request (immediate release / no reverse action).
+--!strict
 local Players=game:GetService("Players")
 local RS=game:GetService("ReplicatedStorage")
 local Run=game:GetService("RunService")
@@ -40,3 +46,5 @@ function Controller.Init()
 	if player.Character then task.spawn(bind,player.Character) end
 end
 return Controller
+
+]============]
