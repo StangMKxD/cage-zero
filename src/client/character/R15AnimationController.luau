@@ -6,6 +6,7 @@
 -- Governed by RF02-IDLE-RUNTIME Contract (Round 1 & Owner Scope Lock 2026-10-26).
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared", 10) :: Folder?
@@ -19,6 +20,7 @@ local LocomotionConfigs = require(LocomotionConfigsModule)
 local JumpConfigsModule = configs:WaitForChild("JumpConfigs", 10) :: ModuleScript?
 local JumpConfigs = if JumpConfigsModule then require(JumpConfigsModule) else { JUMP_POWER = 72, EXPECTED_APEX_HEIGHT = 13.2 }
 
+local JumpTiming = require(Shared:WaitForChild("JumpAnimationTiming"))
 local LocomotionHelper = require(script.Parent:WaitForChild("R15LocomotionHelper"))
 
 local isInitialized = false
@@ -46,7 +48,9 @@ local characterGeneration: number = 0
 local activeConnections: { RBXScriptConnection } = {}
 local currentRunningSpeed: number = 0
 local wasAirborne: boolean = false
-local descentHoldTask: thread? = nil
+local passiveFall = false
+local jumpSourceTime = JumpTiming.PushOff
+local landingStartedAt = 0
 
 local R15AnimationController = {}
 
@@ -58,10 +62,6 @@ local function cleanupConnections()
 end
 
 local function cleanupAllTracks()
-	if descentHoldTask then
-		task.cancel(descentHoldTask)
-		descentHoldTask = nil
-	end
 	LocomotionHelper.CleanupTracks(currentTracks, currentAnimInstances)
 	currentTracks = {
 		Idle = nil,
@@ -118,10 +118,6 @@ local function updateLocomotionPlayback(thisGen: number)
 	-- 1. Disabling states: Climbing, swimming, seated, dead, ragdoll/physics
 	if isDisablingState(state) then
 		wasAirborne = false
-		if descentHoldTask then
-			task.cancel(descentHoldTask)
-			descentHoldTask = nil
-		end
 		for _, track in pairs(currentTracks) do
 			if track and track.IsPlaying then
 				track:Stop(LocomotionConfigs.Playback.IdleFadeTime)
@@ -130,68 +126,33 @@ local function updateLocomotionPlayback(thisGen: number)
 		return
 	end
 
-	-- 2. Airborne states: Jumping or Freefall
-	if isAirborneState(state) then
-		wasAirborne = true
-
-		-- Stop ground locomotion
-		if currentTracks.Idle and currentTracks.Idle.IsPlaying then
-			currentTracks.Idle:Stop(LocomotionConfigs.Playback.IdleFadeTime)
-		end
-		if currentTracks.Walk and currentTracks.Walk.IsPlaying then
-			currentTracks.Walk:Stop(LocomotionConfigs.Playback.WalkFadeTime)
-		end
-		if currentTracks.Run and currentTracks.Run.IsPlaying then
-			currentTracks.Run:Stop(LocomotionConfigs.Playback.RunFadeTime)
-		end
-		if currentTracks.Land and currentTracks.Land.IsPlaying then
-			currentTracks.Land:Stop(0.05)
-		end
-
-		if currentTracks.Jump then
-			if state == Enum.HumanoidStateType.Jumping then
-				-- Takeoff: Start from push-off / rise landmark (0.56s) so jump pose immediately reflects liftoff
-				if not currentTracks.Jump.IsPlaying then
-					currentTracks.Jump:Play(LocomotionConfigs.Playback.JumpFadeTime)
-					currentTracks.Jump.TimePosition = LocomotionConfigs.JumpLandmarks.PushOff
-				end
-			elseif state == Enum.HumanoidStateType.Freefall then
-				-- Falling (ledge fall or extended descent)
-				if not currentTracks.Jump.IsPlaying then
-					currentTracks.Jump:Play(LocomotionConfigs.Playback.JumpFadeTime)
-					currentTracks.Jump.TimePosition = LocomotionConfigs.JumpLandmarks.DescentHold
-					currentTracks.Jump:AdjustSpeed(0)
-				end
-			end
-
-			-- Hold descent pose if fall exceeds apex/descent landmark so it does not touchdown prematurely while airborne
-			if not descentHoldTask then
-				descentHoldTask = task.spawn(function()
-					while characterGeneration == thisGen and wasAirborne do
-						if currentTracks.Jump and currentTracks.Jump.IsPlaying then
-							if currentTracks.Jump.TimePosition >= LocomotionConfigs.JumpLandmarks.DescentHold then
-								currentTracks.Jump:AdjustSpeed(0)
-								currentTracks.Jump.TimePosition = LocomotionConfigs.JumpLandmarks.DescentHold
-								break
-							end
-						end
-						task.wait(0.05)
-					end
-					descentHoldTask = nil
-				end)
-			end
-		end
-		return
-	end
+	-- Flight pose is sampled from actual vertical velocity; Freefall includes the rising arc.
+ if isAirborneState(state) or (wasAirborne and currentHumanoid.FloorMaterial == Enum.Material.Air) then
+  local entering = not wasAirborne
+  wasAirborne = true
+  for _, key in {"Idle","Walk","Run","Land"} do
+   local tr = currentTracks[key]
+   if tr and tr.IsPlaying then tr:Stop(if key == "Land" then 0.02 else 0.08) end
+  end
+  local jump = currentTracks.Jump
+  if entering then
+   local root = currentHumanoid.RootPart
+   passiveFall = state == Enum.HumanoidStateType.Freefall and (not root or root.AssemblyLinearVelocity.Y <= JumpConfigs.LEDGE_FALL_MAX_INITIAL_VY)
+   jumpSourceTime = if passiveFall then JumpTiming.DescentHold else JumpTiming.PushOff
+  end
+  if jump and not jump.IsPlaying then
+   jump:Play(LocomotionConfigs.Playback.JumpFadeTime,1,0)
+   jump.TimePosition = jumpSourceTime
+  end
+  return
+ end
 
 	-- 3. Grounded states: Running or Landed
 	if wasAirborne then
 		-- Just made ground contact after being airborne!
 		wasAirborne = false
-		if descentHoldTask then
-			task.cancel(descentHoldTask)
-			descentHoldTask = nil
-		end
+		landingStartedAt = os.clock()
+		if currentCharacter then currentCharacter:SetAttribute("JumpAnimationPhase","Land") end
 
 		-- Stop jump flight pose immediately
 		if currentTracks.Jump and currentTracks.Jump.IsPlaying then
@@ -227,7 +188,7 @@ local function updateLocomotionPlayback(thisGen: number)
 		if currentTracks.Idle and currentTracks.Idle.IsPlaying then
 			currentTracks.Idle:Stop(LocomotionConfigs.Playback.IdleFadeTime)
 		end
-		if currentTracks.Land and currentTracks.Land.IsPlaying then
+		if currentTracks.Land and currentTracks.Land.IsPlaying and os.clock()-landingStartedAt >= JumpTiming.LandingMoveBlendAfter then
 			currentTracks.Land:Stop(LocomotionConfigs.Playback.LandFadeTime)
 		end
 
@@ -366,6 +327,11 @@ local function onCharacterAdded(character: Model)
 		end
 	end)
 	table.insert(activeConnections, stateConn)
+	-- Landed/Running may arrive transiently before actual support is reported.
+	local floorConn = humanoid:GetPropertyChangedSignal("FloorMaterial"):Connect(function()
+		if characterGeneration == thisGen then updateLocomotionPlayback(thisGen) end
+	end)
+	table.insert(activeConnections, floorConn)
 
 	local sprintAttrConn = character:GetAttributeChangedSignal("IsSprinting"):Connect(function()
 		if characterGeneration == thisGen then
@@ -373,6 +339,27 @@ local function onCharacterAdded(character: Model)
 		end
 	end)
 	table.insert(activeConnections, sprintAttrConn)
+
+
+ -- Apply track timing before Animator evaluates joints (official PreAnimation guidance).
+ local animationConn = RunService.PreAnimation:Connect(function()
+  if characterGeneration ~= thisGen or not currentHumanoid or currentHumanoid.Health <= 0 then return end
+  local root = currentHumanoid.RootPart
+  local jump = currentTracks.Jump
+  if wasAirborne and root and jump and jump.IsPlaying then
+   local time,phase = JumpTiming.Sample(root.AssemblyLinearVelocity.Y,JumpConfigs.JUMP_POWER,passiveFall)
+   jumpSourceTime = math.max(jumpSourceTime,time)
+   jump:AdjustSpeed(0)
+   jump.TimePosition = math.min(jumpSourceTime,JumpTiming.DescentHold)
+   character:SetAttribute("JumpAnimationSourceTime",jumpSourceTime)
+   character:SetAttribute("JumpAnimationPhase",phase)
+  elseif currentTracks.Land and currentTracks.Land.IsPlaying and root
+   and os.clock()-landingStartedAt >= JumpTiming.LandingMoveBlendAfter
+   and (currentHumanoid.MoveDirection.Magnitude > 0.01 or Vector3.new(root.AssemblyLinearVelocity.X,0,root.AssemblyLinearVelocity.Z).Magnitude > 1) then
+   currentTracks.Land:Stop(LocomotionConfigs.Playback.LandFadeTime)
+  end
+ end)
+ table.insert(activeConnections,animationConn)
 
 	-- Initial locomotion evaluation after all observers are active
 	updateLocomotionPlayback(thisGen)

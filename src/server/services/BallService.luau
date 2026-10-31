@@ -24,6 +24,11 @@ local DribbleControlRules = require(Shared:WaitForChild("DribbleControlRules"))
 local DribbleActionConfigs = require(Configs:WaitForChild("DribbleActionConfigs"))
 local SprintConfigs = require(Configs:WaitForChild("SprintConfigs"))
 local Network = require(Shared:WaitForChild("Network"))
+local ShotConfig = require(Configs:WaitForChild("ShotConfigs"))
+local ShotRules = require(Shared:WaitForChild("ShotRules"))
+local ShotModel = require(Shared:WaitForChild("ShotModel"))
+local FootballActions=require(Shared.configs.FootballActionConfigs)
+local FootballRules=require(Shared.FootballActionRules)
 
 local Services = script.Parent
 local CagePhysicsService = require(Services:WaitForChild("CagePhysicsService"))
@@ -78,7 +83,6 @@ local isInitialized = false
 local currentDribblePhase: string = "Free"
 local currentDribbleSpeedFactor: number = 1.0
 local controlledCarrierRoot: BasePart? = nil
-local bypassCarrierBodyCircleThisStep: boolean = false
 local previousPossessorUserId: number? = nil
 
 -- Jump Self-Lob state tracking
@@ -89,9 +93,16 @@ local lastCameraLookByPlayer: { [number]: Vector3 } = {}
 local lastIntentTimeByPlayer: { [number]: number } = {}
 local goalDribbleRequests: {[number]: {character: Model, expires: number, lastStart: number}} = {}
 local lastGoalStartByPlayer: {[number]: number} = {}
-local dribbleTouchIntents: {[number]: {character: Model, foot: string, clip: string, isCut: boolean, startTime: number, expires: number}} = {}
+local dribbleTouchIntents: {[number]: {character: Model, foot: string, clip: string, startTime: number, expires: number}} = {}
 local lastDribbleTouchByPlayer: {[number]: number} = {}
-local dribbleCutIntents: {[number]: {character: Model, cutName: string?, direction: Vector3, entryDirection: Vector3, startTime: number, duration: number, expires: number}} = {}
+type ShotIntent = {character: Model, id: number, phase: string, began: number,
+	start: number, charge: number, aim: Vector3, curve: number, checked: number, userId: number, kind: string, released: number}
+local shots: {[number]: ShotIntent} = {}
+local lastShotIds: {[number]: number} = {}
+local lastShotStart: {[number]: number} = {}
+local shotRecaptureUntil: {[number]: number} = {}
+local shotCurveUntil = 0
+local shotCurve = 0
 
 local BallService = {}
 
@@ -107,7 +118,7 @@ local function applyGoalDribbleMode(player: Player, character: Model, humanoid: 
 		humanoid.WalkSpeed = DribbleActionConfigs.GOAL_SPEED
 		character:SetAttribute("IsSprinting", false)
 	elseif wasActive then
-		humanoid.WalkSpeed = if character:GetAttribute("IsSprinting") == true then SprintConfigs.SPRINT_SPEED else SprintConfigs.NORMAL_WALK_SPEED
+		humanoid.WalkSpeed = if character:GetAttribute("ServerShotPhase") == "Charging" then DribbleActionConfigs.GOAL_SPEED elseif character:GetAttribute("IsSprinting") == true then SprintConfigs.SPRINT_SPEED else SprintConfigs.NORMAL_WALK_SPEED
 	end
 end
 
@@ -132,6 +143,7 @@ function BallService.SetGoalDribbleIntent(player: Player, payload: any): boolean
 end
 
 function BallService.SetDribbleTouchIntent(player: Player, payload: any): boolean
+	if shots[player.UserId] then return false end
 	if typeof(payload) ~= "table" then return false end
 	if payload.foot ~= "L" and payload.foot ~= "R" then return false end
 	if typeof(payload.clip) ~= "string" or not DribbleActionConfigs.IsRecognizedClipName(payload.clip) then return false end
@@ -148,6 +160,7 @@ function BallService.SetDribbleTouchIntent(player: Player, payload: any): boolea
 		return false
 	end
 	local now = os.clock()
+	if payload.isCut == true or payload.phase ~= nil then return false end
 	local lastTime = lastDribbleTouchByPlayer[player.UserId]
 	if lastTime and (now - lastTime) < DribbleActionConfigs.TOUCH_INTENT_COOLDOWN_SEC then
 		return false
@@ -157,7 +170,6 @@ function BallService.SetDribbleTouchIntent(player: Player, payload: any): boolea
 		character = character,
 		foot = payload.foot,
 		clip = payload.clip,
-		isCut = payload.isCut == true,
 		startTime = now,
 		expires = now + DribbleActionConfigs.TOUCH_PULSE_DURATION_SEC,
 	}
@@ -167,44 +179,6 @@ function BallService.SetDribbleTouchIntent(player: Player, payload: any): boolea
 		ballPart:SetAttribute("LastDribbleTouchFoot", payload.foot)
 		ballPart:SetAttribute("LastDribbleTouchClip", payload.clip)
 	end
-	return true
-end
-
--- Cut exit intent: the ball goes and waits at the cut exit point (new heading) for the duration of the cut turn.
-function BallService.SetDribbleCutIntent(player: Player, payload: any): boolean
-	if typeof(payload) ~= "table" or typeof(payload.cut) ~= "string" then return false end
-	local approved = (DribbleActionConfigs.ApprovedCutAnimations :: { [string]: string? })[payload.cut]
-	local spec = (DribbleActionConfigs.Clips :: { [string]: DribbleActionConfigs.DribbleClipSpec })[payload.cut]
-	if not approved or not spec then return false end
-	local direction = payload.direction
-	if typeof(direction) ~= "Vector3" or not DribbleControlRules.IsFiniteVector(direction) then return false end
-	local horizontal = DribbleControlRules.HorizontalDirection(direction)
-	if horizontal.Magnitude < 0.5 then return false end
-	local character = player.Character
-	if not character or payload.character ~= character or not character:IsDescendantOf(Workspace) then return false end
-	if ballState.state ~= "Possessed" or ballState.possessorUserId ~= player.UserId then return false end
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 or humanoid.FloorMaterial == Enum.Material.Air then return false end
-	if payload.cut == "GoalReverse" and character:GetAttribute("GoalDribbleActive") ~= true then return false end
-	local now = os.clock()
-	local duration = math.min(DribbleActionConfigs.CUT_MAX_DURATION, spec.ExpectedDuration)
-	local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local entryDir = horizontal.Unit
-	if hrp then
-		local look = Vector3.new(hrp.CFrame.LookVector.X, 0, hrp.CFrame.LookVector.Z)
-		if look.Magnitude > 0.01 then
-			entryDir = look.Unit
-		end
-	end
-	dribbleCutIntents[player.UserId] = {
-		character = character,
-		cutName = payload.cut,
-		direction = horizontal.Unit,
-		entryDirection = entryDir,
-		startTime = now,
-		duration = duration,
-		expires = now + duration + DribbleActionConfigs.CUT_BALL_INTENT_GRACE_SEC,
-	}
 	return true
 end
 
@@ -352,8 +326,8 @@ function BallService.GetBallState(): Types.BallSnapshot
 		possessorUserId = ballState.possessorUserId,
 		lastPossessingTeam = ballState.lastPossessingTeam,
 		lastKickerUserId = ballState.lastKickerUserId,
-		curveImpulse = nil,
-		inFlightAction = nil,
+		curveImpulse = ballState.curveImpulse,
+		inFlightAction = ballState.inFlightAction,
 	}
 end
 
@@ -366,6 +340,7 @@ function BallService.SetBallPositionAndVelocity(pos: Vector3, vel: Vector3)
 	ballState.possessorUserId = nil
 	ballState.inFlightAction = nil
 	ballState.curveImpulse = nil
+	shotCurve,shotCurveUntil = 0,0
 	table.clear(blockedStealPairs)
 	if not ballPart or ballPart.Parent == nil then
 		BallService.EnsureBallInstance()
@@ -445,6 +420,7 @@ function BallService.GetLastTouchInfo(): TouchInfo
 end
 
 function BallService.ResetBall(customPos: Vector3?, initialPossessingTeam: Types.TeamSide?)
+	for uid,shot in shots do shot.character:SetAttribute("ServerShotPhase","Cancelled"); shot.character:SetAttribute("ServerShotActive",false); shots[uid]=nil end
 	local spawnPos = customPos or Constants.BALL_SPAWN_POSITION or Vector3.new(0, Constants.BALL_RADIUS, 0)
 	ballState.position = spawnPos
 	ballState.velocity = Vector3.zero
@@ -498,6 +474,7 @@ end
 -- Jump Self-Lob (Scoop): Triggered by successful upward jump while carrier
 -- =============================================================================
 function BallService.TriggerSelfLob(player: Player, hrp: BasePart, humanoid: Humanoid): boolean
+	if shots[player.UserId] then return false end
 	if not DribbleConfigs.SELF_LOB_ENABLED then
 		return false
 	end
@@ -559,6 +536,118 @@ function BallService.TriggerSelfLob(player: Player, hrp: BasePart, humanoid: Hum
 end
 
 -- =============================================================================
+
+local function endShot(uid: number, phase: string)
+ local shot = shots[uid]
+ if shot then
+  shot.character:SetAttribute("ServerShotPhase", phase)
+  shot.character:SetAttribute("ServerShotActive", false)
+ end
+ shots[uid] = nil
+end
+
+local function ballAvailable(uid: number): boolean
+ return ballState.state=="Free" or (ballState.state=="Possessed" and ballState.possessorUserId==uid)
+end
+
+local function readyToKick(root: BasePart, shot): boolean
+ if not ballAvailable(shot.userId) then return false end
+ local config=FootballActions[shot.kind]
+ local foot=ShotModel.FootFrame(root.CFrame,config.ContactSource,"Right",shot.kind)
+ return ShotRules.Touches(foot,ballState.position,Constants.BALL_RADIUS)
+end
+
+local function startKick(shot, now: number)
+ shot.phase,shot.start,shot.checked="Windup",now,FootballRules.ContactAt(shot.kind)
+ dribbleTouchIntents[shot.userId]=nil
+ local char=shot.character
+ char:SetAttribute("ServerShotAim",shot.aim)
+ char:SetAttribute("ServerShotStart",workspace:GetServerTimeNow())
+ char:SetAttribute("ServerShotActive",true)
+ char:SetAttribute("ServerShotPhase","Windup")
+end
+
+function BallService.HandleShotIntent(player: Player, payload: any): boolean
+ if typeof(payload)~="table" or not ShotRules.IsActionId(payload.id) then return false end
+ local kind=FootballRules.Kind(payload.action or "Shot")
+ if not kind then return false end
+ local uid,char,now=player.UserId,player.Character,os.clock()
+ local shot=shots[uid]
+ if payload.phase=="Cancel" then
+  if shot and shot.id==payload.id and shot.character==char then endShot(uid,"Cancelled");return true end
+  return false
+ end
+ if not char or not char:IsDescendantOf(workspace) then return false end
+ local hum=char:FindFirstChildOfClass("Humanoid");local root=char:FindFirstChild("HumanoidRootPart")
+ if not hum or hum.Health<=0 or not root or not root:IsA("BasePart")
+  or hum.FloorMaterial==Enum.Material.Air or BallService.IsFreeBallOnly() then return false end
+ if payload.phase=="Begin" then
+  if shot or payload.id<=(lastShotIds[uid] or 0) or now-(lastShotStart[uid] or -math.huge)<ShotConfig.CooldownSec then return false end
+  lastShotIds[uid],lastShotStart[uid]=payload.id,now
+  shots[uid]={character=char,userId=uid,kind=kind,id=payload.id,phase="Charging",began=now,start=0,
+   charge=0,aim=root.CFrame.LookVector,curve=0,checked=0,released=0}
+  char:SetAttribute("ServerShotId",payload.id);char:SetAttribute("ServerShotKind",kind)
+  char:SetAttribute("ServerShotPhase","Charging")
+  return true
+ elseif payload.phase=="Release" then
+  local aim=ShotRules.Aim(payload.aim)
+  if not shot or shot.kind~=kind or shot.id~=payload.id or shot.character~=char or shot.phase~="Charging"
+   or now-shot.began>ShotConfig.ChargeTimeoutSec or not aim
+   or (payload.curve~=-1 and payload.curve~=0 and payload.curve~=1) or kind=="Pass" and payload.curve~=0 then return false end
+  shot.charge=math.clamp(now-shot.began,0,ShotConfig.MaxChargeSec)
+  shot.aim,shot.curve,shot.released=aim,payload.curve,now
+  if readyToKick(root,shot) then startKick(shot,now) else
+   shot.phase="WaitingBall";char:SetAttribute("ServerShotPhase","WaitingBall")
+  end
+  return true
+ end
+ return false
+end
+
+local function stepShots(now: number)
+ for uid,shot in shots do
+  local player=Players:GetPlayerByUserId(uid);local char=shot.character
+  local hum=char:FindFirstChildOfClass("Humanoid");local root=char:FindFirstChild("HumanoidRootPart")
+  if not player or player.Character~=char or not hum or hum.Health<=0 or not root or not root:IsA("BasePart")
+   or not char:IsDescendantOf(workspace) or hum.FloorMaterial==Enum.Material.Air then endShot(uid,"Cancelled")
+  elseif shot.phase=="Charging" then
+   if now-shot.began>ShotConfig.ChargeTimeoutSec then endShot(uid,"Cancelled") end
+  elseif shot.phase=="WaitingBall" then
+   if readyToKick(root,shot) then startKick(shot,now)
+   elseif now-shot.released>=FootballActions.ReleaseWaitSec then
+    shot.phase="Whiff";shot.start=now;char:SetAttribute("ServerShotPhase","Whiff")
+   end
+  elseif shot.phase=="Windup" then
+   local elapsed=now-shot.start;local contact=FootballRules.ContactAt(shot.kind);local contactEnd=FootballRules.ContactEnd(shot.kind)
+   if not ballAvailable(uid) then endShot(uid,"Cancelled")
+   elseif elapsed>=contact then
+    local touched=false;local upper=math.min(elapsed,contactEnd)
+    -- Sweep the authored interval once even if one slow server tick skips its end.
+    -- Previous elapsed<=contactEnd+0.1 discarded valid contact on frame stalls.
+    if shot.checked<=contactEnd then
+     local samples=math.max(1,math.ceil((upper-shot.checked)*120))
+     for i=0,samples do local t=shot.checked+(upper-shot.checked)*i/samples
+      if ShotRules.Touches(ShotModel.FootFrame(root.CFrame,FootballRules.SourceTime(shot.kind,t),"Right",shot.kind),ballState.position,Constants.BALL_RADIUS) then touched=true;break end
+     end
+    end
+    shot.checked=upper
+    if touched then
+     ballState.velocity=FootballRules.Velocity(shot.kind,shot.aim,shot.charge)
+     ballState.possessorUserId=nil;ballState.state="Free";ballState.lastKickerUserId=uid;ballState.lastKickTime=now
+     ballState.inFlightAction=if shot.kind=="Pass" then "Pass" elseif shot.curve==0 then "DirectShoot" else "CurveShoot"
+     currentDribblePhase="Free";controlledCarrierRoot=nil;dribbleTouchIntents[uid]=nil
+     shotCurve,shotCurveUntil=shot.curve,now+ShotConfig.CurveDurationSec
+     shotRecaptureUntil[uid]=now+ShotConfig.RecaptureDelaySec
+     lastTouchInfo.touchId+=1;lastTouchInfo.touchCount+=1
+     lastTouchInfo.ownerUserId,lastTouchInfo.touchTime,lastTouchInfo.action=uid,now,shot.kind
+     shot.phase="Struck";char:SetAttribute("ServerShotContactTime",workspace:GetServerTimeNow())
+     char:SetAttribute("ServerShotPower",shot.charge/ShotConfig.MaxChargeSec);char:SetAttribute("ServerShotPhase","Struck")
+    elseif elapsed>=contactEnd then shot.phase="Whiff";char:SetAttribute("ServerShotPhase","Whiff") end
+   end
+  elseif now-shot.start>=FootballRules.Duration(shot.kind) then endShot(uid,"Complete") end
+ end
+end
+
 -- Ground Dribble & Receive Simulation (RF02-DRIBBLE-RECEIVE)
 -- =============================================================================
 type PlayerCandidate = {
@@ -589,7 +678,6 @@ end
 local function simulateDribbleAndReceive(dt: number, now: number)
 	controlledCarrierRoot = nil
 	lastActiveCarrierCand = nil
-	bypassCarrierBodyCircleThisStep = false
 	if BallService.IsFreeBallOnly() then
 		return
 	end
@@ -659,6 +747,7 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 		local eligibleReceivers: { PlayerCandidate } = {}
 
 		for _, cand in ipairs(candidates) do
+			if now < (shotRecaptureUntil[cand.userId] or 0) then continue end
 			-- Former owner lob recapture protection guard
 			local isFormerLobOwner = (cand.userId == lastLobCarrierUserId)
 			local inLobCooldown = isFormerLobOwner
@@ -859,19 +948,10 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 		local cSpeed = Vector3.new(cVel.X, 0, cVel.Z).Magnitude
 		local goalMode = carrierCand.character:GetAttribute("GoalDribbleActive") == true
 
-		-- During a sprint cut:
-		-- 1) Before the boot strikes the ball (wind-up / plant phase), the ball stays on the entry line so the foot visibly reaches and hits it first.
-		-- 2) Once the boot strikes the ball (TouchL/TouchR marker or strikePhase), the ball slides linearly along a straight line (through the legs for W->S reverse, or straight diagonally for 45/135 cuts) with zero circular orbit!
-		local cutIntent = dribbleCutIntents[currentCarrierId]
-		local isCutEligible = cutIntent ~= nil
-			and (cutIntent.character == carrierCand.character and cutIntent.expires > now)
-			and ((isSprinting and not goalMode) or (goalMode and cutIntent.cutName == "GoalReverse"))
-		local isCutActive = isCutEligible == true
-
 		local look = carrierCand.rootPart.CFrame.LookVector
 		local bodyLook = Vector3.new(look.X, 0, look.Z).Unit
 		local leadDir: Vector3
-		if goalMode and not isCutActive then
+		if goalMode then
 			-- In Goal Mode (Close-Control / G mode), the ball is always controlled & rolled in FRONT of the body
 			-- (where the character is facing, towards the goal), even while backpedaling with S or strafing with A/D!
 			local goal = DribbleControlRules.AttackGoal(carrierCand.teamSide, Constants.ARENA_HALF_LENGTH_Z, Constants.GOAL_BACK_ZONE_STUDS)
@@ -896,19 +976,16 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			local wave = math.sin(progress * math.pi)
 			local boost = if goalMode
 				then DribbleActionConfigs.TOUCH_PULSE_BOOST_GOAL
-				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_PULSE_BOOST_CUT
 				elseif isSprinting then DribbleActionConfigs.TOUCH_PULSE_BOOST_RUN
 				else DribbleActionConfigs.TOUCH_PULSE_BOOST_WALK
 			markerPulse = boost * wave
 			local maxOrbitBoost = if goalMode
 				then DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_GOAL
-				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_CUT
 				elseif isSprinting then DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_RUN
 				else DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_WALK
 			touchSpeedScale = 1.0 + (maxOrbitBoost - 1.0) * wave
 			local maxImpulse = if goalMode
 				then DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_GOAL
-				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_CUT
 				elseif isSprinting then DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_RUN
 				else DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_WALK
 			-- Front-loaded impulse on foot strike (first half of the touch window) so the ball visibly accelerates off the boot
@@ -922,84 +999,37 @@ local function simulateDribbleAndReceive(dt: number, now: number)
 			then 0
 			elseif hasRecentMarker then markerPulse
 			else DribbleGeometryHelper.ComputeMicroTouchOffset(cSpeed, isSprinting, now)
-
-		local cutLead = 0.0
-		local cutPostStrike = false
-		local cutLinearTarget: Vector3? = nil
-		if cutIntent and isCutActive then
-			local uCut = math.clamp((now - cutIntent.startTime) / math.max(0.1, cutIntent.duration), 0, 1)
-			local strikePhase = DribbleActionConfigs.CUT_BALL_STRIKE_PHASE or 0.36
-			local hasCutTouch = touchIntent ~= nil
-				and touchIntent.character == carrierCand.character
-				and touchIntent.isCut
-				and touchIntent.startTime >= (cutIntent.startTime - 0.05)
-			cutPostStrike = hasCutTouch or (uCut >= strikePhase)
-			local baseD = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
-			local pEntry, _, _ = DribbleGeometryHelper.FeasibleFrontTarget(
-				carrierCand.rootPart.Position,
-				cutIntent.entryDirection,
-				isSprinting,
-				0
-			)
-			if not cutPostStrike then
-				-- Wind-up phase: keep ball right on the entry line so the foot reaches out and traps it first
-				leadDir = cutIntent.entryDirection
-				cutLead = 0.0
-				cutLinearTarget = pEntry
-			else
-				-- Strike & pull-through phase: interpolate target along a pure straight lineSegment from pEntry to pExit
-				-- (so W->S pulls straight through the legs instead of orbiting around the right hip!)
-				local postU = if hasCutTouch
-					then math.max(
-						math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1),
-						math.clamp((now - touchIntent.startTime) / math.max(0.15, cutIntent.duration * (1.0 - strikePhase)), 0, 1)
-					)
-					else math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1)
-				local linAlpha = math.clamp(postU * 1.45, 0, 1)
-				local sLin = linAlpha * linAlpha * (3 - 2 * linAlpha)
-				leadDir = cutIntent.direction
-				cutLead = DribbleActionConfigs.CUT_BALL_LEAD_SPRINT * math.sin(postU * math.pi)
-				local pExit, _, _ = DribbleGeometryHelper.FeasibleFrontTarget(
-					carrierCand.rootPart.Position,
-					cutIntent.direction,
-					isSprinting,
-					microOffset + cutLead
-				)
-				cutLinearTarget = pEntry * (1 - sLin) + pExit * sLin
-				bypassCarrierBodyCircleThisStep = true
-			end
-		elseif cutIntent then
-			dribbleCutIntents[currentCarrierId] = nil
-		end
-
 		local target, flankDeg, infeasible = DribbleGeometryHelper.FeasibleFrontTarget(
 			carrierCand.rootPart.Position,
 			leadDir,
 			isSprinting,
-			microOffset + cutLead
+			microOffset
 		)
-		if cutLinearTarget then
-			target = cutLinearTarget
-			flankDeg = 0
-			infeasible = false
-		end
 		if goalMode then
-			-- Reuse the same joint-safe target search, with a close-control radius + bounded marker/cut lead pulse.
+			-- Reuse the same joint-safe target search, with a close-control radius + bounded marker lead pulse.
 			local baseDistance = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
 			target, flankDeg, infeasible = DribbleGeometryHelper.FeasibleFrontTarget(
 				carrierCand.rootPart.Position,
 				leadDir,
 				isSprinting,
-				(DribbleActionConfigs.GOAL_BALL_DISTANCE - baseDistance) + markerPulse + cutLead,
+				(DribbleActionConfigs.GOAL_BALL_DISTANCE - baseDistance) + markerPulse,
 				DribbleActionConfigs.GOAL_CARRIER_SEPARATION
 			)
 		end
-		local v: Vector3
-		if isCutActive then
-			-- Direct linear trajectory toward the cut target (no circular polar orbit arc in either wind-up or pull-through)
+		local shot = shots[currentCarrierId]
+  local settingUp = shot and shot.character == carrierCand.character and (shot.phase == "Windup" or shot.phase == "Charging" or shot.phase == "WaitingBall")
+  if settingUp then
+   local contactFoot = ShotModel.FootFrame(carrierCand.rootPart.CFrame,FootballActions[shot.kind].ContactSource,"Right",shot.kind)
+   local offset = contactFoot.Position-carrierCand.rootPart.Position
+   target = Vector3.new(carrierCand.rootPart.Position.X+offset.X,Constants.BALL_RADIUS,carrierCand.rootPart.Position.Z+offset.Z)
+   touchKickImpulse, markerPulse, touchSpeedScale = 0,0,1
+  end
+  local v: Vector3
+		if settingUp then
+			-- Preserve the existing bounded shot setup approach.
 			local toTarget = Vector3.new(target.X - ballState.position.X, 0, target.Z - ballState.position.Z)
-			local linearGain = (DribbleActionConfigs.CUT_LINEAR_TRACK_GAIN or 9.5) * math.min(touchSpeedScale, 1.35)
-			local maxRel = DribbleActionConfigs.CUT_LINEAR_MAX_REL_SPEED or 28.0
+			local linearGain = (ShotConfig.BallSetupTrackGain or 9.5) * math.min(touchSpeedScale, 1.35)
+			local maxRel = ShotConfig.BallSetupMaxRelativeSpeed or 28.0
 			local relVel = toTarget * linearGain
 			if relVel.Magnitude > maxRel then
 				relVel = relVel.Unit * maxRel
@@ -1062,6 +1092,7 @@ function BallService.StepPhysics(dt: number)
 
 	-- 1. Server-authoritative Dribble & Receive simulation
 	simulateDribbleAndReceive(clampedDt, now)
+	stepShots(now)
 
 	-- 2. Physical flight, Cage collision, and Turf rolling friction
 	local r = Constants.BALL_RADIUS
@@ -1069,6 +1100,13 @@ function BallService.StepPhysics(dt: number)
 	local onGround = not isOnRamp and (ballState.position.Y <= r + 0.08) and (math.abs(ballState.velocity.Y) < 3.0)
 
 	local currentVel = ballState.velocity
+ if ballState.state == "Free" and now < shotCurveUntil and shotCurve ~= 0 then
+  local horizontal = Vector3.new(currentVel.X,0,currentVel.Z)
+  if horizontal.Magnitude > 1 then
+   local rotated = CFrame.Angles(0,-shotCurve*ShotConfig.CurveAcceleration/horizontal.Magnitude*clampedDt,0):VectorToWorldSpace(horizontal)
+   currentVel=Vector3.new(rotated.X,currentVel.Y,rotated.Z)
+  end
+ elseif ballState.state == "Possessed" then shotCurve,shotCurveUntil=0,0 end
 	if onGround then
 		-- Suppress downward velocity when resting on turf
 		currentVel = Vector3.new(currentVel.X, 0, currentVel.Z)
@@ -1117,14 +1155,6 @@ function BallService.StepPhysics(dt: number)
 		local p1 = hrp.Position
 		local p0 = carrierPrevRootPos[carrierCand.userId] or p1
 		carrierPrevRootPos[carrierCand.userId] = p1
-		if bypassCarrierBodyCircleThisStep then
-			-- During a linear cut pull-back (e.g. W->S sole drag), allow the ball to pass straight through the legs
-			-- while still clamping inside the cage walls.
-			local rBall = DribbleConfigs.BALL_COLLISION_RADIUS
-			local mx = Constants.ARENA_HALF_WIDTH_X - rBall
-			local mz = Constants.ARENA_HALF_LENGTH_Z - rBall
-			nextPos = Vector3.new(math.clamp(nextPos.X, -mx, mx), nextPos.Y, math.clamp(nextPos.Z, -mz, mz))
-		else
 			local look = hrp.CFrame.LookVector
 			local goalMode = carrierCand.character:GetAttribute("GoalDribbleActive") == true
 			local minSep = if goalMode then DribbleActionConfigs.GOAL_CARRIER_SEPARATION else nil
@@ -1144,7 +1174,6 @@ function BallService.StepPhysics(dt: number)
 			if infeasible then
 				currentDribbleSpeedFactor = DribbleConfigs.INFEASIBLE_SPEED_FACTOR
 			end
-		end
 	else
 		lastActiveCarrierCand = nil
 	end
@@ -1198,10 +1227,11 @@ local function setupPlayerLifecycle(player: Player)
 			return
 		end
 		activeCharacter = char
+		endShot(userId,"Cancelled")
+		shotRecaptureUntil[userId]=nil
 		goalDribbleRequests[userId] = nil
 		lastGoalStartByPlayer[userId] = nil
 		dribbleTouchIntents[userId] = nil
-		dribbleCutIntents[userId] = nil
 		lastDribbleTouchByPlayer[userId] = nil
 		char:SetAttribute("GoalDribbleActive", false)
 		char:SetAttribute("AttackGoalPosition", DribbleControlRules.AttackGoal(getOrCreatePlayerState(userId).teamSide, Constants.ARENA_HALF_LENGTH_Z, Constants.GOAL_BACK_ZONE_STUDS))
@@ -1262,9 +1292,9 @@ local function setupPlayerLifecycle(player: Player)
 
 		table.insert(conns, humanoid.Died:Connect(function()
 			if player.Character == char then
+				endShot(userId,"Cancelled")
 				goalDribbleRequests[userId] = nil
 				dribbleTouchIntents[userId] = nil
-				dribbleCutIntents[userId] = nil
 				char:SetAttribute("GoalDribbleActive", false)
 			end
 			if playerGenerations[userId] == thisGen and activeCharacter == char and ballState.possessorUserId == userId then
@@ -1289,6 +1319,7 @@ local function setupPlayerLifecycle(player: Player)
 	player.CharacterRemoving:Connect(function(char)
 		local wasActiveCharacter = activeCharacter == char
 		if wasActiveCharacter then
+			endShot(userId,"Cancelled")
 			activeCharacter = nil
 			playerGenerations[userId] = (playerGenerations[userId] or 0) + 1
 			lastPlayerPositions[userId] = nil
@@ -1296,7 +1327,6 @@ local function setupPlayerLifecycle(player: Player)
 			lastCameraLookByPlayer[userId] = nil
 			lastIntentTimeByPlayer[userId] = nil
 			dribbleTouchIntents[userId] = nil
-			dribbleCutIntents[userId] = nil
 			lastDribbleTouchByPlayer[userId] = nil
 			local oldConnections = activeCharacterConnections[userId]
 			if oldConnections then
@@ -1333,16 +1363,16 @@ function BallService.Init()
 				if typeof(payload) ~= "table" then
 					return
 				end
-				if payload.action == "GoalDribble" then
+				if payload.action == "Shot" or payload.action == "Pass" then
+     BallService.HandleShotIntent(player,payload)
+     return
+    end
+    if payload.action == "GoalDribble" then
 					BallService.SetGoalDribbleIntent(player, payload)
 					return
 				end
 				if payload.action == "DribbleTouch" then
 					BallService.SetDribbleTouchIntent(player, payload)
-					return
-				end
-				if payload.action == "DribbleCut" then
-					BallService.SetDribbleCutIntent(player, payload)
 					return
 				end
 				if payload.action == "CameraIntent" then
@@ -1391,10 +1421,11 @@ function BallService.Init()
 
 	Players.PlayerRemoving:Connect(function(player: Player)
 		local uid = player.UserId
+		endShot(uid,"Cancelled")
+		lastShotIds[uid],lastShotStart[uid],shotRecaptureUntil[uid]=nil,nil,nil
 		goalDribbleRequests[uid] = nil
 		lastGoalStartByPlayer[uid] = nil
 		dribbleTouchIntents[uid] = nil
-		dribbleCutIntents[uid] = nil
 		lastDribbleTouchByPlayer[uid] = nil
 		playerStates[uid] = nil
 		lastTouchTimeByPlayer[uid] = nil
@@ -1421,3 +1452,420 @@ function BallService.Init()
 end
 
 return table.freeze(BallService)
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+local CutTimeline = require(Shared:WaitForChild("DribbleCutTimeline"))
+
+-- Previous section --
+local bypassCarrierBodyCircleThisStep: boolean = false
+
+-- Previous section --
+local dribbleTouchIntents: {[number]: {character: Model, foot: string, clip: string, isCut: boolean, startTime: number, expires: number}} = {}
+
+-- Previous section --
+type CutIntent = {
+	character: Model, cutName: string, cutId: number, direction: Vector3, entryDirection: Vector3,
+	startTime: number, duration: number, expires: number, phase: string, struckAt: number?,
+}
+local dribbleCutIntents: { [number]: CutIntent } = {}
+local lastDribbleCutByPlayer: { [number]: { id: number, time: number } } = {}
+local lastSprintContextAt: { [number]: number } = {}
+
+-- Previous section --
+local function hasSprintContext(userId: number, character: Model, now: number): boolean
+	local active = character:GetAttribute("IsSprinting") == true
+	if active then lastSprintContextAt[userId] = now end
+	return CutTimeline.HasSprintContext(active, lastSprintContextAt[userId], now)
+end
+
+
+-- Previous section --
+		local cut = dribbleCutIntents[player.UserId]
+		if cut and CutTimeline.Get(cut.cutName) and now-cut.startTime<cut.duration then return false end
+
+-- Previous section --
+	local cut = dribbleCutIntents[player.UserId]
+	local profile = cut and CutTimeline.Get(cut.cutName)
+	local cutSpec = cut and (DribbleActionConfigs.Clips :: { [string]: DribbleActionConfigs.DribbleClipSpec })[cut.cutName]
+	local isSprintCutClip = false
+	for key, spec in pairs(DribbleActionConfigs.Clips) do
+		if CutTimeline.Get(key) and spec.ClipName == payload.clip then isSprintCutClip = true break end
+	end
+	if payload.isCut == true then
+		if not cut or not cutSpec or cut.character ~= character or cut.expires <= now
+			or cutSpec.ClipName ~= payload.clip or payload.cutId ~= cut.cutId then return false end
+		if profile then
+			if now-cut.startTime > cut.duration+DribbleActionConfigs.CUT_BALL_INTENT_GRACE_SEC then return false end
+			if not CutTimeline.ValidateMarker(profile, payload.phase, payload.foot, now - cut.startTime) then return false end
+			local expected = if payload.phase == "Trap" then "Approach" elseif payload.phase == "Strike" then "Trapped" else "Struck"
+			if cut.phase ~= expected then return false end
+			cut.phase = if payload.phase == "Trap" then "Trapped" elseif payload.phase == "Strike" then "Struck" else "Released"
+			character:SetAttribute("ServerDribbleCutBallPhase", cut.phase)
+			if payload.phase == "Strike" then
+				cut.struckAt = now
+				character:SetAttribute("ServerDribbleCutStrikeTime", now)
+			else
+				dribbleTouchIntents[player.UserId] = nil
+				return true
+			end
+		end
+	elseif isSprintCutClip or (profile and cut and cut.expires > now
+		and (cut.phase ~= "Released" or now - cut.startTime < cut.duration)) then
+		-- A background run marker cannot strike/redirect the ball while an Action cut owns it.
+		return false
+	end
+
+-- Previous section --
+		isCut = payload.isCut == true,
+
+-- Previous section --
+-- Correlated start/cancel intents; validated animation markers own sprint-cut ball phases.
+function BallService.SetDribbleCutIntent(player: Player, payload: any): boolean
+	if shots[player.UserId] then return false end
+	if typeof(payload) ~= "table" then return false end
+	local character = player.Character
+	if not character or payload.character ~= character or not character:IsDescendantOf(Workspace) then return false end
+	if payload.cancel == true then
+		local active = dribbleCutIntents[player.UserId]
+		if not active or active.character ~= character or payload.cutId ~= active.cutId then return false end
+		local hum=character:FindFirstChildOfClass("Humanoid")
+		if CutTimeline.Get(active.cutName) and os.clock()-active.startTime < active.duration and hum and hum.Health>0
+			and hum.FloorMaterial~=Enum.Material.Air and ballState.possessorUserId==player.UserId then return false end
+		dribbleCutIntents[player.UserId] = nil
+		local touch = dribbleTouchIntents[player.UserId]
+		if touch and touch.isCut then dribbleTouchIntents[player.UserId] = nil end
+		character:SetAttribute("ServerDribbleCutBallPhase", if CutTimeline.Get(active.cutName) and os.clock()-active.startTime>=active.duration then "Complete" else "Cancelled")
+		return true
+	end
+	if typeof(payload.cut) ~= "string" or typeof(payload.cutId) ~= "number" or payload.cutId ~= payload.cutId
+		or payload.cutId < 1 or payload.cutId > 2147483647 or payload.cutId % 1 ~= 0 then return false end
+	local approved = (DribbleActionConfigs.ApprovedCutAnimations :: { [string]: string? })[payload.cut]
+	local spec = (DribbleActionConfigs.Clips :: { [string]: DribbleActionConfigs.DribbleClipSpec })[payload.cut]
+	if not approved or not spec then return false end
+	local direction = payload.direction
+	if typeof(direction) ~= "Vector3" or not DribbleControlRules.IsFiniteVector(direction) then return false end
+	local horizontal = DribbleControlRules.HorizontalDirection(direction)
+	if horizontal.Magnitude < 0.5 then return false end
+	if ballState.state ~= "Possessed" or ballState.possessorUserId ~= player.UserId then return false end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 or humanoid.FloorMaterial == Enum.Material.Air then return false end
+	if payload.cut == "GoalReverse" and character:GetAttribute("GoalDribbleActive") ~= true then return false end
+	local now = os.clock()
+	local profile = CutTimeline.Get(payload.cut)
+	if profile and (not hasSprintContext(player.UserId, character, now) or character:GetAttribute("GoalDribbleActive") == true) then return false end
+	local previous = lastDribbleCutByPlayer[player.UserId]
+	if previous and (payload.cutId <= previous.id or now - previous.time < DribbleActionConfigs.CUT_COOLDOWN_SEC) then return false end
+	local active = dribbleCutIntents[player.UserId]
+	if active and active.character == character and active.expires > now then return false end
+	local duration = math.min(DribbleActionConfigs.CUT_MAX_DURATION, spec.ExpectedDuration)
+	local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp or Vector3.new(ballState.position.X - hrp.Position.X, 0, ballState.position.Z - hrp.Position.Z).Magnitude > DribbleConfigs.LOOSE_BALL_DISTANCE then return false end
+	local entryDir = horizontal.Unit
+	if hrp then
+		local look = Vector3.new(hrp.CFrame.LookVector.X, 0, hrp.CFrame.LookVector.Z)
+		if look.Magnitude > 0.01 then
+			entryDir = look.Unit
+		end
+	end
+	dribbleCutIntents[player.UserId] = {
+		character = character,
+		cutName = payload.cut,
+		cutId = payload.cutId,
+		phase = "Approach",
+		direction = horizontal.Unit,
+		entryDirection = entryDir,
+		startTime = now,
+		duration = duration,
+		expires = now + duration + DribbleActionConfigs.CUT_BALL_INTENT_GRACE_SEC,
+	}
+	lastDribbleCutByPlayer[player.UserId] = { id = payload.cutId, time = now }
+	dribbleTouchIntents[player.UserId] = nil
+	character:SetAttribute("ServerDribbleCutId", payload.cutId)
+	character:SetAttribute("ServerDribbleCutBallPhase", "Approach")
+	character:SetAttribute("ServerDribbleCutEntryDirection", entryDir)
+	character:SetAttribute("ServerDribbleCutExitDirection", horizontal.Unit)
+	return true
+end
+
+
+-- Previous section --
+  if shot or payload.id <= (lastShotIds[uid] or 0) or dribbleCutIntents[uid]
+
+-- Previous section --
+	bypassCarrierBodyCircleThisStep = false
+
+-- Previous section --
+		if isSprinting then lastSprintContextAt[currentCarrierId] = now end
+
+-- Previous section --
+		-- During a sprint cut:
+		-- 1) Before the boot strikes the ball (wind-up / plant phase), the ball stays on the entry line so the foot visibly reaches and hits it first.
+		-- 2) Once the boot strikes the ball (TouchL/TouchR marker or strikePhase), the ball slides linearly along a straight line (through the legs for W->S reverse, or straight diagonally for 45/135 cuts) with zero circular orbit!
+		local cutIntent = dribbleCutIntents[currentCarrierId]
+		local cutSprint = cutIntent ~= nil and CutTimeline.Get(cutIntent.cutName) ~= nil
+			and now-cutIntent.startTime < cutIntent.duration
+		local isCutEligible = cutIntent ~= nil
+			and (cutIntent.character == carrierCand.character and cutIntent.expires > now)
+			and (((isSprinting or cutSprint) and not goalMode) or (goalMode and cutIntent.cutName == "GoalReverse"))
+		if cutSprint then isSprinting = true end
+		local isCutActive = isCutEligible == true and (cutSprint or not cutIntent or cutIntent.phase ~= "Released")
+
+
+-- Previous section --
+		if goalMode and not isCutActive then
+
+-- Previous section --
+				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_PULSE_BOOST_CUT
+
+-- Previous section --
+				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_ORBIT_SPEED_BOOST_CUT
+
+-- Previous section --
+				elseif touchIntent.isCut then DribbleActionConfigs.TOUCH_KICK_SPEED_IMPULSE_CUT
+
+-- Previous section --
+		if cutIntent and CutTimeline.Get(cutIntent.cutName) and cutIntent.phase == "Released"
+			and now - cutIntent.startTime < cutIntent.duration then
+			-- The visible cut is still playing: let the last strike roll without invisible run-loop taps.
+			microOffset, markerPulse, touchKickImpulse, touchSpeedScale = 0, 0, 0, 1
+		end
+
+		local cutLead = 0.0
+		local cutPostStrike = false
+		local cutLinearTarget: Vector3? = nil
+		if cutIntent and isCutActive and CutTimeline.Get(cutIntent.cutName) then
+			local elapsed = now - cutIntent.startTime
+			local baseD = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
+			local closeAlpha = math.clamp(elapsed / CutTimeline.TrapAt, 0, 1)
+			local closeDistance = baseD + (CutTimeline.TrapDistance - baseD) * closeAlpha
+			local pEntry = DribbleGeometryHelper.FeasibleFrontTarget(carrierCand.rootPart.Position, cutIntent.entryDirection, isSprinting, closeDistance - baseD)
+			leadDir = cutIntent.entryDirection
+			cutLinearTarget = pEntry
+			microOffset, markerPulse = 0, 0
+			if (cutIntent.phase == "Struck" or cutIntent.phase == "Released") and cutIntent.struckAt then
+				local post = math.clamp((now - cutIntent.struckAt) / (CutTimeline.ReleaseAt - CutTimeline.StrikeAt), 0, 1)
+				local alpha = post * post * (3 - 2 * post)
+				cutPostStrike = true
+				cutLead = CutTimeline.PushLead * math.sin(post * math.pi)
+				local pExit = DribbleGeometryHelper.FeasibleFrontTarget(carrierCand.rootPart.Position, cutIntent.direction, isSprinting, cutLead)
+				cutLinearTarget = pEntry:Lerp(pExit, alpha)
+				leadDir = cutIntent.direction
+				-- Keep the normal body/cage sweep for marker-driven cuts.
+			else
+				touchKickImpulse, touchSpeedScale = 0, 1
+			end
+		elseif cutIntent and isCutActive then
+			local uCut = math.clamp((now - cutIntent.startTime) / math.max(0.1, cutIntent.duration), 0, 1)
+			local strikePhase = DribbleActionConfigs.CUT_BALL_STRIKE_PHASE or 0.36
+			local hasCutTouch = touchIntent ~= nil
+				and touchIntent.character == carrierCand.character
+				and touchIntent.isCut
+				and touchIntent.startTime >= (cutIntent.startTime - 0.05)
+			cutPostStrike = hasCutTouch or (uCut >= strikePhase)
+			local baseD = if isSprinting then DribbleConfigs.FRONT_DISTANCE_SPRINT else DribbleConfigs.FRONT_DISTANCE_WALK
+			local pEntry, _, _ = DribbleGeometryHelper.FeasibleFrontTarget(
+				carrierCand.rootPart.Position,
+				cutIntent.entryDirection,
+				isSprinting,
+				0
+			)
+			if not cutPostStrike then
+				-- Wind-up phase: keep ball right on the entry line so the foot reaches out and traps it first
+				leadDir = cutIntent.entryDirection
+				cutLead = 0.0
+				cutLinearTarget = pEntry
+			else
+				-- Strike & pull-through phase: interpolate target along a pure straight lineSegment from pEntry to pExit
+				-- (so W->S pulls straight through the legs instead of orbiting around the right hip!)
+				local postU = if hasCutTouch
+					then math.max(
+						math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1),
+						math.clamp((now - touchIntent.startTime) / math.max(0.15, cutIntent.duration * (1.0 - strikePhase)), 0, 1)
+					)
+					else math.clamp((uCut - strikePhase) / math.max(0.1, 1.0 - strikePhase), 0, 1)
+				local linAlpha = math.clamp(postU * 1.45, 0, 1)
+				local sLin = linAlpha * linAlpha * (3 - 2 * linAlpha)
+				leadDir = cutIntent.direction
+				cutLead = DribbleActionConfigs.CUT_BALL_LEAD_SPRINT * math.sin(postU * math.pi)
+				local pExit, _, _ = DribbleGeometryHelper.FeasibleFrontTarget(
+					carrierCand.rootPart.Position,
+					cutIntent.direction,
+					isSprinting,
+					microOffset + cutLead
+				)
+				cutLinearTarget = pEntry * (1 - sLin) + pExit * sLin
+				bypassCarrierBodyCircleThisStep = true
+			end
+		elseif cutIntent and not isCutEligible then
+			dribbleCutIntents[currentCarrierId] = nil
+			if touchIntent and touchIntent.isCut then dribbleTouchIntents[currentCarrierId] = nil end
+			carrierCand.character:SetAttribute("ServerDribbleCutBallPhase", if CutTimeline.Get(cutIntent.cutName) and now-cutIntent.startTime>=cutIntent.duration then "Complete" else "Cancelled")
+		end
+
+
+-- Previous section --
+			microOffset + cutLead
+
+-- Previous section --
+		if cutLinearTarget then
+			target = cutLinearTarget
+			flankDeg = 0
+			infeasible = false
+		end
+
+-- Previous section --
+			-- Reuse the same joint-safe target search, with a close-control radius + bounded marker/cut lead pulse.
+
+-- Previous section --
+				(DribbleActionConfigs.GOAL_BALL_DISTANCE - baseDistance) + markerPulse + cutLead,
+
+-- Previous section --
+		if isCutActive or settingUp then
+			-- Direct linear trajectory toward the cut target (no circular polar orbit arc in either wind-up or pull-through)
+
+-- Previous section --
+			local linearGain = (DribbleActionConfigs.CUT_LINEAR_TRACK_GAIN or 9.5) * math.min(touchSpeedScale, 1.35)
+			local maxRel = DribbleActionConfigs.CUT_LINEAR_MAX_REL_SPEED or 28.0
+
+-- Previous section --
+		if bypassCarrierBodyCircleThisStep then
+			-- During a linear cut pull-back (e.g. W->S sole drag), allow the ball to pass straight through the legs
+			-- while still clamping inside the cage walls.
+			local rBall = DribbleConfigs.BALL_COLLISION_RADIUS
+			local mx = Constants.ARENA_HALF_WIDTH_X - rBall
+			local mz = Constants.ARENA_HALF_LENGTH_Z - rBall
+			nextPos = Vector3.new(math.clamp(nextPos.X, -mx, mx), nextPos.Y, math.clamp(nextPos.Z, -mz, mz))
+		else
+
+-- Previous section --
+		end
+
+-- Previous section --
+		dribbleCutIntents[userId] = nil
+		lastDribbleCutByPlayer[userId] = nil
+		lastSprintContextAt[userId] = nil
+
+-- Previous section --
+				dribbleCutIntents[userId] = nil
+
+-- Previous section --
+			dribbleCutIntents[userId] = nil
+
+-- Previous section --
+				if payload.action == "DribbleCut" then
+					BallService.SetDribbleCutIntent(player, payload)
+					return
+				end
+
+-- Previous section --
+		dribbleCutIntents[uid] = nil
+		lastDribbleCutByPlayer[uid] = nil
+		lastSprintContextAt[uid] = nil
+]====]
+
+--[========[
+Previous carrier-only shot state machine retained.
+function BallService.HandleShotIntent(player: Player, payload: any): boolean
+ if typeof(payload) ~= "table" or not ShotRules.IsActionId(payload.id) then return false end
+ local uid, char, now = player.UserId, player.Character, os.clock()
+ local shot = shots[uid]
+ if payload.phase == "Cancel" then
+  if shot and shot.id == payload.id and shot.character == char then endShot(uid,"Cancelled"); return true end
+  return false
+ end
+ if not char or not char:IsDescendantOf(workspace) then return false end
+ local hum = char:FindFirstChildOfClass("Humanoid")
+ local root = char:FindFirstChild("HumanoidRootPart")
+ if not hum or hum.Health <= 0 or not root or not root:IsA("BasePart")
+  or hum.FloorMaterial == Enum.Material.Air or BallService.IsFreeBallOnly()
+  or ballState.possessorUserId ~= uid or ballState.state ~= "Possessed"
+  or (root.Position-ballState.position).Magnitude > DribbleConfigs.LOOSE_BALL_DISTANCE then return false end
+ if payload.phase == "Begin" then
+  if shot or payload.id <= (lastShotIds[uid] or 0)
+   or now-(lastShotStart[uid] or -math.huge) < ShotConfig.CooldownSec then return false end
+  lastShotIds[uid],lastShotStart[uid] = payload.id,now
+  shots[uid] = {character=char,id=payload.id,phase="Charging",began=now,start=0,
+   charge=0,aim=root.CFrame.LookVector,curve=0,checked=ShotConfig.ContactAt}
+  char:SetAttribute("ServerShotId",payload.id)
+  char:SetAttribute("ServerShotPhase","Charging")
+  return true
+ elseif payload.phase == "Release" then
+  local aim = ShotRules.Aim(payload.aim)
+  if not shot or shot.character ~= char or shot.id ~= payload.id or shot.phase ~= "Charging"
+   or now-shot.began > ShotConfig.ChargeTimeoutSec or not aim
+   or (payload.curve ~= -1 and payload.curve ~= 0 and payload.curve ~= 1) then return false end
+  shot.phase,shot.start,shot.charge,shot.aim,shot.curve = "Windup",now,
+   math.clamp(now-shot.began,0,ShotConfig.MaxChargeSec),aim,payload.curve
+  dribbleTouchIntents[uid] = nil
+  char:SetAttribute("ServerShotAim",aim)
+  char:SetAttribute("ServerShotStart",workspace:GetServerTimeNow())
+  char:SetAttribute("ServerShotActive",true)
+  char:SetAttribute("ServerShotPhase","Windup")
+  return true
+ end
+ return false
+end
+
+local function stepShots(now: number)
+ for uid,shot in shots do
+  local player = Players:GetPlayerByUserId(uid)
+  local char = shot.character
+  local hum = char:FindFirstChildOfClass("Humanoid")
+  local root = char:FindFirstChild("HumanoidRootPart")
+  local elapsed = now-shot.start
+  if not player or player.Character ~= char or not hum or hum.Health <= 0
+   or not root or not root:IsA("BasePart") or not char:IsDescendantOf(workspace) then
+   endShot(uid,"Cancelled")
+  elseif shot.phase == "Charging" then
+   if now-shot.began > ShotConfig.ChargeTimeoutSec or ballState.possessorUserId ~= uid
+    or hum.FloorMaterial == Enum.Material.Air then endShot(uid,"Cancelled") end
+  elseif shot.phase == "Windup" then
+   if ballState.possessorUserId ~= uid or hum.FloorMaterial == Enum.Material.Air then
+    endShot(uid,"Cancelled")
+   elseif elapsed >= ShotConfig.ContactAt then
+    local upper = math.min(elapsed,ShotConfig.ContactEnd)
+    local touched = false
+    -- Swept authored foot samples cover a low-FPS tick without enlarging the hitbox.
+    if elapsed <= ShotConfig.ContactEnd+0.1 then
+     local samples = math.max(1,math.ceil((upper-shot.checked)*120))
+     for i=0,samples do
+      local t=shot.checked+(upper-shot.checked)*i/samples
+      if ShotRules.Touches(ShotModel.FootFrame(root.CFrame,t*ShotConfig.PlaybackRate,"Right"),ballState.position,Constants.BALL_RADIUS) then
+       touched=true; break
+      end
+     end
+    end
+    shot.checked=upper
+    if touched then
+     ballState.velocity=ShotRules.Velocity(shot.aim,shot.charge)
+     ballState.possessorUserId=nil
+     ballState.state="Free"
+     ballState.lastKickerUserId=uid
+     ballState.lastKickTime=now
+     ballState.inFlightAction=if shot.curve == 0 then "DirectShoot" else "CurveShoot"
+     currentDribblePhase="Free"
+     controlledCarrierRoot=nil
+     dribbleTouchIntents[uid]=nil
+     shotCurve,shotCurveUntil=shot.curve,now+ShotConfig.CurveDurationSec
+     shotRecaptureUntil[uid]=now+ShotConfig.RecaptureDelaySec
+     lastTouchInfo.touchId+=1
+     lastTouchInfo.touchCount+=1
+     lastTouchInfo.ownerUserId,lastTouchInfo.touchTime,lastTouchInfo.action=uid,now,"Shot"
+     shot.phase="Struck"
+     char:SetAttribute("ServerShotContactTime",workspace:GetServerTimeNow())
+     char:SetAttribute("ServerShotPower",shot.charge/ShotConfig.MaxChargeSec)
+     char:SetAttribute("ServerShotPhase","Struck")
+    elseif elapsed >= ShotConfig.ContactEnd then
+     shot.phase="Whiff"
+     char:SetAttribute("ServerShotPhase","Whiff")
+    end
+   end
+  elseif elapsed >= ShotConfig.Duration then endShot(uid,"Complete") end
+ end
+end
+
+
+]========]

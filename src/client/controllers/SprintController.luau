@@ -23,6 +23,7 @@ local lastSentTime: number = 0
 local currentCharacter: Model? = nil
 
 local currentForwardIntent: number = 0
+local currentLateralIntent: number = 0
 local isMovingIntent: boolean = false
 local serverSprintRequested: boolean = false
 
@@ -123,7 +124,8 @@ function syncSprintIntent(forceResend: boolean?)
 		sprintRemote:FireServer({
 			isShiftHeld = isShiftHeld,
 			isMoving = true,
-			forward = 1,
+			forward = currentForwardIntent,
+			lateral = currentLateralIntent,
 		})
 	end
 
@@ -131,17 +133,18 @@ function syncSprintIntent(forceResend: boolean?)
 	checkRetrySprint(characterGeneration)
 end
 
-function SprintController.SetMovementIntent(isMoving: boolean)
-	if isMovingIntent == isMoving then
-		return
-	end
+function SprintController.SetMovementIntent(isMoving: boolean, forward: number?, lateral: number?)
+	local nextForward = if isMoving then (forward or 0) else 0
+	local nextLateral = if isMoving then (lateral or 0) else 0
+	if isMovingIntent == isMoving and currentForwardIntent == nextForward and currentLateralIntent == nextLateral then return end
 	isMovingIntent = isMoving
-	currentForwardIntent = if isMoving then 1 else 0
-	syncSprintIntent()
+	currentForwardIntent = nextForward
+	currentLateralIntent = nextLateral
+	syncSprintIntent(true)
 end
 
 function SprintController.SetForwardIntent(forward: number)
-	SprintController.SetMovementIntent(forward ~= 0)
+	SprintController.SetMovementIntent(forward ~= 0, forward)
 end
 
 local function resetSprintState()
@@ -152,6 +155,7 @@ local function resetSprintState()
 	table.clear(activeSprintKeys)
 	isMovingIntent = false
 	currentForwardIntent = 0
+	currentLateralIntent = 0
 	local char = currentCharacter
 	local serverFlag = (char and char:GetAttribute("IsSprinting") == true)
 	if isSprinting or serverSprintRequested or serverFlag then
@@ -341,3 +345,33 @@ function SprintController.IsSprinting(): boolean
 end
 
 return table.freeze(SprintController)
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+			forward = 1,
+
+-- Previous section --
+function SprintController.SetMovementIntent(isMoving: boolean)
+	if isMovingIntent == isMoving then
+		return
+	end
+
+-- Previous section --
+	currentForwardIntent = if isMoving then 1 else 0
+	syncSprintIntent()
+
+-- Previous section --
+	SprintController.SetMovementIntent(forward ~= 0)
+]====]
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+function SprintController.SetMovementIntent(isMoving: boolean, forward: number?)
+
+-- Previous section --
+	if isMovingIntent == isMoving and currentForwardIntent == nextForward then return end
+]====]

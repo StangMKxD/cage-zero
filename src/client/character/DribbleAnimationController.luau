@@ -17,8 +17,6 @@ local LocomotionConfigs = require(configs:WaitForChild("R15LocomotionConfigs"))
 local DribbleActionConfigs = require(configs:WaitForChild("DribbleActionConfigs"))
 local R15AnimationController = require(script.Parent:WaitForChild("R15AnimationController"))
 local DribbleAnimationHelper = require(script.Parent:WaitForChild("DribbleAnimationHelper"))
-local ControllersFolder = script.Parent.Parent:WaitForChild("controllers")
-local DribbleCutController = require(ControllersFolder:WaitForChild("DribbleCutController"))
 
 local isInitialized = false
 local currentCharacter: Model? = nil
@@ -136,9 +134,6 @@ local function updateDribblePlayback(thisGen: number)
 	local grounded = isGroundedState(hum)
 
 	if not isCarrier or not grounded then
-		if not grounded or not isCarrier then
-			DribbleCutController.Cancel()
-		end
 		stopAllDribbleLoops(0.10)
 		char:SetAttribute("ActiveDribbleClip", "")
 		return
@@ -160,63 +155,6 @@ local function updateDribblePlayback(thisGen: number)
 				end)
 			end
 		end
-	end
-
-	-- One-shot directional/reverse cut takes priority and locks movement until completion.
-	-- Keep underlying RunDribble (or GModeLoop in goal mode) playing under Action-priority cuts
-	-- and keep base locomotion muted so there is zero 1-frame snap to R15AnimationController!
-	if DribbleCutController.IsLocked(char) then
-		muteBaseLocomotionWeights()
-		local goalMode = (char:GetAttribute("GoalDribbleActive") == true)
-		if goalMode then
-			if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
-				currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
-			end
-			if currentTracks.RunDribble and currentTracks.RunDribble.IsPlaying then
-				currentTracks.RunDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
-			end
-			local keepKey: DribbleAnimationHelper.DribbleLoopKey = if currentTracks.GoalBackward then "GoalBackward" else "GModeLoop"
-			local goalKeys: { DribbleAnimationHelper.DribbleLoopKey } = {
-				"GoalForward",
-				"GoalBackward",
-				"GoalLeft",
-				"GoalRight",
-				"GModeLoop",
-			}
-			for _, key in ipairs(goalKeys) do
-				if key ~= keepKey then
-					local tr = currentTracks[key]
-					if tr and tr.IsPlaying then
-						pcall(function()
-							tr:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
-						end)
-					end
-				end
-			end
-			local gTrack = currentTracks[keepKey]
-			if gTrack then
-				if not gTrack.IsPlaying then
-					gTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
-				end
-				gTrack:AdjustSpeed(1.0)
-			end
-			activeLoopKey = keepKey
-		else
-			if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
-				currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
-			end
-			stopAllGoalLoops(DribbleActionConfigs.LOOP_FADE_SEC)
-			local runTrack = currentTracks.RunDribble
-			if runTrack then
-				if not runTrack.IsPlaying then
-					runTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
-				end
-				runTrack:AdjustSpeed(1.0)
-			end
-			activeLoopKey = "RunDribble"
-		end
-		char:SetAttribute("ActiveDribbleClip", DribbleCutController.GetActiveClipName() or "")
-		return
 	end
 
 	local rootPart = hum.RootPart
@@ -390,7 +328,6 @@ end
 
 local function invalidateCharacterState()
 	cleanupCharacterConnections()
-	DribbleCutController.Cancel()
 	stopAllDribbleLoops(0)
 	DribbleAnimationHelper.CleanupLoopTracks(currentTracks, currentAnimInstances)
 	currentTracks = {
@@ -431,7 +368,7 @@ local function attachLoopMarkers(thisGen: number, character: Model, key: Dribble
 		activeConnections,
 		track:GetMarkerReachedSignal("TouchL"):Connect(function()
 			if characterGeneration == thisGen and currentCharacter == character and track.IsPlaying then
-				DribbleAnimationHelper.NotifyTouchMarker(character, "L", spec.ClipName, false)
+				DribbleAnimationHelper.NotifyTouchMarker(character, "L", spec.ClipName)
 			end
 		end)
 	)
@@ -440,7 +377,7 @@ local function attachLoopMarkers(thisGen: number, character: Model, key: Dribble
 		activeConnections,
 		track:GetMarkerReachedSignal("TouchR"):Connect(function()
 			if characterGeneration == thisGen and currentCharacter == character and track.IsPlaying then
-				DribbleAnimationHelper.NotifyTouchMarker(character, "R", spec.ClipName, false)
+				DribbleAnimationHelper.NotifyTouchMarker(character, "R", spec.ClipName)
 			end
 		end)
 	)
@@ -504,13 +441,6 @@ local function onCharacterAdded(character: Model)
 	currentSources = sources
 	currentAnimInstances = animInstances
 
-	-- Warm up one-shot cut clips asynchronously so TryStart sees track.Length > 0 immediately
-	task.spawn(function()
-		if characterGeneration == thisGen and currentAnimator == animator then
-			DribbleAnimationHelper.WarmupCutTracks(animator)
-		end
-	end)
-
 	attachLoopMarkers(thisGen, character, "WalkDribble", tracks.WalkDribble)
 	attachLoopMarkers(thisGen, character, "RunDribble", tracks.RunDribble)
 	attachLoopMarkers(thisGen, character, "GModeLoop", tracks.GModeLoop)
@@ -556,7 +486,6 @@ local function onCharacterAdded(character: Model)
 	table.insert(activeConnections, character:GetAttributeChangedSignal("IsBallCarrier"):Connect(observe))
 	table.insert(activeConnections, character:GetAttributeChangedSignal("GoalDribbleActive"):Connect(observe))
 	table.insert(activeConnections, character:GetAttributeChangedSignal("IsSprinting"):Connect(observe))
-	table.insert(activeConnections, character:GetAttributeChangedSignal("DribbleCutActive"):Connect(observe))
 	table.insert(
 		activeConnections,
 		RunService.Heartbeat:Connect(function()
@@ -668,3 +597,96 @@ function DribbleAnimationController.GetRegistrationSources(): DribbleAnimationHe
 end
 
 return table.freeze(DribbleAnimationController)
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+local ControllersFolder = script.Parent.Parent:WaitForChild("controllers")
+local DribbleCutController = require(ControllersFolder:WaitForChild("DribbleCutController"))
+
+-- Previous section --
+		if not grounded or not isCarrier then
+			DribbleCutController.Cancel()
+		end
+
+-- Previous section --
+	-- One-shot directional/reverse cut takes priority and locks movement until completion.
+	-- Keep underlying RunDribble (or GModeLoop in goal mode) playing under Action-priority cuts
+	-- and keep base locomotion muted so there is zero 1-frame snap to R15AnimationController!
+	if DribbleCutController.IsLocked(char) then
+		muteBaseLocomotionWeights()
+		local goalMode = (char:GetAttribute("GoalDribbleActive") == true)
+		if goalMode then
+			if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
+				currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			if currentTracks.RunDribble and currentTracks.RunDribble.IsPlaying then
+				currentTracks.RunDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			local keepKey: DribbleAnimationHelper.DribbleLoopKey = if currentTracks.GoalBackward then "GoalBackward" else "GModeLoop"
+			local goalKeys: { DribbleAnimationHelper.DribbleLoopKey } = {
+				"GoalForward",
+				"GoalBackward",
+				"GoalLeft",
+				"GoalRight",
+				"GModeLoop",
+			}
+			for _, key in ipairs(goalKeys) do
+				if key ~= keepKey then
+					local tr = currentTracks[key]
+					if tr and tr.IsPlaying then
+						pcall(function()
+							tr:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+						end)
+					end
+				end
+			end
+			local gTrack = currentTracks[keepKey]
+			if gTrack then
+				if not gTrack.IsPlaying then
+					gTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
+				end
+				gTrack:AdjustSpeed(1.0)
+			end
+			activeLoopKey = keepKey
+		else
+			if currentTracks.WalkDribble and currentTracks.WalkDribble.IsPlaying then
+				currentTracks.WalkDribble:Stop(DribbleActionConfigs.LOOP_FADE_SEC)
+			end
+			stopAllGoalLoops(DribbleActionConfigs.LOOP_FADE_SEC)
+			local runTrack = currentTracks.RunDribble
+			if runTrack then
+				if not runTrack.IsPlaying then
+					runTrack:Play(DribbleActionConfigs.LOOP_FADE_SEC)
+				end
+				runTrack:AdjustSpeed(1.0)
+			end
+			activeLoopKey = "RunDribble"
+		end
+		char:SetAttribute("ActiveDribbleClip", DribbleCutController.GetActiveClipName() or "")
+		return
+	end
+
+
+-- Previous section --
+	DribbleCutController.Cancel()
+
+-- Previous section --
+				DribbleAnimationHelper.NotifyTouchMarker(character, "L", spec.ClipName, false)
+
+-- Previous section --
+				DribbleAnimationHelper.NotifyTouchMarker(character, "R", spec.ClipName, false)
+
+-- Previous section --
+	-- Warm up one-shot cut clips asynchronously so TryStart sees track.Length > 0 immediately
+	task.spawn(function()
+		if characterGeneration == thisGen and currentAnimator == animator then
+			DribbleAnimationHelper.WarmupCutTracks(animator)
+		end
+	end)
+
+
+-- Previous section --
+	table.insert(activeConnections, character:GetAttributeChangedSignal("DribbleCutActive"):Connect(observe))
+]====]

@@ -27,6 +27,12 @@ function Rules.GoalMovement(localInput: Vector3, goalDirection: Vector3): Vector
 	return Rules.HorizontalDirection(right * localInput.X - forward * localInput.Z)
 end
 
+return table.freeze(Rules)
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
 function Rules.CutForTransition(previousChord: string, chord: string, previousInput: Vector3, input: Vector3, reverseAngle: number): string?
 	if chord == previousChord or previousInput.Magnitude < 0.001 or input.Magnitude < 0.001 then return nil end
 	local prev = Rules.HorizontalDirection(previousInput)
@@ -42,4 +48,4 @@ function Rules.CutForTransition(previousChord: string, chord: string, previousIn
 	return nil
 end
 
-return table.freeze(Rules)
+]====]

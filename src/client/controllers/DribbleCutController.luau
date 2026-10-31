@@ -1,10 +1,14 @@
+-- Retired by Owner: retained as comments, no runtime implementation.
+--[====[
 --!strict
 -- Only an Owner-approved, successfully loaded one-shot clip can lock movement.
 -- Governed by RF02-DRIBBLE-ANIMATION-INTEGRATION Contract (2026-10-27).
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("configs"):WaitForChild("DribbleActionConfigs"))
+local CutTimeline = require(Shared:WaitForChild("DribbleCutTimeline"))
 local CharacterFolder = script.Parent.Parent:WaitForChild("character")
 local DribbleAnimationHelper = require(CharacterFolder:WaitForChild("DribbleAnimationHelper"))
 
@@ -18,6 +22,8 @@ local activeCutDirection: Vector3? = nil
 local activeEntryDirection: Vector3? = nil
 local cutTouchReached: boolean = false
 local deadline = 0.0
+local activeCutId: number? = nil
+local legOffsets: {{joint: Instance, attachment: Attachment?, base: CFrame, yaw: number, roll: number}} = {}
 
 local function disconnectAll()
 	for _, conn in ipairs(activeConnections) do
@@ -26,8 +32,22 @@ local function disconnectAll()
 	table.clear(activeConnections)
 end
 
-function Controller.Cancel()
+function Controller.Cancel(force: boolean?)
+	local hum = lockedCharacter and lockedCharacter:FindFirstChildOfClass("Humanoid")
+	if not force and track and activeCutName and CutTimeline.Get(activeCutName) and track.IsPlaying
+		and track.TimePosition < CutTimeline.Duration - 0.002 and hum and hum.Health > 0
+		and hum.FloorMaterial ~= Enum.Material.Air and lockedCharacter:GetAttribute("IsBallCarrier") == true then return end
 	disconnectAll()
+	for _,offset in legOffsets do
+		if offset.attachment and offset.attachment.Parent then offset.attachment.CFrame=offset.base
+		elseif offset.joint.Parent and offset.joint:IsA("Motor6D") then offset.joint.C0=offset.base end
+	end
+	table.clear(legOffsets)
+	if lockedCharacter and activeCutId then
+		DribbleAnimationHelper.NotifyCutCancel(lockedCharacter, activeCutId)
+	end
+	activeCutId = nil
+	local wasSprintCut = activeCutName ~= nil and CutTimeline.Get(activeCutName) ~= nil
 	local old = track
 	track = nil
 	activeCutName = nil
@@ -40,12 +60,14 @@ function Controller.Cancel()
 		lockedCharacter:SetAttribute("DribbleCutName", "")
 		lockedCharacter:SetAttribute("DribbleCutClipName", "")
 		lockedCharacter:SetAttribute("DribbleCutControlReleaseReached", false)
+		lockedCharacter:SetAttribute("DribbleCutBallPhase", "")
+		lockedCharacter:SetAttribute("DribbleCutVisualOwner", false)
 	end
 	lockedCharacter = nil
 	deadline = 0
 	if old then
 		pcall(function()
-			local fade = Config.CUT_FADE_SEC or 0.15
+			local fade = if wasSprintCut then Config.SPRINT_CUT_FADE_SEC else Config.CUT_FADE_SEC
 			old:Stop(fade)
 			task.delay(fade + 0.05, function()
 				pcall(function()
@@ -57,6 +79,7 @@ function Controller.Cancel()
 end
 
 function Controller.TryStart(character: Model, name: string, exitDirection: Vector3?, entryDirection: Vector3?): boolean
+	if character:GetAttribute("ShotActive") == true or character:GetAttribute("ShotCharging") == true then return false end
 	if track then
 		return false
 	end
@@ -92,6 +115,32 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 	activeCutName = name
 	activeClipName = resolvedClipName
 	cutTouchReached = false
+	local profile = CutTimeline.Get(name)
+ if profile then
+  local side=if profile.StrikeFoot=="L" then "Left" else "Right"
+  local sign=if side=="Left" then 1 else -1
+  for _,joint in character:GetDescendants() do
+   if joint:IsA("Motor6D") or joint:IsA("AnimationConstraint") then
+    local part=joint.Part1
+    if part and (part.Name==side.."UpperLeg" or part.Name==side.."Foot") then
+     local attachment=if joint:IsA("AnimationConstraint") then joint.Attachment0 else nil
+     table.insert(legOffsets,{joint=joint,attachment=attachment,base=if attachment then attachment.CFrame else joint.C0,
+      yaw=-sign*(if part.Name:find("Foot") then 6 else 8),roll=if part.Name:find("Foot") then 0 else -sign*2})
+    end
+   end
+  end
+  table.insert(activeConnections,RunService.PreSimulation:Connect(function()
+   if track~=newTrack then return end
+   local t=newTrack.TimePosition
+   local a=if t<=CutTimeline.StrikeAt then t/CutTimeline.StrikeAt else (0.3-t)/(0.3-CutTimeline.StrikeAt)
+   a=math.clamp(a,0,1);a=a*a*(3-2*a)
+   for _,offset in legOffsets do
+    local cf=offset.base*CFrame.Angles(0,math.rad(offset.yaw*a),math.rad(offset.roll*a))
+    if offset.attachment and offset.attachment.Parent then offset.attachment.CFrame=cf
+    elseif offset.joint.Parent and offset.joint:IsA("Motor6D") then offset.joint.C0=cf end
+   end
+  end))
+ end
 	if exitDirection and exitDirection.Magnitude > 0.001 then
 		activeCutDirection = exitDirection.Unit
 	else
@@ -102,7 +151,7 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 	else
 		activeEntryDirection = activeCutDirection
 	end
-	deadline = os.clock() + math.min(Config.CUT_MAX_DURATION, newTrack.Length + 0.15)
+	deadline = os.clock() + math.min(Config.CUT_MAX_DURATION, newTrack.Length + 0.03)
 	newTrack.Looped = false
 	newTrack.Priority = Enum.AnimationPriority.Action
 
@@ -110,13 +159,25 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 	character:SetAttribute("DribbleCutName", name)
 	character:SetAttribute("DribbleCutClipName", resolvedClipName)
 	character:SetAttribute("DribbleCutControlReleaseReached", false)
+	character:SetAttribute("DribbleCutBallPhase", "Approach")
+	character:SetAttribute("DribbleCutVisualOwner", profile ~= nil)
+
+	if profile then
+		table.insert(activeConnections, newTrack:GetMarkerReachedSignal("BallTrap"):Connect(function(foot: string)
+			if track == newTrack and lockedCharacter == character then
+				character:SetAttribute("DribbleCutBallPhase", "Trapped")
+				DribbleAnimationHelper.NotifyTouchMarker(character, foot, resolvedClipName, true, activeCutId, "Trap")
+			end
+		end))
+	end
 
 	table.insert(
 		activeConnections,
 		newTrack:GetMarkerReachedSignal("TouchL"):Connect(function()
 			if track == newTrack and lockedCharacter == character then
 				cutTouchReached = true
-				DribbleAnimationHelper.NotifyTouchMarker(character, "L", resolvedClipName, true)
+				character:SetAttribute("DribbleCutBallPhase", "Struck")
+				DribbleAnimationHelper.NotifyTouchMarker(character, "L", resolvedClipName, true, activeCutId, if profile then "Strike" else nil)
 			end
 		end)
 	)
@@ -126,7 +187,8 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 		newTrack:GetMarkerReachedSignal("TouchR"):Connect(function()
 			if track == newTrack and lockedCharacter == character then
 				cutTouchReached = true
-				DribbleAnimationHelper.NotifyTouchMarker(character, "R", resolvedClipName, true)
+				character:SetAttribute("DribbleCutBallPhase", "Struck")
+				DribbleAnimationHelper.NotifyTouchMarker(character, "R", resolvedClipName, true, activeCutId, if profile then "Strike" else nil)
 			end
 		end)
 	)
@@ -136,6 +198,11 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 		newTrack:GetMarkerReachedSignal("ControlRelease"):Connect(function()
 			if track == newTrack and lockedCharacter == character then
 				character:SetAttribute("DribbleCutControlReleaseReached", true)
+				character:SetAttribute("DribbleCutBallPhase", "Released")
+				if profile then
+					DribbleAnimationHelper.NotifyTouchMarker(character, profile.StrikeFoot, resolvedClipName, true, activeCutId, "Release")
+					return
+				end
 				local fadeOut = Config.CUT_FADE_OUT_SEC or 0.18
 				pcall(function()
 					newTrack:AdjustWeight(0.001, fadeOut)
@@ -143,12 +210,20 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 			end
 		end)
 	)
+	if profile then
+		table.insert(activeConnections, newTrack:GetMarkerReachedSignal("BlendOut"):Connect(function()
+			if track == newTrack then
+				character:SetAttribute("DribbleCutVisualOwner", false)
+				newTrack:AdjustWeight(0.001, Config.SPRINT_CUT_FADE_OUT_SEC)
+			end
+		end))
+	end
 
 	table.insert(
 		activeConnections,
 		newTrack.Ended:Connect(function()
 			if track == newTrack then
-				Controller.Cancel()
+				Controller.Cancel(true)
 			end
 		end)
 	)
@@ -157,15 +232,16 @@ function Controller.TryStart(character: Model, name: string, exitDirection: Vect
 		activeConnections,
 		newTrack.Stopped:Connect(function()
 			if track == newTrack then
-				Controller.Cancel()
+				Controller.Cancel(true)
 			end
 		end)
 	)
 
-	newTrack:Play(Config.CUT_FADE_SEC)
 	if exitDirection then
-		DribbleAnimationHelper.NotifyCutIntent(character, name, exitDirection)
+		activeCutId = DribbleAnimationHelper.NotifyCutIntent(character, name, exitDirection)
+		if not activeCutId then Controller.Cancel() return false end
 	end
+	newTrack:Play(if profile then 0.08 else Config.CUT_FADE_SEC, if profile then 0.001 else 1)
 	return true
 end
 
@@ -189,6 +265,7 @@ function Controller.IsControlReleased(character: Model?): boolean
 	if not track or lockedCharacter ~= character then
 		return true
 	end
+	if activeCutName and CutTimeline.Get(activeCutName) then return false end
 	if character and character:GetAttribute("DribbleCutControlReleaseReached") == true then
 		return true
 	end
@@ -211,6 +288,12 @@ function Controller.GetActiveCutDirection(): Vector3?
 	if not track or not activeCutDirection then
 		return activeCutDirection
 	end
+	if activeCutName and CutTimeline.Get(activeCutName) then
+		local entry = activeEntryDirection or activeCutDirection
+		if not cutTouchReached then return entry end
+		local angle = math.atan2(entry:Cross(activeCutDirection).Y, math.clamp(entry:Dot(activeCutDirection), -1, 1))
+		return CFrame.Angles(0, angle * CutTimeline.DirectionAlpha(track.TimePosition), 0):VectorToWorldSpace(entry).Unit
+	end
 	if cutTouchReached then
 		return activeCutDirection
 	end
@@ -231,4 +314,13 @@ function Controller.GetActiveCutDirection(): Vector3?
 	return activeCutDirection
 end
 
+function Controller.GetMovementSpeedFactor(): number
+	if track and activeCutName and CutTimeline.Get(activeCutName) then
+		return CutTimeline.SpeedFactor(track.TimePosition)
+	end
+	return 1
+end
+
 return Controller
+
+]====]

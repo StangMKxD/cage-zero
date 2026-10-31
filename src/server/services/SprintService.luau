@@ -5,15 +5,18 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Network = require(Shared:WaitForChild("Network"))
 local SprintConfigs = require(Shared:WaitForChild("configs"):WaitForChild("SprintConfigs"))
 local DribbleActionConfigs = require(Shared:WaitForChild("configs"):WaitForChild("DribbleActionConfigs"))
+local SprintSpeedRules = require(Shared:WaitForChild("SprintSpeedRules"))
 
 local lastSprintStartTime: { [Player]: number } = {}
 local activeConnections: { [Player]: { RBXScriptConnection } } = {}
 local characterGenerations: { [Player]: number } = {}
+local speedStates: { [Player]: SprintSpeedRules.State } = {}
 local isInitialized = false
 
 local SprintService = {}
@@ -21,6 +24,7 @@ local SprintService = {}
 local function cleanupPlayer(player: Player)
 	lastSprintStartTime[player] = nil
 	characterGenerations[player] = nil
+	speedStates[player] = nil
 	local conns = activeConnections[player]
 	if conns then
 		for _, c in ipairs(conns) do
@@ -30,7 +34,7 @@ local function cleanupPlayer(player: Player)
 	end
 end
 
-local function setSprintState(player: Player, shouldSprint: boolean)
+local function setSprintState(player: Player, shouldSprint: boolean, forward: number?, lateral: number?)
 	local character = player.Character
 	if not character or not character:IsDescendantOf(game) then
 		return
@@ -41,7 +45,8 @@ local function setSprintState(player: Player, shouldSprint: boolean)
 		return
 	end
 	-- Owner-approved G close-control mode: Shift cannot raise its server speed cap.
-	if character:GetAttribute("GoalDribbleActive") == true then
+	if character:GetAttribute("GoalDribbleActive") == true or character:GetAttribute("ServerShotPhase") == "Charging" then
+		speedStates[player] = nil
 		humanoid.WalkSpeed = DribbleActionConfigs.GOAL_SPEED
 		character:SetAttribute("IsSprinting", false)
 		if shouldSprint then
@@ -67,7 +72,14 @@ local function setSprintState(player: Player, shouldSprint: boolean)
 			return
 		end
 
-		humanoid.WalkSpeed = SprintConfigs.SPRINT_SPEED
+		local speedState = speedStates[player] or SprintSpeedRules.New()
+		speedStates[player] = speedState
+		local oldSequence=speedState.reverseSeq
+		SprintSpeedRules.SetDirection(speedState, forward or 0, lateral or 0, os.clock())
+		if speedState.reverseSeq>oldSequence then character:SetAttribute("SprintReverseStarted",workspace:GetServerTimeNow()) end
+		humanoid.WalkSpeed = speedState.speed
+		character:SetAttribute("SprintForward", forward == 1)
+		character:SetAttribute("SprintTurnUntil", speedState.penaltyUntil)
 		character:SetAttribute("IsSprinting", true)
 	else
 		humanoid.WalkSpeed = SprintConfigs.NORMAL_WALK_SPEED
@@ -77,6 +89,8 @@ end
 
 local function onSprintIntentRequest(player: Player, payload: any)
 	local shouldSprint: boolean = false
+	local forward = 0
+	local lateral = 0
 
 	-- Security Gate 1: Strict validation of client intent payload (RF-F44 fix & 360° Analog Sprint).
 	-- Never accepts arbitrary client speed/velocity. Server chooses authoritative configured speed.
@@ -87,6 +101,10 @@ local function onSprintIntentRequest(player: Player, payload: any)
 			return
 		end
 
+		local lateralValue = if payload.lateral == nil then 0 else payload.lateral
+		if not SprintSpeedRules.IsAxis(payload.forward) or not SprintSpeedRules.IsAxis(lateralValue) then return end
+		forward = payload.forward
+		lateral = lateralValue
 		local isMoving = false
 		if typeof(payload.isMoving) == "boolean" then
 			isMoving = payload.isMoving
@@ -100,6 +118,7 @@ local function onSprintIntentRequest(player: Player, payload: any)
 			return
 		end
 
+		if isMoving ~= (forward ~= 0 or lateral ~= 0) then return end
 		shouldSprint = (isShiftHeld == true and isMoving == true)
 	elseif payload == false then
 		-- Fail-safe stop request is allowed as a boolean `false`
@@ -114,13 +133,14 @@ local function onSprintIntentRequest(player: Player, payload: any)
 	if shouldSprint then
 		local now = os.clock()
 		local lastStart = lastSprintStartTime[player] or 0
-		if (now - lastStart) < SprintConfigs.START_RATE_LIMIT_INTERVAL_SEC then
+		if (now - lastStart) < SprintConfigs.START_RATE_LIMIT_INTERVAL_SEC
+			and not (player.Character and player.Character:GetAttribute("IsSprinting") == true) then
 			-- Rate limit exceeded: reject start request and signal rejection sequence (RF-F45/RF-F48 fix)
 			local char = player.Character
 			if char and char:IsDescendantOf(game) then
 				local hum = char:FindFirstChildOfClass("Humanoid")
 				if hum then
-					hum.WalkSpeed = if char:GetAttribute("GoalDribbleActive") == true then DribbleActionConfigs.GOAL_SPEED else SprintConfigs.NORMAL_WALK_SPEED
+					hum.WalkSpeed = if char:GetAttribute("GoalDribbleActive") == true or char:GetAttribute("ServerShotPhase") == "Charging" then DribbleActionConfigs.GOAL_SPEED else SprintConfigs.NORMAL_WALK_SPEED
 				end
 				char:SetAttribute("IsSprinting", false)
 				char:SetAttribute("SprintRejectedSeq", (char:GetAttribute("SprintRejectedSeq") or 0) + 1)
@@ -131,10 +151,11 @@ local function onSprintIntentRequest(player: Player, payload: any)
 	end
 
 	-- Security Gate 3: Live R15 character validation and authoritative speed assignment
-	setSprintState(player, shouldSprint)
+	setSprintState(player, shouldSprint, forward, lateral)
 end
 
 local function bindCharacter(player: Player, character: Model)
+	speedStates[player] = nil
 	local currentGen = (characterGenerations[player] or 0) + 1
 	characterGenerations[player] = currentGen
 
@@ -163,6 +184,11 @@ local function bindCharacter(player: Player, character: Model)
 	-- Initialize walk speed to baseline normal
 	humanoid.WalkSpeed = SprintConfigs.NORMAL_WALK_SPEED
 	character:SetAttribute("IsSprinting", false)
+
+	local shotConn = character:GetAttributeChangedSignal("ServerShotPhase"):Connect(function()
+		if player.Character == character then setSprintState(player,false) end
+	end)
+	table.insert(conns,shotConn)
 
 	-- Reset sprint on death
 	local diedConn = humanoid.Died:Connect(function()
@@ -232,6 +258,24 @@ function SprintService.Init()
 	assert(sprintEvent ~= nil, "[SprintService] SprintIntentRequest remote event missing")
 
 	sprintEvent.OnServerEvent:Connect(onSprintIntentRequest)
+	RunService.Heartbeat:Connect(function(dt: number)
+		local now = os.clock()
+		for player, state in pairs(speedStates) do
+			local char = player.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if char and hum and hum.Health > 0 and char:GetAttribute("IsSprinting") == true then
+				if char:GetAttribute("GoalDribbleActive") == true or char:GetAttribute("ServerShotPhase") == "Charging" then
+					setSprintState(player, false)
+				else
+					local root=hum.RootPart
+					local oldSequence=state.reverseSeq
+					if root then SprintSpeedRules.ObserveFacing(state,root.CFrame.LookVector,now) end
+					if state.reverseSeq>oldSequence then char:SetAttribute("SprintReverseStarted",workspace:GetServerTimeNow()) end
+					hum.WalkSpeed = SprintSpeedRules.Advance(state, now, dt)
+				end
+			end
+		end
+	end)
 
 	Players.PlayerAdded:Connect(function(player)
 		player.CharacterAdded:Connect(function(char)
@@ -262,3 +306,35 @@ function SprintService.Init()
 end
 
 return table.freeze(SprintService)
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+local function setSprintState(player: Player, shouldSprint: boolean)
+
+-- Previous section --
+		humanoid.WalkSpeed = SprintConfigs.SPRINT_SPEED
+
+-- Previous section --
+		if (now - lastStart) < SprintConfigs.START_RATE_LIMIT_INTERVAL_SEC then
+
+-- Previous section --
+	setSprintState(player, shouldSprint)
+]====]
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+local function setSprintState(player: Player, shouldSprint: boolean, forward: number?)
+
+-- Previous section --
+		humanoid.WalkSpeed = if forward == 1 then SprintConfigs.SPRINT_SPEED else SprintConfigs.OTHER_DIRECTION_SPEED
+
+-- Previous section --
+		if payload.forward ~= -1 and payload.forward ~= 0 and payload.forward ~= 1 then return end
+
+-- Previous section --
+	setSprintState(player, shouldSprint, forward)
+]====]

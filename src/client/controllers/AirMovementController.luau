@@ -16,6 +16,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local JumpConfigs = require(Shared:WaitForChild("configs"):WaitForChild("JumpConfigs"))
+local GroundTurnConfigs = require(Shared:WaitForChild("configs"):WaitForChild("GroundTurnConfigs"))
 
 local isInitialized = false
 local localPlayer: Player? = nil
@@ -323,22 +324,37 @@ local function onHeartbeat(dt: number, thisGen: number)
 		end
 
 		local _, y, _ = hrp.CFrame:ToOrientation()
+		local yawDelta = (y - lastGroundedFacingYaw + math.pi) % (2 * math.pi) - math.pi
+		local yawRate = yawDelta / math.max(dt, 0.001)
 		lastGroundedFacingYaw = y
 
-		-- Grounded: Smoothly return lean to neutral
-		if math.abs(currentPitch) > 0.001 or math.abs(currentRoll) > 0.001 then
-			local returnFactor = math.clamp(dt * JumpConfigs.LEAN_RETURN_SPEED, 0, 1)
-			currentPitch += (0 - currentPitch) * returnFactor
-			currentRoll += (0 - currentRoll) * returnFactor
-
-			if math.abs(currentPitch) < 0.001 and math.abs(currentRoll) < 0.001 then
-				currentPitch = 0
-				currentRoll = 0
-				resetJoints()
-			else
-				applyLeanJoint(currentPitch, currentRoll)
-				syncCharacterTelemetry()
+		-- Reuse the existing single visual-joint owner; airborne yaw/momentum stay unchanged.
+		local targetPitch, targetRoll = 0, 0
+		local char = currentCharacter
+		local eligible = char ~= nil and char:GetAttribute("MovePreviewActive") == true
+			and char:GetAttribute("GoalDribbleActive") ~= true
+			and char:GetAttribute("ShotActive") ~= true and char:GetAttribute("ShotCharging") ~= true
+			and hum.FloorMaterial ~= Enum.Material.Air
+			and hum:GetState() == Enum.HumanoidStateType.Running
+		if eligible and char and horizVel.Magnitude > 2 then
+			local desired = char:GetAttribute("DesiredMoveDirection")
+			if typeof(desired) == "Vector3" and desired.Magnitude > 0.01 then
+				local wantedYaw = math.atan2(-desired.X, -desired.Z)
+				local delta = (wantedYaw - y + math.pi) % (2 * math.pi) - math.pi
+				local turn = math.clamp(delta / math.rad(GroundTurnConfigs.FullLeanAngleDeg)
+					+ yawRate / GroundTurnConfigs.FullLeanRateRadPerSec, -1, 1)
+				local speedWeight = math.clamp(horizVel.Magnitude / 28.8, 0, 1)
+				targetRoll = turn * math.rad(GroundTurnConfigs.MaxRollDeg) * speedWeight
+				targetPitch = -math.abs(turn) * math.rad(GroundTurnConfigs.MaxPitchDeg) * speedWeight
 			end
+		end
+		local alpha = 1 - math.exp(-GroundTurnConfigs.LeanResponse * math.clamp(dt, 0, 0.1))
+		currentPitch += (targetPitch - currentPitch) * alpha
+		currentRoll += (targetRoll - currentRoll) * alpha
+		applyLeanJoint(currentPitch, currentRoll)
+		if char then
+			char:SetAttribute("GroundTurnRoll", currentRoll)
+			char:SetAttribute("GroundTurnPitch", currentPitch)
 		end
 	end
 end
@@ -578,3 +594,22 @@ function AirMovementController.GetAimOrientation(): CFrame
 end
 
 return table.freeze(AirMovementController)
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+		-- Grounded: Smoothly return lean to neutral
+		if math.abs(currentPitch) > 0.001 or math.abs(currentRoll) > 0.001 then
+			local returnFactor = math.clamp(dt * JumpConfigs.LEAN_RETURN_SPEED, 0, 1)
+			currentPitch += (0 - currentPitch) * returnFactor
+			currentRoll += (0 - currentRoll) * returnFactor
+
+			if math.abs(currentPitch) < 0.001 and math.abs(currentRoll) < 0.001 then
+				currentPitch = 0
+				currentRoll = 0
+				resetJoints()
+			else
+				applyLeanJoint(currentPitch, currentRoll)
+				syncCharacterTelemetry()
+]====]

@@ -20,7 +20,7 @@ local DribbleConfigs = require(ConfigsFolder:WaitForChild("DribbleConfigs"))
 local DribbleGeometryHelper = require(Shared:WaitForChild("DribbleGeometryHelper"))
 local DribbleActionConfigs = require(ConfigsFolder:WaitForChild("DribbleActionConfigs"))
 local DribbleControlRules = require(Shared:WaitForChild("DribbleControlRules"))
-local DribbleCutController = require(script.Parent:WaitForChild("DribbleCutController"))
+local TurnConfigs = require(ConfigsFolder:WaitForChild("GroundTurnConfigs"))
 local MOVEMENT_STEP_NAME = "CageZeroMovementHeadingStep"
 
 local MovementHeadingPreviewController = {}
@@ -41,12 +41,6 @@ local isGHeld = false
 local goalDirection: Vector3? = nil
 local lastGoalIntent = false
 local lastGoalSentTime = 0.0
-local lastCutChord = "NONE"
-local lastCutInput = Vector3.zero
-local lastCutWorldDir = Vector3.zero
-local lastCutInputTime = 0.0
-local lastCutEndTime = 0.0
-
 -- Bounded jump input buffer (os.clock deadline); cleared once Humanoid enters Jumping
 local jumpBufferUntil: number = 0
 
@@ -57,10 +51,6 @@ local currentWorldDirection: Vector3 = Vector3.zero
 -- Phase-Aware Dribble Turn Gate State (RF02-DRIBBLE-RECEIVE 2026-10-27)
 local rawWorldDirection: Vector3 = Vector3.zero
 local dribbleTurnFactor: number = 1.0
-
--- Cut speed scale: drops to the cut factor when a cut starts, recovers smoothly afterwards (movement never freezes)
-local cutSpeedScale: number = 1.0
-local CUT_REVERSE_NAMES = { ReverseLeft = true, ReverseRight = true, GoalReverse = true }
 
 -- Character tracking
 local currentCharacter: Model? = nil
@@ -134,7 +124,8 @@ local function notifyMovementIntent(isMoving: boolean, forward: number)
 	local sprintCtrl = getSprintController()
 	if sprintCtrl then
 		if sprintCtrl.SetMovementIntent then
-			sprintCtrl.SetMovementIntent(isMoving)
+			local lateral = (isDDown and 1 or 0) - (isADown and 1 or 0)
+			sprintCtrl.SetMovementIntent(isMoving, forward, lateral)
 		elseif sprintCtrl.SetForwardIntent then
 			sprintCtrl.SetForwardIntent(forward)
 		end
@@ -282,98 +273,9 @@ local function updateMovementIntent(camYaw: number)
 	currentChord = chord
 	publishLeanInput(worldDir)
 
-	currentWorldDirection = worldDir
-	local char = currentCharacter
-	if char and char:GetAttribute("IsBallCarrier") == true and isEligibleGrounded() then
-		local opposingKeys = (isWDown and isSDown) or (isADown and isDDown)
-		if opposingKeys then
-			DribbleCutController.Cancel()
-			lastCutInput = Vector3.zero
-			lastCutWorldDir = Vector3.zero
-			lastCutChord = "NONE"
-			currentWorldDirection = Vector3.zero
-		else
-			local input = computeLocalInputVector()
-			local locked = DribbleCutController.IsLocked(char)
-			local sprintCtrl = getSprintController()
-			local sprintingNow = (char:GetAttribute("IsSprinting") == true)
-				or (sprintCtrl ~= nil and sprintCtrl.IsSprinting ~= nil and sprintCtrl.IsSprinting() == true)
-			local cutsAllowed = sprintingNow and not activeGoal and (char:GetAttribute("GoalDribbleActive") ~= true)
-			if not cutsAllowed and locked then
-				DribbleCutController.Cancel()
-				locked = false
-			end
-			if input.Magnitude > 0 then
-				if now - lastCutInputTime > DribbleActionConfigs.REVERSE_INPUT_GRACE_SEC then
-					lastCutInput = Vector3.zero
-					lastCutWorldDir = Vector3.zero
-					lastCutChord = "NONE"
-				end
-				if not locked and cutsAllowed then
-					local name = DribbleControlRules.CutForTransition(lastCutChord, chord, lastCutInput, input, DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG)
-					local prevWorldDir = if lastCutWorldDir.Magnitude > 0.001
-						then lastCutWorldDir
-						elseif lastCutInput.Magnitude > 0.001
-							then (CFrame.Angles(0, camYaw, 0):VectorToWorldSpace(lastCutInput)).Unit
-						else worldDir
-
-					-- Mouse-steer cut detection: if holding the same key (e.g. W) and turning the mouse/camera so desired
-					-- world direction diverges significantly from the current body heading, trigger the matching diagonal/reverse cut!
-					local cutCooldown = DribbleActionConfigs.CUT_COOLDOWN_SEC or 0.20
-					if not name and currentHrp and (now - lastCutEndTime >= cutCooldown) then
-						local bodyLook = DribbleControlRules.HorizontalDirection(currentHrp.CFrame.LookVector)
-						if bodyLook.Magnitude > 0.001 and worldDir.Magnitude > 0.001 then
-							local steerAngleDeg = math.deg(math.acos(math.clamp(bodyLook:Dot(worldDir), -1, 1)))
-							local crossY = bodyLook:Cross(worldDir).Y -- > 0 means steering Left, < 0 means steering Right
-							local frontThresh = DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_FRONT_DEG or 34
-							local backThresh = DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_BACK_DEG or 88
-							local revThresh = DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG or 120
-							if steerAngleDeg >= revThresh then
-								name = if crossY < 0 then "ReverseRight" else "ReverseLeft"
-								prevWorldDir = bodyLook
-							elseif steerAngleDeg >= backThresh then
-								name = if crossY >= 0 then "BackLeft" else "BackRight"
-								prevWorldDir = bodyLook
-							elseif steerAngleDeg >= frontThresh then
-								name = if crossY >= 0 then "FrontLeft" else "FrontRight"
-								prevWorldDir = bodyLook
-							end
-						end
-					end
-
-					if not name and lastCutChord == "NONE" and #chord == 2 then
-						name = if input.Z < 0
-							then (if input.X < 0 then "FrontLeft" else "FrontRight")
-							else (if input.X < 0 then "BackLeft" else "BackRight")
-					end
-					if name then
-						locked = DribbleCutController.TryStart(char, name, worldDir, prevWorldDir)
-						if locked then
-							lastCutEndTime = now
-						end
-					end
-				end
-				-- Latest held input wins when the real animation finishes, without replay.
-				lastCutChord = chord
-				lastCutInput = input
-				lastCutWorldDir = worldDir
-				lastCutInputTime = now
-			end
-			-- While a cut animation is active, lock the carrier's travel direction to the cut's diagonal/exit direction
-			-- at full normal speed until ControlRelease; once ControlRelease is reached, seamlessly steer into the running loop.
-			if locked and not DribbleCutController.IsControlReleased(char) then
-				local lockedDir = DribbleCutController.GetActiveCutDirection()
-				if lockedDir and lockedDir.Magnitude > 0.001 then
-					currentWorldDirection = lockedDir
-				end
-			end
-		end
-	else
-		DribbleCutController.Cancel()
-		lastCutInput = Vector3.zero
-		lastCutWorldDir = Vector3.zero
-		lastCutChord = "NONE"
-		lastCutEndTime = now
+	-- Latest input continuously steers travel; there is no committed animation or queued direction.
+	if worldDir.Magnitude < 0.001 or currentWorldDirection.Magnitude < 0.001 or activeGoal or checkIsAirborne() then
+		currentWorldDirection = worldDir
 	end
 
 	local isMoving = currentWorldDirection.Magnitude > 0.001
@@ -400,7 +302,6 @@ local function updateGroundedFacing(camYaw: number, dt: number): number
 	if currentWorldDirection.Magnitude <= 0.001 and not goalDirection then
 		return 1.0
 	end
-	-- Cut no longer freezes heading: the body keeps turning toward the held direction while the cut clip plays.
 
 	-- Ground body faces actual movement direction in 360°
 	local facing = goalDirection or currentWorldDirection
@@ -417,9 +318,10 @@ local function updateGroundedFacing(camYaw: number, dt: number): number
 	-- No contact/phase/timer gate: the heading above always follows the latest intent immediately.
 	local char = currentCharacter
 	local isCarrier = (char and char:GetAttribute("IsBallCarrier") == true)
+	local isSprinting = (char and char:GetAttribute("IsSprinting") == true)
 	if isCarrier then
-		local isSprinting = (char:GetAttribute("IsSprinting") == true)
-		local target = DribbleGeometryHelper.ComputeTurnSpeedFactor(diff, isSprinting)
+		-- Sprint turn speed now has one timed server owner; keep walking/collision slow-down.
+		local target = if isSprinting then 1 else DribbleGeometryHelper.ComputeTurnSpeedFactor(diff, false)
 		if target < dribbleTurnFactor then
 			dribbleTurnFactor = target
 		else
@@ -427,14 +329,8 @@ local function updateGroundedFacing(camYaw: number, dt: number): number
 		end
 		local blocked = char:GetAttribute("DribbleSpeedFactor")
 		local blockedFactor = if typeof(blocked) == "number" then math.clamp(blocked, 0, 1) else 1.0
-		-- Diagonal turns (< 120 deg) and active dribble cuts keep full 1.0 speed (no speed dip on diagonal keyboard or mouse steering).
-		if DribbleCutController.IsLocked(char) then
-			dribbleTurnFactor = 1.0
-			speedDipFactor = blockedFactor
-		else
-			speedDipFactor = dribbleTurnFactor * blockedFactor
-		end
-	elseif movementCfg and movementCfg.TurnSpeedDipEnabled ~= false then
+		speedDipFactor = dribbleTurnFactor * blockedFactor
+	elseif not isSprinting and movementCfg and movementCfg.TurnSpeedDipEnabled ~= false then
 		local threshRad = math.rad(movementCfg.TurnSpeedDipThresholdDeg or 30.0)
 		local absDiff = math.abs(diff)
 		if absDiff > threshRad then
@@ -451,7 +347,7 @@ local function updateGroundedFacing(camYaw: number, dt: number): number
 		local newYaw = targetYaw
 		if movementCfg and movementCfg.TurnSmoothingEnabled ~= false then
 			local turnSpeed = if isCarrier
-				then (DribbleConfigs.DRIBBLE_TURN_RATE_RAD_PER_SEC or 10.0)
+				then TurnConfigs.FacingRateRadPerSec
 				else (movementCfg.FacingTurnSpeedRadPerSec or 20.0)
 			local clampedDt = math.clamp(dt, 0.001, 0.1)
 			local maxStep = turnSpeed * clampedDt
@@ -479,10 +375,6 @@ local function resetAllKeys()
 	isSpaceDown = false
 	isGHeld = false
 	goalDirection = nil
-	DribbleCutController.Cancel()
-	lastCutChord = "NONE"
-	lastCutInput = Vector3.zero
-	lastCutWorldDir = Vector3.zero
 	if lastGoalIntent then
 		local remote = getBallActionRemote()
 		if remote and currentCharacter then
@@ -493,7 +385,6 @@ local function resetAllKeys()
 	lastGoalSentTime = 0
 	jumpBufferUntil = 0
 	dribbleTurnFactor = 1.0
-	cutSpeedScale = 1.0
 	currentChord = "NONE"
 	rawWorldDirection = Vector3.zero
 	currentWorldDirection = Vector3.zero
@@ -578,30 +469,35 @@ local function onMovementStep(dt: number)
 	updateMovementIntent(camYaw)
 
 	local isAirborne = checkIsAirborne()
+	if not isAirborne and not goalDirection and rawWorldDirection.Magnitude > 0.001 and currentWorldDirection.Magnitude > 0.001 then
+		local currentYaw = math.atan2(-currentWorldDirection.X, -currentWorldDirection.Z)
+		local desiredYaw = math.atan2(-rawWorldDirection.X, -rawWorldDirection.Z)
+		local alpha = 1 - math.exp(-math.clamp(dt, 0, 0.1) / TurnConfigs.ResponseSec)
+		local yaw = currentYaw + getShortestAngleDiff(desiredYaw, currentYaw) * alpha
+		currentWorldDirection = Vector3.new(-math.sin(yaw), 0, -math.cos(yaw))
+	end
 	if isAirborne then
 		-- Humanoid air physics must not see a non-zero MoveDirection: AirMovementController owns
 		-- airborne horizontal momentum/lean. Lean intent is delivered via publishLeanInput().
 		currentHumanoid:Move(Vector3.zero, false)
 		-- Landing-edge jump buffer is preserved: do not clear jumpBufferUntil here
-	elseif isEligibleGrounded() then
+	elseif currentCharacter and (currentCharacter:GetAttribute("ShotActive") == true or currentCharacter:GetAttribute("ShotCharging") == true) then
+  if currentCharacter:GetAttribute("ShotCharging") == true and currentWorldDirection.Magnitude>0.001 then
+   currentHumanoid:Move(currentWorldDirection*math.min(1,DribbleActionConfigs.GOAL_SPEED/math.max(1,currentHumanoid.WalkSpeed)),false)
+  else currentHumanoid:Move(Vector3.zero, false) end
+  currentHumanoid.Jump = false
+  local aim = if currentCharacter:GetAttribute("ShotCharging") == true then currentCharacter:GetAttribute("ShotChargeAim") else (currentCharacter:GetAttribute("ShotVisualAim") or currentCharacter:GetAttribute("ServerShotAim"))
+  local root = currentCharacter:FindFirstChild("HumanoidRootPart")
+  if typeof(aim) == "Vector3" and root and root:IsA("BasePart") then
+   local flat = Vector3.new(aim.X,0,aim.Z)
+   if flat.Magnitude > 0.01 then root.CFrame=root.CFrame:Lerp(CFrame.lookAt(root.Position,root.Position+flat),1-math.exp(-20*dt)) end
+  end
+ elseif isEligibleGrounded() then
 		-- Grounded: 360° Analog Locomotion Facing with Turn Smoothing & Speed Dip
 		local speedDipFactor = updateGroundedFacing(camYaw, dt)
 		if goalDirection then
 			speedDipFactor *= math.min(1, DribbleActionConfigs.GOAL_SPEED / math.max(1, currentHumanoid.WalkSpeed))
 		end
-
-		-- Dribble cut: keep moving at reduced speed for the cut, then recover smoothly.
-		local cutLocked = currentCharacter ~= nil and DribbleCutController.IsLocked(currentCharacter)
-		if cutLocked then
-			local cutName = DribbleCutController.GetActiveCutName()
-			local cutFactor = if cutName ~= nil and CUT_REVERSE_NAMES[cutName]
-				then DribbleActionConfigs.CUT_MOVE_SPEED_FACTOR_REVERSE
-				else DribbleActionConfigs.CUT_MOVE_SPEED_FACTOR
-			cutSpeedScale = math.min(cutSpeedScale, cutFactor)
-		else
-			cutSpeedScale = math.min(1.0, cutSpeedScale + DribbleActionConfigs.CUT_SPEED_RECOVERY_PER_SEC * dt)
-		end
-		speedDipFactor = math.min(speedDipFactor, cutSpeedScale)
 
 		-- Apply camera-relative movement direction while grounded, scaled by turn speed dip factor
 		if currentWorldDirection.Magnitude > 0.001 then
@@ -613,8 +509,7 @@ local function onMovementStep(dt: number)
 		local state = currentHumanoid:GetState()
 		if state == Enum.HumanoidStateType.Jumping then
 			jumpBufferUntil = 0
-		elseif (isSpaceDown or os.clock() < jumpBufferUntil)
-			and not (currentCharacter and DribbleCutController.IsLocked(currentCharacter)) then
+		elseif isSpaceDown or os.clock() < jumpBufferUntil then
 			-- A press on the Landed edge would otherwise be eaten by Landed -> Running
 			if state == Enum.HumanoidStateType.Landed and currentHumanoid.FloorMaterial ~= Enum.Material.Air then
 				currentHumanoid:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -832,3 +727,219 @@ function MovementHeadingPreviewController.Cleanup()
 end
 
 return MovementHeadingPreviewController
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+local DribbleCutController = require(script.Parent:WaitForChild("DribbleCutController"))
+
+-- Previous section --
+local lastCutChord = "NONE"
+local lastCutInput = Vector3.zero
+local lastCutWorldDir = Vector3.zero
+local lastCutInputTime = 0.0
+local lastCutEndTime = 0.0
+
+
+-- Previous section --
+-- Cut speed scale: drops to the cut factor when a cut starts, recovers smoothly afterwards (movement never freezes)
+local cutSpeedScale: number = 1.0
+local CUT_REVERSE_NAMES = { ReverseLeft = true, ReverseRight = true, GoalReverse = true }
+
+
+-- Previous section --
+			sprintCtrl.SetMovementIntent(isMoving)
+
+-- Previous section --
+local cutInputSettlingUntil = 0
+local wasCutLocked = false
+local queuedCutJump = false
+local suppressCutMouseUntilAligned = false
+
+-- Previous section --
+	if not (currentCharacter and DribbleCutController.IsLocked(currentCharacter)) and isGHeld and isEligibleGrounded() and currentCharacter and currentHrp then
+
+-- Previous section --
+	currentWorldDirection = worldDir
+	local char = currentCharacter
+	if char and char:GetAttribute("IsBallCarrier") == true and char:GetAttribute("ShotActive") ~= true and char:GetAttribute("ShotCharging") ~= true and isEligibleGrounded() then
+		local opposingKeys = (isWDown and isSDown) or (isADown and isDDown)
+  if opposingKeys then cutInputSettlingUntil=now+0.15 end
+  local committed = DribbleCutController.IsLocked(char)
+  if committed then
+   wasCutLocked = true
+   lastCutChord = if opposingKeys then "NONE" else chord
+   lastCutInput = if opposingKeys then Vector3.zero else computeLocalInputVector()
+   lastCutWorldDir = if opposingKeys then Vector3.zero else worldDir
+   lastCutInputTime = now
+   currentWorldDirection = DribbleCutController.GetActiveCutDirection() or Vector3.zero
+   currentHumanoid.Jump = false
+   notifyMovementIntent(currentWorldDirection.Magnitude>0.001,forward)
+   return
+  elseif wasCutLocked then
+   wasCutLocked = false
+   suppressCutMouseUntilAligned = true
+   lastCutEndTime = now
+   if queuedCutJump then jumpBufferUntil=now+JumpConfigs.JUMP_BUFFER_WINDOW_SEC;queuedCutJump=false;char:SetAttribute("CutQueuedJump",false);char:SetAttribute("CutJumpConsumedTime",workspace:GetServerTimeNow()) end
+  end
+  if suppressCutMouseUntilAligned and currentHrp and worldDir.Magnitude>0.001 then
+   local body = DribbleControlRules.HorizontalDirection(currentHrp.CFrame.LookVector)
+   if body:Dot(worldDir)>math.cos(math.rad(12)) then suppressCutMouseUntilAligned=false end
+  end
+		if opposingKeys then
+			DribbleCutController.Cancel()
+			lastCutInput = Vector3.zero
+			lastCutWorldDir = Vector3.zero
+			lastCutChord = "NONE"
+			currentWorldDirection = Vector3.zero
+		else
+			local input = computeLocalInputVector()
+			local locked = DribbleCutController.IsLocked(char)
+			local sprintCtrl = getSprintController()
+			local sprintingNow = (char:GetAttribute("IsSprinting") == true)
+				or (sprintCtrl ~= nil and sprintCtrl.IsSprinting ~= nil and sprintCtrl.IsSprinting() == true)
+			local cutsAllowed = now>=cutInputSettlingUntil and sprintingNow and not activeGoal and (char:GetAttribute("GoalDribbleActive") ~= true)
+			if not cutsAllowed and locked then
+				DribbleCutController.Cancel()
+				locked = false
+			end
+			if input.Magnitude > 0 then
+				if now - lastCutInputTime > DribbleActionConfigs.REVERSE_INPUT_GRACE_SEC then
+					lastCutInput = Vector3.zero
+					lastCutWorldDir = Vector3.zero
+					lastCutChord = "NONE"
+				end
+				if not locked and cutsAllowed then
+					local name = DribbleControlRules.CutForTransition(lastCutChord, chord, lastCutInput, input, DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG)
+					local prevWorldDir = if lastCutWorldDir.Magnitude > 0.001
+						then lastCutWorldDir
+						elseif lastCutInput.Magnitude > 0.001
+							then (CFrame.Angles(0, camYaw, 0):VectorToWorldSpace(lastCutInput)).Unit
+						else worldDir
+
+					-- Mouse-steer cut detection: if holding the same key (e.g. W) and turning the mouse/camera so desired
+					-- world direction diverges significantly from the current body heading, trigger the matching diagonal/reverse cut!
+					local cutCooldown = DribbleActionConfigs.CUT_COOLDOWN_SEC or 0.20
+					if not name and not suppressCutMouseUntilAligned and currentHrp and (now - lastCutEndTime >= cutCooldown) then
+						local bodyLook = DribbleControlRules.HorizontalDirection(currentHrp.CFrame.LookVector)
+						if bodyLook.Magnitude > 0.001 and worldDir.Magnitude > 0.001 then
+							local steerAngleDeg = math.deg(math.acos(math.clamp(bodyLook:Dot(worldDir), -1, 1)))
+							local crossY = bodyLook:Cross(worldDir).Y -- > 0 means steering Left, < 0 means steering Right
+							local frontThresh = DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_FRONT_DEG or 34
+							local backThresh = DribbleActionConfigs.CUT_MOUSE_STEER_DIAG_BACK_DEG or 88
+							local revThresh = DribbleActionConfigs.CUT_REVERSE_ANGLE_DEG or 120
+							if steerAngleDeg >= revThresh then
+								name = if crossY < 0 then "ReverseRight" else "ReverseLeft"
+								prevWorldDir = bodyLook
+							elseif steerAngleDeg >= backThresh then
+								name = if crossY >= 0 then "BackLeft" else "BackRight"
+								prevWorldDir = bodyLook
+							elseif steerAngleDeg >= frontThresh then
+								name = if crossY >= 0 then "FrontLeft" else "FrontRight"
+								prevWorldDir = bodyLook
+							end
+						end
+					end
+
+					if not name and lastCutChord == "NONE" and #chord == 2 then
+						name = if input.Z < 0
+							then (if input.X < 0 then "FrontLeft" else "FrontRight")
+							else (if input.X < 0 then "BackLeft" else "BackRight")
+					end
+					if name then
+						locked = DribbleCutController.TryStart(char, name, worldDir, prevWorldDir)
+						if locked then
+							lastCutEndTime = now
+						end
+					end
+				end
+				-- Latest held input wins when the real animation finishes, without replay.
+				lastCutChord = chord
+				lastCutInput = input
+				lastCutWorldDir = worldDir
+				lastCutInputTime = now
+			end
+			-- While a cut animation is active, lock the carrier's travel direction to the cut's diagonal/exit direction
+			-- at full normal speed until ControlRelease; once ControlRelease is reached, seamlessly steer into the running loop.
+			if locked and not DribbleCutController.IsControlReleased(char) then
+				local lockedDir = DribbleCutController.GetActiveCutDirection()
+				if lockedDir and lockedDir.Magnitude > 0.001 then
+					currentWorldDirection = lockedDir
+				end
+			end
+		end
+	else
+		queuedCutJump=false
+		wasCutLocked=false
+		DribbleCutController.Cancel()
+		lastCutInput = Vector3.zero
+		lastCutWorldDir = Vector3.zero
+		lastCutChord = "NONE"
+		lastCutEndTime = now
+
+-- Previous section --
+	-- Cut no longer freezes heading: the body keeps turning toward the held direction while the cut clip plays.
+
+-- Previous section --
+		-- Diagonal turns (< 120 deg) and active dribble cuts keep full 1.0 speed (no speed dip on diagonal keyboard or mouse steering).
+		if DribbleCutController.IsLocked(char) then
+			dribbleTurnFactor = 1.0
+			speedDipFactor = blockedFactor
+		else
+			speedDipFactor = dribbleTurnFactor * blockedFactor
+		end
+
+-- Previous section --
+				then (DribbleConfigs.DRIBBLE_TURN_RATE_RAD_PER_SEC or 10.0)
+
+-- Previous section --
+	DribbleCutController.Cancel()
+	lastCutChord = "NONE"
+	lastCutInput = Vector3.zero
+	lastCutWorldDir = Vector3.zero
+
+-- Previous section --
+	queuedCutJump=false
+	wasCutLocked=false
+	suppressCutMouseUntilAligned=false
+
+-- Previous section --
+	cutSpeedScale = 1.0
+
+-- Previous section --
+		if currentCharacter and DribbleCutController.IsLocked(currentCharacter) then queuedCutJump=true;currentCharacter:SetAttribute("CutQueuedJump",true) end
+
+-- Previous section --
+		-- Dribble cut: keep moving at reduced speed for the cut, then recover smoothly.
+		local cutLocked = currentCharacter ~= nil and DribbleCutController.IsLocked(currentCharacter)
+		if cutLocked then
+			local cutName = DribbleCutController.GetActiveCutName()
+			local cutFactor = if cutName ~= nil and CUT_REVERSE_NAMES[cutName]
+				then DribbleActionConfigs.CUT_MOVE_SPEED_FACTOR_REVERSE
+				else DribbleActionConfigs.CUT_MOVE_SPEED_FACTOR
+			cutSpeedScale = math.min(cutFactor, DribbleCutController.GetMovementSpeedFactor())
+		else
+			cutSpeedScale = math.min(1.0, cutSpeedScale + DribbleActionConfigs.CUT_SPEED_RECOVERY_PER_SEC * dt)
+		end
+		speedDipFactor = math.min(speedDipFactor, cutSpeedScale)
+
+
+-- Previous section --
+		elseif (isSpaceDown or os.clock() < jumpBufferUntil)
+			and not (currentCharacter and DribbleCutController.IsLocked(currentCharacter)) then
+]====]
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+			sprintCtrl.SetMovementIntent(isMoving, forward)
+
+-- Previous section --
+		local isSprinting = (char:GetAttribute("IsSprinting") == true)
+		local target = DribbleGeometryHelper.ComputeTurnSpeedFactor(diff, isSprinting)
+
+-- Previous section --
+	elseif movementCfg and movementCfg.TurnSpeedDipEnabled ~= false then
+]====]

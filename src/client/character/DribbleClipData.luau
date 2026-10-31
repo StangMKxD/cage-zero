@@ -1,10 +1,10 @@
 --!strict
 -- src/client/character/DribbleClipData.luau
--- Immutable Authored R15 Dribble, Directional Cut, and G-Mode Close-Control Animation Data
+-- Immutable Authored R15 Dribble and G-Mode Close-Control Animation Data
 -- Governed by RF02-DRIBBLE-ANIMATION-INTEGRATION Contract (2026-10-27).
 -- Provides deterministic KeyframeSequence construction with 15 R15 joints and KeyframeMarkers.
 
-local SprintCutReference = require(script.Parent:WaitForChild("SprintCutReferenceData"))
+local WalkDribbleReference = require(script.Parent:WaitForChild("WalkDribbleReferenceData"))
 
 export type MarkerEntry = {
 	t: number,
@@ -26,6 +26,7 @@ export type ClipDefinition = {
 	loop: boolean,
 	priority: Enum.AnimationPriority,
 	markers: { MarkerEntry },
+	frameTimes: { number }?,
 	poseAt: (u: number) -> PoseMap,
 }
 
@@ -259,29 +260,40 @@ local function gWalkingFeet(pose: PoseMap, phase: number, forward: number, later
 	return pose
 end
 
--- Walking shares the accepted run-dribble choreography and marker phases.
--- Reduce the pose amplitudes and ground the softer stance at the slower walk cadence.
+-- Owner-provided 3s walking loop, with source joint rotations/timestamps and level gaze.
+-- Root X/Z travel stays with the game controller; baked support height fits the rig.
 local function walkDribblePose(u: number): PoseMap
-	local pose = runDribblePose(u)
-	for name, joint in pairs(pose) do
-		local r = joint.r
-		if name == "LowerTorso" then
-			local p = joint.p or Vector3.zero
-			joint.p = Vector3.new(p.X * 0.55, p.Y * 0.65, p.Z * 0.45)
-			joint.r = Vector3.new(r.X * 0.55, r.Y * 0.5, r.Z * 0.6)
-		elseif name == "UpperTorso" or name == "Head" then
-			joint.r = r * 0.55
-		elseif name:find("UpperArm") then
-			joint.r = Vector3.new(r.X * 0.48, r.Y * 0.5, r.Z * 0.85)
-		elseif name:find("LowerArm") then
-			joint.r = Vector3.new(36 + (r.X - 72) * 0.35, r.Y * 0.4, r.Z * 0.6)
-		elseif name:find("UpperLeg") then
-			joint.r = Vector3.new(r.X * 0.62, r.Y * 0.6, r.Z * 0.85)
-		elseif name:find("LowerLeg") then
-			joint.r = r * 0.65
-		else
-			joint.r = r * 0.6
-		end
+	local frames = WalkDribbleReference.Frames
+	local time = math.clamp(u, 0, 1) * 3
+	local index = math.clamp(math.floor(time * 30) + 1, 1, #frames - 1)
+	while index > 1 and frames[index].time > time do
+		index -= 1
+	end
+	while index < #frames - 1 and frames[index + 1].time < time do
+		index += 1
+	end
+	local first, second = frames[index], frames[index + 1]
+	local alpha = math.clamp((time - first.time) / (second.time - first.time), 0, 1)
+	local pose: PoseMap = {}
+	for joint, name in ipairs(WalkDribbleReference.Parts) do
+		local rotation = first.rotations[joint]:Lerp(second.rotations[joint], alpha)
+		local x, y, z = rotation:ToEulerAnglesXYZ()
+		pose[name] = { r = Vector3.new(math.deg(x), math.deg(y), math.deg(z)) }
+	end
+	pose.LowerTorso.p = Vector3.new(0, first.travel.Y + (second.travel.Y - first.travel.Y) * alpha, 0)
+	-- Keep the accepted body lean, but compensate at the neck so the gaze stays level.
+	-- Preserve the reference's horizontal look direction and head roll.
+	local function rotation(r: Vector3): CFrame
+		return CFrame.Angles(math.rad(r.X), math.rad(r.Y), math.rad(r.Z))
+	end
+	local body = rotation(pose.LowerTorso.r) * rotation(pose.UpperTorso.r)
+	local head = body * rotation(pose.Head.r)
+	local forward = Vector3.new(head.LookVector.X, 0, head.LookVector.Z)
+	if forward.Magnitude > 0.001 then
+		local roll = math.atan2(head.RightVector.Y, head.UpVector.Y)
+		local level = CFrame.lookAt(Vector3.zero, forward.Unit) * CFrame.Angles(0, 0, roll)
+		local x, y, z = (body:Inverse() * level):ToEulerAnglesXYZ()
+		pose.Head.r = Vector3.new(math.deg(x), math.deg(y), math.deg(z))
 	end
 	return gGroundPose(pose)
 end
@@ -355,110 +367,38 @@ local function gModeRightStepPose(u: number): PoseMap
 	return gModeGroundStepPose(u, 0, 1)
 end
 
-local function mirrorCutPose(pose: PoseMap): PoseMap
-	local mirrored: PoseMap = {}
-	for name, joint in pairs(pose) do
-		local other = if name:sub(1, 4) == "Left" then "Right" .. name:sub(5)
-			elseif name:sub(1, 5) == "Right" then "Left" .. name:sub(6) else name
-		local p = joint.p
-		mirrored[other] = {
-			p = if p then Vector3.new(-p.X, p.Y, p.Z) else nil,
-			r = Vector3.new(joint.r.X, -joint.r.Y, -joint.r.Z),
-		}
-	end
-	return mirrored
-end
-
-local function makeReferenceCutPose(dirSign: number, turnDegrees: number, duration: number)
-	local plantU = 0.12 / duration
-	local strikeU = (if turnDegrees == 45 then 0.28 elseif turnDegrees == 135 then 0.22 else 0.24) / duration
-	local releaseU = (duration - (if turnDegrees == 180 then 0.14 else 0.12)) / duration
-	return function(u: number): PoseMap
-		local time: number
-		if u < plantU then
-			time = 1.6 + 0.5 * u / plantU
-		elseif u < strikeU then
-			time = 2.1 + 0.2 * (u - plantU) / (strikeU - plantU)
-		elseif u < releaseU then
-			time = 2.3 + 0.6 * (u - strikeU) / (releaseU - strikeU)
-		else
-			time = 2.9 + 0.1 * (u - releaseU) / (1 - releaseU)
-		end
-		local frames = SprintCutReference.Frames
-		local first, second = frames[1], frames[#frames]
-		for index = 1, #frames - 1 do
-			if time <= frames[index + 1].time then
-				first, second = frames[index], frames[index + 1]
-				break
-			end
-		end
-		local alpha = math.clamp((time - first.time) / (second.time - first.time), 0, 1)
-		local pose: PoseMap = {}
-		local turnGain = (turnDegrees - 45) / 135
-		local plant = math.sin(math.pi * math.clamp(u, 0, 1)) ^ 2
-		for index, name in ipairs(SprintCutReference.Parts) do
-			local rotation = first.rotations[index]:Lerp(second.rotations[index], alpha)
-			if name == "LowerTorso" then
-				local look = rotation.LookVector
-				local heading = math.atan2(-look.X, -look.Z)
-				rotation = CFrame.Angles(0, -heading, 0) * rotation
-			end
-			local x, y, z = rotation:ToEulerAnglesXYZ()
-			local r = Vector3.new(math.deg(x), math.deg(y), math.deg(z))
-			if name == "LowerTorso" then
-				r = Vector3.new(math.clamp(r.X * 0.65, -22, 22), -8 * turnGain * plant, math.clamp(r.Z * 0.65, -24, 24))
-			elseif name == "UpperTorso" then
-				r = Vector3.new(math.clamp(r.X * 0.75, -35, 20), r.Y * 0.8 + 8 * turnGain * plant, r.Z * 0.7)
-			elseif name == "Head" then
-				r = Vector3.new(math.clamp(r.X * 0.7, -15, 30), r.Y * 0.7, r.Z * 0.6)
-			elseif name:find("UpperLeg") then
-				local side = if name:sub(1, 4) == "Left" then -1 else 1
-				r = Vector3.new(math.clamp(r.X * 0.85, -55, 70), math.clamp(r.Y * 0.7, -20, 20), side * math.clamp(math.abs(r.Z) * 0.7, 3, 15))
-			elseif name:find("LowerLeg") then
-				r = Vector3.new(math.clamp(r.X * 0.8 - 5 * turnGain * plant, -110, -8), r.Y * 0.5, r.Z * 0.5)
-			elseif name:find("Foot") then
-				r = Vector3.new(math.clamp(r.X * 0.7, -35, 35), math.clamp(r.Y * 0.6, -25, 25), math.clamp(r.Z * 0.6, -15, 15))
-			else
-				r *= 0.85
-			end
-			pose[name] = { r = r }
-		end
-		-- In-place authored weight shift only; original ~30-stud travel and heading are not applied.
-		pose.LowerTorso.p = Vector3.new(-0.10 * plant, -0.08 - 0.06 * turnGain * plant, -0.06 * plant)
-		local base = runDribblePose(u * 0.75 + 0.15)
-		local entry = math.clamp(u / math.max(0.05, plantU), 0, 1)
-		local exit = math.clamp((1 - u) / math.max(0.05, 1 - releaseU), 0, 1)
-		local weight = (entry * entry * (3 - 2 * entry)) * (exit * exit * (3 - 2 * exit))
-		for name, sample in pairs(pose) do
-			local old = base[name]
-			local a = CFrame.Angles(math.rad(old.r.X), math.rad(old.r.Y), math.rad(old.r.Z))
-			local b = CFrame.Angles(math.rad(sample.r.X), math.rad(sample.r.Y), math.rad(sample.r.Z))
-			local x, y, z = a:Lerp(b, weight):ToEulerAnglesXYZ()
-			sample.r = Vector3.new(math.deg(x), math.deg(y), math.deg(z))
-			if name == "LowerTorso" then
-				sample.p = (old.p or Vector3.zero):Lerp(sample.p or Vector3.zero, weight)
-			end
-		end
-		if dirSign < 0 then
-			pose = mirrorCutPose(pose)
-		end
-		return gGroundPose(pose)
-	end
-end
-
+local ShotConfig = require(game:GetService("ReplicatedStorage").Shared.configs.ShotConfigs)
+local ShotModel = require(game:GetService("ReplicatedStorage").Shared.ShotModel)
+local ShotReference = require(game:GetService("ReplicatedStorage").Shared.ShotReferenceData)
+local shotFrameTimes = {}
+for _,t in ShotReference.Times do if t<=ShotConfig.SourceEnd then table.insert(shotFrameTimes,t/ShotConfig.PlaybackRate) end end
 local Definitions: { [string]: ClipDefinition } = {
+ RF02_Shot_R15_v01 = {
+  name = ShotConfig.ClipName, duration = ShotConfig.Duration, keyCount = #shotFrameTimes,
+  frameTimes = shotFrameTimes, loop = false, priority = Enum.AnimationPriority.Action2,
+  markers = {
+   {t=0, name="ShotStart", value="Right"},
+   {t=ShotConfig.ContactAt, name="BallStrike", value="Right"},
+   {t=ShotConfig.ContactEnd, name="ContactEnd", value="Right"},
+   {t=ShotConfig.BlendOutAt, name="BlendOut", value=""},
+   {t=ShotConfig.Duration, name="ClipEnd", value=""},
+  },
+  poseAt = function(u) return ShotModel.PoseAt(u*ShotConfig.Duration*ShotConfig.PlaybackRate) end,
+ },
 	RF02_WalkDribble_R15_v01 = {
 		name = "RF02_WalkDribble_R15_v01",
-		duration = 1.04,
-		keyCount = 209,
+		duration = 3.0,
+		keyCount = 91,
+		frameTimes = WalkDribbleReference.Times,
 		loop = true,
 		priority = Enum.AnimationPriority.Movement,
 		markers = {
 			{ t = 0.0, name = "LeftSupportEntry", value = "left_cycle_start" },
-			{ t = 0.195, name = "TouchL", value = "left_foot_ball_touch" },
-			{ t = 0.52, name = "MidCycleTransition", value = "right_half_entry" },
-			{ t = 0.715, name = "TouchR", value = "right_foot_ball_touch" },
-			{ t = 1.04, name = "WalkDribbleLoop", value = "loop_seam" },
+			{ t = 0.4, name = "TouchL", value = "npcmotion_left_contact" },
+			{ t = 1.0, name = "TouchR", value = "npcmotion_right_contact" },
+			{ t = 1.7333, name = "TouchL", value = "npcmotion_left_contact" },
+			{ t = 2.3667, name = "TouchR", value = "npcmotion_right_contact" },
+			{ t = 3.0, name = "WalkDribbleLoop", value = "loop_seam" },
 		},
 		poseAt = walkDribblePose,
 	},
@@ -477,79 +417,6 @@ local Definitions: { [string]: ClipDefinition } = {
 		},
 		poseAt = runDribblePose,
 	},
-	RF02_CutDiagFrontLeft_AW_R15_v01 = {
-		name = "RF02_CutDiagFrontLeft_AW_R15_v01",
-		duration = 0.68,
-		keyCount = 137,
-		loop = false,
-		priority = Enum.AnimationPriority.Action,
-		markers = {
-			{ t = 0.12, name = "PlantBrake", value = "AW_brake_plant" },
-			{ t = 0.28, name = "TouchR", value = "AW_diagonal_cut_touch_right" },
-			{ t = 0.56, name = "ControlRelease", value = "cut_exit_ready" },
-			{ t = 0.68, name = "ClipEnd", value = "one_shot_complete" },
-		},
-		poseAt = makeReferenceCutPose(1, 45, 0.68),
-	},
-	RF02_CutDiagFrontRight_WD_R15_v01 = {
-		name = "RF02_CutDiagFrontRight_WD_R15_v01",
-		duration = 0.68,
-		keyCount = 137,
-		loop = false,
-		priority = Enum.AnimationPriority.Action,
-		markers = {
-			{ t = 0.12, name = "PlantBrake", value = "WD_brake_plant" },
-			{ t = 0.28, name = "TouchL", value = "WD_diagonal_cut_touch_left" },
-			{ t = 0.56, name = "ControlRelease", value = "cut_exit_ready" },
-			{ t = 0.68, name = "ClipEnd", value = "one_shot_complete" },
-		},
-		poseAt = makeReferenceCutPose(-1, 45, 0.68),
-	},
-	RF02_CutDiagBackLeft_AS_R15_v01 = {
-		name = "RF02_CutDiagBackLeft_AS_R15_v01",
-		duration = 0.76,
-		keyCount = 153,
-		loop = false,
-		priority = Enum.AnimationPriority.Action,
-		markers = {
-			{ t = 0.12, name = "PlantBrake", value = "AS_brake_entry" },
-			{ t = 0.22, name = "TouchR", value = "AS_sole_lock_drag_right" },
-			{ t = 0.44, name = "TouchL", value = "AS_exit_redirect_left" },
-			{ t = 0.64, name = "ControlRelease", value = "cut_exit_ready" },
-			{ t = 0.76, name = "ClipEnd", value = "one_shot_complete" },
-		},
-		poseAt = makeReferenceCutPose(1, 135, 0.76),
-	},
-	RF02_CutDiagBackRight_SD_R15_v01 = {
-		name = "RF02_CutDiagBackRight_SD_R15_v01",
-		duration = 0.76,
-		keyCount = 153,
-		loop = false,
-		priority = Enum.AnimationPriority.Action,
-		markers = {
-			{ t = 0.12, name = "PlantBrake", value = "SD_brake_entry" },
-			{ t = 0.22, name = "TouchL", value = "SD_sole_lock_drag_left" },
-			{ t = 0.44, name = "TouchR", value = "SD_exit_redirect_right" },
-			{ t = 0.64, name = "ControlRelease", value = "cut_exit_ready" },
-			{ t = 0.76, name = "ClipEnd", value = "one_shot_complete" },
-		},
-		poseAt = makeReferenceCutPose(-1, 135, 0.76),
-	},
-	RF02_CutReverse_WS_R15_v01 = {
-		name = "RF02_CutReverse_WS_R15_v01",
-		duration = 0.82,
-		keyCount = 165,
-		loop = false,
-		priority = Enum.AnimationPriority.Action,
-		markers = {
-			{ t = 0.12, name = "HardBrake", value = "WS_reversal_brake" },
-			{ t = 0.24, name = "TouchR", value = "sole_lock_pullback_right" },
-			{ t = 0.52, name = "TouchL", value = "reverse_control_tap_left" },
-			{ t = 0.68, name = "ControlRelease", value = "cut_exit_ready" },
-			{ t = 0.82, name = "ClipEnd", value = "one_shot_complete" },
-		},
-		poseAt = makeReferenceCutPose(1, 180, 0.82),
-	},
 	RF02_GMode_SlowControlLoop_R15_v01 = {
 		name = "RF02_GMode_SlowControlLoop_R15_v01",
 		duration = 1.12,
@@ -564,21 +431,6 @@ local Definitions: { [string]: ClipDefinition } = {
 			{ t = 1.12, name = "GControlLoop", value = "loop_seam" },
 		},
 		poseAt = gModeSlowLoopPose,
-	},
-	RF02_GMode_SoleDragBack_WS_R15_v01 = {
-		name = "RF02_GMode_SoleDragBack_WS_R15_v01",
-		duration = 0.74,
-		keyCount = 149,
-		loop = false,
-		priority = Enum.AnimationPriority.Action,
-		markers = {
-			{ t = 0.10, name = "SoleTrapEntry", value = "g_mode_sole_reach" },
-			{ t = 0.20, name = "TouchR", value = "g_mode_sole_lock_drag_right" },
-			{ t = 0.48, name = "TouchL", value = "g_mode_cushion_settle_left" },
-			{ t = 0.62, name = "ControlRelease", value = "cut_exit_ready" },
-			{ t = 0.74, name = "ClipEnd", value = "one_shot_complete" },
-		},
-		poseAt = gModeBackwardStepPose,
 	},
 	RF02_GMode_SoleRollForward_W_R15_v01 = {
 		name = "RF02_GMode_SoleRollForward_W_R15_v01",
@@ -677,8 +529,8 @@ function DribbleClipData.BuildKeyframeSequence(clipName: string): KeyframeSequen
 	local frames: { Keyframe } = {}
 	for i = 0, def.keyCount - 1 do
 		local u = i / (def.keyCount - 1)
-		local timeSec = math.round(u * def.duration * 1000) / 1000
-		local poseMap = def.poseAt(u)
+		local timeSec = if def.frameTimes then def.frameTimes[i + 1] else math.round(u * def.duration * 1000) / 1000
+		local poseMap = def.poseAt(if def.frameTimes then timeSec / def.duration else u)
 		local frame = Instance.new("Keyframe")
 		frame.Time = timeSec
 		frame:AddPose(buildPose(R15_TREE, poseMap))
@@ -709,3 +561,174 @@ function DribbleClipData.BuildKeyframeSequence(clipName: string): KeyframeSequen
 end
 
 return table.freeze(DribbleClipData)
+
+--[====[
+Retired/replaced code retained as comments at Owner request (2026-10-30).
+Original complete source is also in the external backup.
+
+-- Immutable Authored R15 Dribble, Directional Cut, and G-Mode Close-Control Animation Data
+
+-- Previous section --
+local CutTimeline = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("DribbleCutTimeline"))
+local SprintCutReference = require(script.Parent:WaitForChild("SprintCutReferenceData"))
+
+-- Previous section --
+	legsOnly: boolean?,
+	poseAt: (u: number, gaitPhase: number?) -> PoseMap,
+
+-- Previous section --
+local function mirrorCutPose(pose: PoseMap): PoseMap
+	local mirrored: PoseMap = {}
+	for name, joint in pairs(pose) do
+		local other = if name:sub(1, 4) == "Left" then "Right" .. name:sub(5)
+			elseif name:sub(1, 5) == "Right" then "Left" .. name:sub(6) else name
+		local p = joint.p
+		mirrored[other] = {
+			p = if p then Vector3.new(-p.X, p.Y, p.Z) else nil,
+			r = Vector3.new(joint.r.X, -joint.r.Y, -joint.r.Z),
+		}
+	end
+	return mirrored
+end
+
+-- A small directional tap layered over the same running stride; no torso/arm sway.
+local function makeRunningCutPose(dirSign: number, turnDegrees: number)
+ return function(u: number, gaitPhase: number?): PoseMap
+  local phase=((gaitPhase or 0)+u*CutTimeline.Duration/0.72)%1
+  local pose=runDribblePose(phase)
+  local t=u*CutTimeline.Duration
+  local tap=pulse(t,0,CutTimeline.StrikeAt,0.3)
+  local exit=pulse(u,0.13,0.4,1)
+  local gain=if turnDegrees>90 then 1.2 else 1
+  local function add(name: string,x: number,y: number,z: number)
+   pose[name].r+=Vector3.new(x,y,z)
+  end
+  local tapSide=if dirSign>0 then "Left" else "Right"
+  local supportSide=if dirSign>0 then "Right" else "Left"
+  add(tapSide.."UpperLeg",5*tap,-dirSign*(8*tap+3*exit)*gain,-dirSign*2*tap)
+  add(tapSide.."LowerLeg",-7*tap,0,0)
+  add(tapSide.."Foot",-3*tap,-dirSign*6*tap*gain,0)
+  add(supportSide.."UpperLeg",0,-dirSign*3*exit*gain,dirSign*exit)
+  return pose
+ end
+end
+
+
+-- Previous section --
+local cutFrameTimes = {}
+for _, t in SprintCutReference.Times do table.insert(cutFrameTimes, t * CutTimeline.TimeScale) end
+
+-- Previous section --
+	RF02_CutDiagFrontLeft_AW_R15_v01 = {
+		name = "RF02_CutDiagFrontLeft_AW_R15_v01",
+		duration = CutTimeline.Duration,
+		keyCount = 61,
+		frameTimes = cutFrameTimes,
+		legsOnly = true,
+		loop = false,
+		priority = Enum.AnimationPriority.Action,
+		markers = {
+			{ t = 0, name = "CutStart", value = "sprint_cut_entry" },
+			{ t = CutTimeline.TrapAt, name = "BallTrap", value = "L" },
+			{ t = CutTimeline.StrikeAt, name = "TouchL", value = "Strike" },
+			{ t = CutTimeline.ReleaseAt, name = "ControlRelease", value = "L" },
+			{ t = CutTimeline.BlendOutAt, name = "BlendOut", value = "run_recovery" },
+			{ t = CutTimeline.Duration, name = "ClipEnd", value = "complete" },
+		},
+		poseAt = makeRunningCutPose(1, 45),
+	},	RF02_CutDiagFrontRight_WD_R15_v01 = {
+		name = "RF02_CutDiagFrontRight_WD_R15_v01",
+		duration = CutTimeline.Duration,
+		keyCount = 61,
+		frameTimes = cutFrameTimes,
+		legsOnly = true,
+		loop = false,
+		priority = Enum.AnimationPriority.Action,
+		markers = {
+			{ t = 0, name = "CutStart", value = "sprint_cut_entry" },
+			{ t = CutTimeline.TrapAt, name = "BallTrap", value = "R" },
+			{ t = CutTimeline.StrikeAt, name = "TouchR", value = "Strike" },
+			{ t = CutTimeline.ReleaseAt, name = "ControlRelease", value = "R" },
+			{ t = CutTimeline.BlendOutAt, name = "BlendOut", value = "run_recovery" },
+			{ t = CutTimeline.Duration, name = "ClipEnd", value = "complete" },
+		},
+		poseAt = makeRunningCutPose(-1, 45),
+	},	RF02_CutDiagBackLeft_AS_R15_v01 = {
+		name = "RF02_CutDiagBackLeft_AS_R15_v01",
+		duration = CutTimeline.Duration,
+		keyCount = 61,
+		frameTimes = cutFrameTimes,
+		legsOnly = true,
+		loop = false,
+		priority = Enum.AnimationPriority.Action,
+		markers = {
+			{ t = 0, name = "CutStart", value = "sprint_cut_entry" },
+			{ t = CutTimeline.TrapAt, name = "BallTrap", value = "L" },
+			{ t = CutTimeline.StrikeAt, name = "TouchL", value = "Strike" },
+			{ t = CutTimeline.ReleaseAt, name = "ControlRelease", value = "L" },
+			{ t = CutTimeline.BlendOutAt, name = "BlendOut", value = "run_recovery" },
+			{ t = CutTimeline.Duration, name = "ClipEnd", value = "complete" },
+		},
+		poseAt = makeRunningCutPose(1, 135),
+	},	RF02_CutDiagBackRight_SD_R15_v01 = {
+		name = "RF02_CutDiagBackRight_SD_R15_v01",
+		duration = CutTimeline.Duration,
+		keyCount = 61,
+		frameTimes = cutFrameTimes,
+		legsOnly = true,
+		loop = false,
+		priority = Enum.AnimationPriority.Action,
+		markers = {
+			{ t = 0, name = "CutStart", value = "sprint_cut_entry" },
+			{ t = CutTimeline.TrapAt, name = "BallTrap", value = "R" },
+			{ t = CutTimeline.StrikeAt, name = "TouchR", value = "Strike" },
+			{ t = CutTimeline.ReleaseAt, name = "ControlRelease", value = "R" },
+			{ t = CutTimeline.BlendOutAt, name = "BlendOut", value = "run_recovery" },
+			{ t = CutTimeline.Duration, name = "ClipEnd", value = "complete" },
+		},
+		poseAt = makeRunningCutPose(-1, 135),
+	},	RF02_CutReverse_WS_R15_v01 = {
+		name = "RF02_CutReverse_WS_R15_v01",
+		duration = CutTimeline.Duration,
+		keyCount = 61,
+		frameTimes = cutFrameTimes,
+		legsOnly = true,
+		loop = false,
+		priority = Enum.AnimationPriority.Action,
+		markers = {
+			{ t = 0, name = "CutStart", value = "sprint_cut_entry" },
+			{ t = CutTimeline.TrapAt, name = "BallTrap", value = "L" },
+			{ t = CutTimeline.StrikeAt, name = "TouchL", value = "Strike" },
+			{ t = CutTimeline.ReleaseAt, name = "ControlRelease", value = "L" },
+			{ t = CutTimeline.BlendOutAt, name = "BlendOut", value = "run_recovery" },
+			{ t = CutTimeline.Duration, name = "ClipEnd", value = "complete" },
+		},
+		poseAt = makeRunningCutPose(1, 180),
+	},	RF02_GMode_SlowControlLoop_R15_v01 = {
+
+-- Previous section --
+	RF02_GMode_SoleDragBack_WS_R15_v01 = {
+		name = "RF02_GMode_SoleDragBack_WS_R15_v01",
+		duration = 0.74,
+		keyCount = 149,
+		loop = false,
+		priority = Enum.AnimationPriority.Action,
+		markers = {
+			{ t = 0.10, name = "SoleTrapEntry", value = "g_mode_sole_reach" },
+			{ t = 0.20, name = "TouchR", value = "g_mode_sole_lock_drag_right" },
+			{ t = 0.48, name = "TouchL", value = "g_mode_cushion_settle_left" },
+			{ t = 0.62, name = "ControlRelease", value = "cut_exit_ready" },
+			{ t = 0.74, name = "ClipEnd", value = "one_shot_complete" },
+		},
+		poseAt = gModeBackwardStepPose,
+	},
+
+-- Previous section --
+function DribbleClipData.BuildKeyframeSequence(clipName: string, gaitPhase: number?): KeyframeSequence?
+
+-- Previous section --
+		pose.Weight = if sample and (not def.legsOnly or node.name:find("Leg") or node.name:find("Foot")) then 1 else 0
+
+-- Previous section --
+		local poseMap = def.poseAt(if def.frameTimes then timeSec / def.duration else u, gaitPhase)
+]====]

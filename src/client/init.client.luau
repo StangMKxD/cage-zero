@@ -58,6 +58,9 @@ if remaining > 0 then
 	if ControllersFolder and ControllersFolder:IsA("Folder") then
 		-- CameraShiftLockController preserved as inert reference; not initialized (normal camera temporarily)
 
+		require(ControllersFolder:WaitForChild("ShotController")).Init()
+		require(ControllersFolder:WaitForChild("ReverseTurnAnimationController")).Init()
+
 		local InputCtrlModule = ControllersFolder:FindFirstChild("InputController")
 		local dribblePresentation = ControllersFolder:FindFirstChild("DribblePresentationController")
 		if dribblePresentation and dribblePresentation:IsA("ModuleScript") then
