@@ -17,17 +17,31 @@ const CLIPS = [
   'RF02_GMode_SoleDragBack_WS_R15_v01',
 ];
 
+const rpcPath = join(AI_TOOLS, 'motion-tools/.local/animation-rpc.json');
+let control;
+try {
+  control = JSON.parse(await readFile(rpcPath, 'utf8'));
+} catch (e) {
+  console.error(`[MOTION TOOLS ERROR] Could not read RPC config from ${rpcPath}: ${e.message}`);
+  process.exit(1);
+}
+
 async function call(name, args = {}) {
-  const control = JSON.parse(await readFile(join(AI_TOOLS, 'motion-tools/.local/animation-rpc.json'), 'utf8'));
-  const r = await fetch(`http://127.0.0.1:${control.port}/tool`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${control.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ name, arguments: args }),
-    signal: AbortSignal.timeout(25000),
-  });
+  let r;
+  try {
+    r = await fetch(`http://127.0.0.1:${control.port}/tool`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${control.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, arguments: args }),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch (err) {
+    console.error(`[MOTION TOOLS ERROR] Connection failed for '${name}': ${err.message}`);
+    process.exit(1);
+  }
   const data = await r.json();
   if (!r.ok || data.isError) throw new Error(`${name} failed: ${JSON.stringify(data)}`);
   const text = data.content?.find((x) => x.type === 'text')?.text;

@@ -1,0 +1,13 @@
+{
+  "commands": [],
+  "files": {
+    "read": [],
+    "created": [
+      ".migration-staging/.agents/smoke/ok.txt",
+      ".migration-staging/.agents/teamwork/SMOKE-001/worker-result.md",
+      ".migration-staging/.agents/teamwork/SMOKE-001/tool-activity.json"
+    ],
+    "modified": [],
+    "deleted": []
+  }
+}
