@@ -1,0 +1,35 @@
+schema_version: "2.0.0"
+manifest_id: "manifest-{{TASK_ID}}-{{RUN_ID}}"
+task_id: "{{TASK_ID}}"
+run_id: "{{RUN_ID}}"
+created_at: "{{CREATED_AT}}"
+governance_mode: "{{GOVERNANCE_MODE}}"
+
+scope_lock:
+  target_project: "project-last-wave"
+  allowed_file_patterns:
+    - "{{ALLOWED_FILE_PATTERN_1}}"
+  forbidden_file_patterns:
+    - "src/server/Data/**"
+
+git_context:
+  base_sha: "{{BASE_GIT_SHA}}"
+  target_branch: "main"
+
+staged_changes:
+  files:
+    - path: "{{CHANGED_FILE_PATH_1}}"
+      sha256: "{{FILE_SHA256_HASH}}"
+      status: "MODIFIED" # ADDED | MODIFIED | DELETED
+
+gates_summary:
+  G-ENG-01: "NOT_RUN"
+  G-ANIM-02: "NOT_RUN"
+  G-VFX-03: "NOT_RUN"
+  G-FEEL-04: "NOT_RUN"
+  RBX-10: "NOT_RUN"
+  RBX-11: "NOT_RUN"
+  G-VIS-07: "NOT_RUN"
+  G-OWN-08: "USER_UAT_PENDING"
+
+delivery_state: "PENDING_ACK"

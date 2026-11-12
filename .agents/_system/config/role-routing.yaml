@@ -1,0 +1,267 @@
+schema_version: "2.0.0"
+config_id: "roblox-role-routing"
+title: "Project Last Wave: Role Routing & Intent-to-Team Matrix"
+updated_at: "2026-11-10T14:46:00+07:00"
+
+# ==============================================================================
+# 1. GOVERNANCE ROLES (from ROLE-CATALOG.md)
+# ==============================================================================
+governance_roles:
+  controller:
+    description: "Orchestrator and governance lead. Responsible for role assignment handshakes, scope locks, task board tracking, SoD enforcement, and technical verification. Never self-approves own code."
+    can_write_code: false
+    can_approve_handoff: true
+    can_assign_roles: true
+    default_tools: ["orchestrator_capabilities", "delegate_task", "view_file", "run_command"]
+
+  implementer:
+    description: "Hands-on engineer or artist. Executes bounded tasks, writes smallest correct diff, updates tests, and prepares handoffs. Hands off as READY_FOR_REVIEW, never APPROVED."
+    can_write_code: true
+    can_approve_handoff: false
+    can_assign_roles: false
+    default_tools: ["view_file", "write_to_file", "replace_file_content", "run_command"]
+
+  browser-e2e-tester:
+    description: "Independent quality and runtime verification agent. Executes functional user flows, Studio sandbox playtests, and negative scenarios. Does not alter code to force passes."
+    can_write_code: false
+    can_approve_handoff: false
+    can_assign_roles: false
+    default_tools: ["view_file", "run_command"]
+
+  specialist:
+    description: "Domain authority for deep architectural, security, performance, audio, or art reviews. Read-only by default unless specific bounded implementation granted."
+    can_write_code: false
+    can_approve_handoff: false
+    can_assign_roles: false
+    default_tools: ["view_file", "run_command"]
+
+# ==============================================================================
+# 2. SEVENTEEN (17) SPECIALIST TASK PROFILES
+# Dynamic resolution rule: Never hardcode vendor or model to a profile.
+# Dynamically query runtime capabilities via orchestrator_capabilities at execution time.
+# ==============================================================================
+specialist_profiles:
+  roblox-team-lead:
+    governance_role: "controller"
+    description: "Hierarchical orchestrator across game design, art direction, engineering, review, and QA. Manages task boards, DAG schedules, and SoD."
+    allowed_file_patterns: [".agents/tasks/**", "docs/plans/TASKS.md"]
+    dynamic_model_capability_query: "deep-reasoning, orchestration, multi-turn plan"
+
+  game-designer:
+    governance_role: "specialist"
+    description: "Combat rules, balance mathematics, cooldown curves, stamina economy, weapon attributes, and game feel specifications."
+    allowed_file_patterns: ["docs/architecture/feature-registry.md", "docs/plans/**"]
+    dynamic_model_capability_query: "creative-systems, design-analysis"
+
+  gameplay-engineer:
+    governance_role: "implementer"
+    description: "Luau combat mechanics, state machines, combo chains, hitbox detection, weapon controllers, and player input."
+    allowed_file_patterns: ["src/client/**", "src/shared/**", "src/server/**", "tests/**"]
+    dynamic_model_capability_query: "luau-expert, clean-architecture, refactoring"
+
+  systems-networking-engineer:
+    governance_role: "implementer"
+    description: "RemoteEvent/RemoteFunction definitions, network replication budgets, client prediction, lag compensation, server validation."
+    allowed_file_patterns: ["src/shared/Network/**", "src/server/Network/**", "src/client/Network/**"]
+    dynamic_model_capability_query: "distributed-systems, networking, security-mindset"
+
+  ui-ux-designer:
+    governance_role: "implementer"
+    description: "ScreenGui, HUD layouts, health/stamina bars, mobile touch controls, responsive UI sizing, TweenService interactions."
+    allowed_file_patterns: ["src/client/UI/**", "src/client/Controllers/*UI*.luau"]
+    dynamic_model_capability_query: "ui-ux, layout-math, tweening"
+
+  animation-artist-r15:
+    governance_role: "implementer"
+    description: "R15 animation tracks, Motor6D manipulation, animation event markers, blend spaces, procedural tilts, IK."
+    allowed_file_patterns: ["assets/animations/**", "src/client/Animation/**", "src/shared/Configs/AnimationConfig.luau"]
+    dynamic_model_capability_query: "animation-math, timing-specialist, r15-rigs"
+
+  vfx-artist:
+    governance_role: "implementer"
+    description: "ParticleEmitters, Beams, Trails, CameraShaker cues, highlight effects, impact bursts. Strictly preserves file size limits."
+    allowed_file_patterns: ["src/client/VFX/**", "assets/vfx/**", "src/client/Controllers/CombatVFXController.luau"]
+    dynamic_model_capability_query: "vfx-math, visual-tuning, particle-physics"
+
+  technical-artist:
+    governance_role: "specialist"
+    description: "Bridges art and engineering. Syncs animation keyframe event markers with hitbox active frames and particle spawn timings."
+    allowed_file_patterns: ["src/shared/Configs/**", "docs/architecture/feature-registry.md"]
+    dynamic_model_capability_query: "tech-art, pipeline-automation, visual-auditing"
+
+  art-director:
+    governance_role: "controller"
+    description: "Owns visual direction and Game Art Bible consistency across models, animation, VFX and UI. Items without Owner evidence stay PROPOSED."
+    allowed_file_patterns: [".agents/_system/art-direction/**"]
+    dynamic_model_capability_query: "art-direction, visual-consistency"
+
+  sound-designer:
+    governance_role: "implementer"
+    description: "SoundGroup routing, 3D spatial roll-off, hit-impact audio cues, audio timing markers shared with animation and VFX."
+    allowed_file_patterns: ["src/client/Audio/**", "src/shared/Configs/AudioConfig.luau"]
+    dynamic_model_capability_query: "audio-engineering, spatial-sound"
+
+  independent-code-reviewer:
+    governance_role: "specialist"
+    description: "Mandatory independent code quality auditor. Checks memory leaks, cyclic dependencies, type safety, Selene/StyLua rules."
+    allowed_file_patterns: [".agents/tasks/**/reviews/**"]
+    dynamic_model_capability_query: "code-audit, deep-review, security-mindset"
+
+  visual-animation-reviewer:
+    governance_role: "specialist"
+    description: "Inspects frame-accurate timing, camera drift, visual clipping, VFX visual clarity, and animation transition smoothness."
+    allowed_file_patterns: [".agents/tasks/**/reviews/**"]
+    dynamic_model_capability_query: "visual-critic, animation-analysis"
+
+  security-anti-exploit-specialist:
+    governance_role: "specialist"
+    description: "Audits server authority, typeof validation, math.isfinite checks, rate limiting, and damage exploit prevention."
+    allowed_file_patterns: [".agents/tasks/**/reviews/**", "docs/architecture/security-design.md"]
+    dynamic_model_capability_query: "exploit-analysis, defensive-engineering"
+
+  performance-specialist:
+    governance_role: "specialist"
+    description: "Analyzes MicroProfiler spans, Heartbeat budget consumption (<12ms), memory tag allocations, and Luau table churn."
+    allowed_file_patterns: [".agents/tasks/**/evidence/**"]
+    dynamic_model_capability_query: "profiling, performance-engineering, memory-analysis"
+
+  roblox-qa-tester:
+    governance_role: "browser-e2e-tester"
+    description: "Executes unit test suites (Jest/Lune), connectivity checks, integration tests, and sandbox Play Solo verification."
+    allowed_file_patterns: [".agents/tasks/**/evidence/**", "tests/**"]
+    dynamic_model_capability_query: "testing, test-runners, test-automation"
+
+  game-design-lead:
+    governance_role: "controller"
+    description: "Owns combat/game design intent and acceptance criteria; checks consistency with docs/CONTEXT.md and the Owner Decision Log."
+    allowed_file_patterns: ["docs/architecture/combat-build-design.md"]
+    dynamic_model_capability_query: "game-design, combat-design"
+
+  3d-artist:
+    governance_role: "implementer"
+    description: "Models, meshes, props and rigs; records every asset in assets-manifest.json. No upload without Owner authorization."
+    allowed_file_patterns: ["assets/models/**", ".sandbox/**/source/assets/**"]
+    dynamic_model_capability_query: "3d-modeling, asset-pipeline"
+
+# ==============================================================================
+# 3. DETERMINISTIC INTENT-TO-TEAM ROUTING MATRIX (MEM-BP-0005)
+# ==============================================================================
+intent_routing_matrix:
+  animation_r15:
+    description: "R15 keyframe, combat animation, or rig manipulation"
+    combo_id: "COMBO-RBX-03"
+    team:
+      - role: "animation-artist-r15"
+        governance: "implementer"
+      - role: "visual-animation-reviewer"
+        governance: "specialist"
+    mandatory_gates: ["G-ANIM-02", "G-VIS-07"]
+
+  vfx:
+    description: "Combat VFX, particles, beams, trails, camera shakes"
+    combo_id: "COMBO-RBX-04"
+    team:
+      - role: "vfx-artist"
+        governance: "implementer"
+      - role: "visual-animation-reviewer"
+        governance: "specialist"
+    mandatory_gates: ["G-VFX-03", "G-VIS-07"]
+
+  animation_and_vfx:
+    description: "Synchronized combat animation and visual particle effects"
+    combo_id: "COMBO-RBX-03 + COMBO-RBX-04 -> COMBO-RBX-07"
+    team:
+      - role: "animation-artist-r15"
+        governance: "implementer"
+      - role: "vfx-artist"
+        governance: "implementer"
+      - role: "technical-artist"
+        governance: "specialist"
+      - role: "visual-animation-reviewer"
+        governance: "specialist"
+      - role: "roblox-qa-tester"
+        governance: "browser-e2e-tester"
+    mandatory_gates: ["G-ANIM-02", "G-VFX-03", "G-VIS-07", "G-ENG-01"]
+
+  gameplay_combat:
+    description: "Melee/ranged combat mechanics, combo chains, weapon logic"
+    combo_id: "COMBO-RBX-02 -> COMBO-RBX-07"
+    team:
+      - role: "game-designer"
+        governance: "specialist"
+      - role: "gameplay-engineer"
+        governance: "implementer"
+      - role: "independent-code-reviewer"
+        governance: "specialist"
+      - role: "roblox-qa-tester"
+        governance: "browser-e2e-tester"
+    mandatory_gates: ["G-ENG-01", "G-FEEL-04", "RBX-10"]
+
+  ui_hud:
+    description: "HUD, health/stamina meters, mobile action buttons"
+    combo_id: "COMBO-RBX-05"
+    team:
+      - role: "ui-ux-designer"
+        governance: "implementer"
+      - role: "gameplay-engineer"
+        governance: "implementer"
+      - role: "visual-animation-reviewer"
+        governance: "specialist"
+    mandatory_gates: ["G-ENG-01", "G-VIS-07"]
+
+  remote_event_damage_authority:
+    description: "Client-server damage replication, state mutation, network payloads"
+    combo_id: "COMBO-RBX-02 + Mandatory COMBO-RBX-10 -> COMBO-RBX-07"
+    team:
+      - role: "systems-networking-engineer"
+        governance: "implementer"
+      - role: "independent-code-reviewer"
+        governance: "specialist"
+      - role: "security-anti-exploit-specialist"
+        governance: "specialist"
+      - role: "roblox-qa-tester"
+        governance: "browser-e2e-tester"
+    mandatory_gates: ["G-ENG-01", "RBX-10", "RBX-11"]
+
+  large_npc_heavy_vfx:
+    description: "Wave AI spawner, high entity count, heavy particle load"
+    combo_id: "COMBO-RBX-06 + Mandatory COMBO-RBX-11 -> COMBO-RBX-07"
+    team:
+      - role: "gameplay-engineer"
+        governance: "implementer"
+      - role: "independent-code-reviewer"
+        governance: "specialist"
+      - role: "performance-specialist"
+        governance: "specialist"
+      - role: "roblox-qa-tester"
+        governance: "browser-e2e-tester"
+    mandatory_gates: ["G-ENG-01", "RBX-11", "G-VIS-07"]
+
+  full_feature:
+    description: "End-to-end combat character, complete wave feature, or major subsystem"
+    combo_id: "COMBO-RBX-01..11 Comprehensive"
+    team:
+      - role: "roblox-team-lead"
+        governance: "controller"
+      - role: "game-designer"
+        governance: "specialist"
+      - role: "technical-artist"
+        governance: "specialist"
+      - role: "gameplay-engineer"
+        governance: "implementer"
+      - role: "independent-code-reviewer"
+        governance: "specialist"
+      - role: "roblox-qa-tester"
+        governance: "browser-e2e-tester"
+    mandatory_gates: ["G-ENG-01", "G-ANIM-02", "G-VFX-03", "G-FEEL-04", "RBX-10", "RBX-11", "G-VIS-07", "G-OWN-08"]
+
+# ==============================================================================
+# 4. MULTI-INTENT UNION RULE
+# ==============================================================================
+multi_intent_union_rule:
+  rule: "MERGE_ALL_PROFILES_AND_GATES"
+  description: >
+    When a task prompt matches multiple intents or risk domains (e.g. Combat + RemoteEvent + Heavy VFX),
+    the Orchestrator must compute the strict set union of all required specialist profiles,
+    and MUST merge all mandatory quality gates (e.g. RBX-10 Security + RBX-11 Performance + RBX-07 QA).
+    Dropping quality gates or skipping independent review to save context window tokens is STRICTLY FORBIDDEN.

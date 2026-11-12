@@ -1,0 +1,134 @@
+schema_version: "2.0.0"
+config_id: "roblox-handoff-rules"
+title: "Project Last Wave: Multi-Hop Handoff Rules & Separation of Duties"
+updated_at: "2026-11-10T14:47:00+07:00"
+
+# ==============================================================================
+# 1. MULTI-HOP DELEGATION CHAIN
+# ==============================================================================
+delegation_chain:
+  canonical_flow:
+    step_1: "Owner (Stang) -> Assigns bounded initiative & explicit gates"
+    step_2: "Orchestrator -> Dispatches to Team Lead with verified capabilities"
+    step_3: "Team Lead -> Resolves intent, constructs DAG, assigns Specialist Agents"
+    step_4: "Specialist Agents (Implementers) -> Produce bounded code diff & test updates"
+    step_5: "Independent Reviewer -> Audits diff, architecture, security, and gates"
+    step_6: "Tester / QA -> Executes unit tests, network/security tests, and sandbox play"
+    step_7: "Team Lead -> Validates gates, aggregates evidence, updates Single Board"
+    step_8: "Orchestrator -> Verifies compliance, prepares proposal for Stang"
+    step_9: "Owner (Stang) -> Explicit manual commit/push or gameplay milestone sign-off"
+
+  routing_topologies:
+    direct_peer_sequential:
+      enabled: true
+      description: >
+        Direct peer-to-peer sequential handoff along an authorized workflow DAG is permitted
+        without bouncing back to the top-level Orchestrator at every intermediate hop, provided
+        that each step records its handoff payload and maintains SoD invariants.
+    mediated_centralized:
+      enabled: true
+      description: >
+        When runtime nested delegation is restricted or unavailable, Team Lead acts as the central
+        dispatch router, collecting handoffs from Implementers and invoking Reviewer/QA sequentially.
+
+# ==============================================================================
+# 2. SEPARATION OF DUTIES (SOD) INVARIANTS
+# ==============================================================================
+sod_invariants:
+  no_self_review:
+    rule: "SENDER_NEQ_REVIEWER"
+    condition: "payload.sender.session_id != payload.reviewer.session_id"
+    description: "No agent may review, approve, or verify its own changes. Self-approval is invalid and triggers IMMEDIATE_REJECTION."
+
+  no_reviewer_selection_by_author:
+    rule: "AUTHOR_CANNOT_CHOOSE_REVIEWER"
+    description: "An implementer cannot designate who audits its code. The Team Lead or Controller must assign the Reviewer independently."
+
+  zero_privilege_escalation:
+    rule: "ZERO_PRIVILEGE_ESCALATION"
+    description: "Receiving a handoff payload confers zero authority to commit, push, merge, deploy, or bypass Owner decisions."
+
+# ==============================================================================
+# 3. MANDATORY HANDOFF PAYLOAD SCHEMA
+# ==============================================================================
+handoff_payload_schema:
+  required_fields:
+    - task_id                 # Pattern: ^TASK-\d{8}-\d{3}$ (e.g. TASK-20261110-001)
+    - run_id                  # Pattern: ^run_\d{2}$ (e.g. run_01, run_02)
+    - handoff_id              # Pattern: ^HND-\d{4}$ (e.g. HND-0001)
+    - idempotency_key         # UUID v4 or unique content-hash to prevent duplicate execution
+    - sender                  # { role: string, session_id: string }
+    - recipient               # { role: string, session_id: string }
+    - session_identity        # Cryptographic or verifiable runtime session identifier
+    - scope                   # Bounded file paths or subsystems permitted for mutation
+    - acceptance_criteria     # Exact pass/fail checklist items from PLAN/feature registry
+    - base_git_sha            # Commit SHA from which the branch or working tree started
+    - changed_files           # Array of relative file paths actually modified
+    - change_summary          # Concise engineering description of modifications
+    - relevant_assets         # Roblox Place IDs, Model IDs, or local rbxm paths
+    - test_commands           # Array of executable test commands (e.g. selene ., stylua --check .)
+    - evidence_refs           # Pointers to evidence files, logs, or inline command outputs
+    - outstanding_risks       # Known risks, edge cases, or potential side-effects
+    - unresolved_findings     # Open issues from prior review cycles
+    - required_next_action    # Explicit next step (e.g. CODE_REVIEW, QA_TEST, UAT_PREPARATION)
+    - delivery_state          # One of the recognized delivery states below
+
+# ==============================================================================
+# 4. DELIVERY STATES & UNCONFIRMED POLICY
+# ==============================================================================
+delivery_states:
+  allowed_values:
+    - PENDING_ACK             # Dispatched, awaiting recipient receipt confirmation
+    - DELIVERED_ACK           # Recipient confirmed receipt and validated payload completeness
+    - DELIVERY_UNCONFIRMED    # Transport error, no ACK received, or terminal buffer unsubmitted
+    - BLOCKED                 # Recipient rejected due to lock conflict or unmet precondition
+    - REJECTED                # Payload rejected due to missing mandatory fields or SoD violation
+
+  unconfirmed_protocol:
+    rule: "STOP_BLIND_RETRIES_ON_DELIVERY_UNCONFIRMED"
+    description: >
+      If a handoff results in DELIVERY_UNCONFIRMED, agents must NOT blindly spam retries.
+      The dispatching agent must inspect the transport status, check recipient health,
+      and if unresolved within 1 check, escalate to Team Lead / Controller as BLOCKED.
+
+# ==============================================================================
+# 5. SINGLE-WRITER FILE OWNERSHIP LOCK
+# ==============================================================================
+single_writer_lock:
+  rule: "ONE_WRITER_PER_TARGET"
+  scope:
+    - "Filesystem files in src/**"
+    - "Roblox DataModel Instances / scripts"
+    - "Documentation plans docs/plans/**"
+  enforcement:
+    conflict_action: "IMMEDIATE_BLOCK"
+    description: >
+      Only one active writer is permitted per file or Roblox Instance at any time.
+      Concurrent modifications to the same file by parallel subagents are strictly forbidden.
+      Any detected collision immediately halts the incoming worker with status BLOCKED.
+
+# ==============================================================================
+# 6. REWORK LOOP & 3-STRIKE CIRCUIT BREAKER
+# ==============================================================================
+circuit_breaker:
+  max_rework_rounds: 2
+  escalation_trigger_round: 3
+
+  rework_invalidation_rule:
+    rule: "STALE_REVIEW_REQUIRES_RERUN"
+    description: >
+      Any new code diff produced during a rework loop completely invalidates prior review approvals.
+      All review gates must be re-executed against the latest Git diff / working tree state.
+
+  strike_protocol:
+    round_1_failure:
+      action: "REWORK_ROUND_2"
+      target: "Original Implementer"
+      instruction: "Address specific findings (F-xx) identified by Reviewer / QA"
+    round_2_failure:
+      action: "CIRCUIT_BREAKER_TRIGGERED"
+      target: "Roblox Team Lead / Owner (Stang)"
+      instruction: >
+        Do NOT start Round 3 automatically. Halt implementation immediately.
+        Set Board State to ESCALATED. Present unresolved findings, root-cause analysis,
+        and wait for human Owner guidance before any further attempts.

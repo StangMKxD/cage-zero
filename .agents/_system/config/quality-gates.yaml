@@ -1,0 +1,185 @@
+schema_version: "2.0.0"
+config_id: "roblox-quality-gates"
+title: "Project Last Wave: Quality Gates & Verification Matrix"
+updated_at: "2026-11-10T14:47:30+07:00"
+
+# ==============================================================================
+# 1. STANDARDIZED STATUS VOCABULARY
+# ==============================================================================
+status_vocabulary:
+  PASS:
+    description: "Gate criteria fully met with verified command outputs, exit code 0, or logged evidence."
+    allows_handoff_advance: true
+
+  FAIL:
+    description: "Gate criteria evaluated and failed. Requires rework loop."
+    allows_handoff_advance: false
+
+  PARTIAL:
+    description: "Partially implemented or verified with bounded non-critical gaps."
+    allows_handoff_advance: false
+
+  UNVERIFIED:
+    description: "Code implemented but checks have not yet been evaluated."
+    allows_handoff_advance: false
+
+  NOT_RUN:
+    description: "Check was intentionally or unintentionally omitted."
+    allows_handoff_advance: false
+
+  BLOCKED:
+    description: "Preconditions missing, environment unavailable, or lock conflict."
+    allows_handoff_advance: false
+
+  STUDIO_RUNTIME_UNVERIFIED:
+    description: "Static checks pass, but interactive Studio Play Solo runtime verification has not been performed."
+    allows_handoff_advance: false
+
+  USER_UAT_PENDING:
+    description: "Awaiting human owner (Stang) visual/interactive Play test in Studio or client."
+    allows_handoff_advance: false
+
+  OWNER_DECISION_REQUIRED:
+    description: "Architecture choice, scope change, or financial/asset decision requiring Stang approval."
+    allows_handoff_advance: false
+
+# ==============================================================================
+# 2. EVIDENCE ENFORCEMENT RULE
+# ==============================================================================
+evidence_policy:
+  rule: "MISSING_EVIDENCE_BLOCKS_PASS"
+  description: >
+    Never allow a gate to transition to PASS without verifiable command output,
+    exit code 0, or referenced evidence files. Claims of success without proof
+    must be downgraded to UNVERIFIED or NOT_RUN immediately.
+
+# ==============================================================================
+# 3. CORE QUALITY GATES (G-ENG, G-ANIM, G-VFX, G-FEEL, RBX-10, RBX-11, G-VIS, G-OWN)
+# ==============================================================================
+quality_gates:
+  G-ENG-01:
+    gate_id: "G-ENG-01"
+    name: "Engineering Quality & Static Analysis"
+    category: "ENGINEERING"
+    description: "Luau strict typing, Selene linting, StyLua formatting, and cyclic require checks."
+    checks:
+      - command: "selene ."
+        expected_exit_code: 0
+        description: "Zero lint errors across modified Luau files"
+      - command: "stylua --check ."
+        expected_exit_code: 0
+        description: "Strict compliance with .stylua.toml formatting"
+      - check_type: "TYPECHECK"
+        description: "--!strict compliance on all new/modified ModuleScripts"
+      - check_type: "DEPENDENCY_GRAPH"
+        description: "Zero circular requires between client, shared, and server modules"
+    owner_role: "independent-code-reviewer"
+
+  G-ANIM-02:
+    gate_id: "G-ANIM-02"
+    name: "R15 Animation Integrity & Event Markers"
+    category: "ANIMATION"
+    description: "Keyframe animation integrity on R15 rig, event markers for hitbox timing."
+    checks:
+      - check_type: "RIG_COMPATIBILITY"
+        description: "Valid R15 Motor6D hierarchy (HumanoidRootPart, UpperTorso, LowerTorso, etc.)"
+      - check_type: "EVENT_MARKERS"
+        description: "Animation events (HitboxStart, HitboxEnd, VFXSpawn) present with non-zero timestamps"
+      - check_type: "TIMING_CURVES"
+        description: "Clear anticipation, strike, and recovery phases without instant pop"
+    owner_role: "visual-animation-reviewer"
+
+  G-VFX-03:
+    gate_id: "G-VFX-03"
+    name: "VFX File Size & Visual Restraint"
+    category: "VFX"
+    description: "Visual effects visual polish and strict adherence to asset/controller size limits."
+    checks:
+      - check_type: "CONTROLLER_FILE_SIZE"
+        target_file: "src/client/Controllers/CombatVFXController.luau"
+        max_bytes: 199000
+        description: "File size must remain strictly under 199,000 bytes project constraint"
+      - check_type: "PARTICLE_LIFETIME"
+        description: "All ParticleEmitters, Beams, and Trails must have explicit cleanup/Debris timeouts"
+      - check_type: "NO_CAMERA_DRIFT"
+        description: "Zero-drift camera shake implementation per MEM-FIX-0003"
+    owner_role: "visual-animation-reviewer"
+
+  G-FEEL-04:
+    gate_id: "G-FEEL-04"
+    name: "Combat Game Feel & Hitstop Validation"
+    category: "GAMEPLAY"
+    description: "Tactile combat responsiveness: hitstop, knockback impulse, audio cues, screen shake."
+    checks:
+      - check_type: "HITSTOP_DURATION"
+        tolerance: "40ms - 120ms based on weapon weight class"
+        description: "Hitstop pauses animation/velocity momentarily on successful hit"
+      - check_type: "KNOCKBACK_VECTOR"
+        description: "Authoritative server impulse applied via LinearVelocity or VectorForce"
+      - check_type: "AUDIO_CUE_SYNC"
+        description: "Impact sound fires within 1 frame of contact confirmation"
+    owner_role: "game-designer"
+
+  RBX-10:
+    gate_id: "RBX-10"
+    name: "Security & Anti-Exploit Verification"
+    category: "SECURITY"
+    description: "Mandatory gate for RemoteEvents, server authority, damage calculation, and inventory."
+    checks:
+      - check_type: "SERVER_AUTHORITY"
+        description: "Client never sends damage amount; client sends attack intent, server computes damage"
+      - check_type: "TYPEOF_VALIDATION"
+        description: "Strict typeof() checks on all arguments arriving at OnServerEvent/OnServerInvoke"
+      - check_type: "NUMERIC_SANITY"
+        description: "math.isfinite() validation on all numeric coordinates, forces, and cooldowns"
+      - check_type: "SPATIAL_VALIDATION"
+        description: "Distance sanity check: (targetPos - playerPos).Magnitude <= maxRange + tolerance"
+      - check_type: "RATE_LIMITING"
+        description: "Token-bucket or timestamp cooldown validation on server"
+    owner_role: "security-anti-exploit-specialist"
+
+  RBX-11:
+    gate_id: "RBX-11"
+    name: "Performance & MicroProfiler Budget"
+    category: "PERFORMANCE"
+    description: "Mandatory gate for heavy simulation, wave spawns, raycasts, and VFX churn."
+    checks:
+      - check_type: "FRAME_BUDGET"
+        max_ms: 12.0
+        description: "Total frame compute must not exceed 12ms to maintain 60 FPS"
+      - check_type: "HEARTBEAT_BUDGET"
+        max_ms: 4.0
+        description: "Script step on RunService.Heartbeat must remain under 4ms"
+      - check_type: "MEMORY_LEAK_AUDIT"
+        description: "All Maid/Janitor cleanup connections disconnected upon entity destruction"
+      - check_type: "BASELINE_COMPARISON"
+        description: "Baseline vs post-change measurement under identical load scenario"
+    owner_role: "performance-specialist"
+
+  G-VIS-07:
+    gate_id: "G-VIS-07"
+    name: "Visual Playback & Capture Review"
+    category: "VISUAL_REVIEW"
+    description: "Visual validation of UI layout, animation playback, and camera perspective."
+    checks:
+      - check_type: "ASPECT_RATIO_TEST"
+        description: "ScreenGui responsive on Phone (16:9), Tablet (4:3), and PC (16:9)"
+      - check_type: "SAFE_AREA_INSETS"
+        description: "UI respects GuiService safe area insets on mobile notches"
+      - check_type: "VISUAL_ARTIFACT_INSPECTION"
+        description: "Reviewer verifies screenshot or recording of visual execution"
+    owner_role: "visual-animation-reviewer"
+
+  G-OWN-08:
+    gate_id: "G-OWN-08"
+    name: "Owner Approval & Closure Gate"
+    category: "GOVERNANCE"
+    description: "Final human authorization by Stang before any git commit or milestone transition."
+    checks:
+      - check_type: "ALL_PRIOR_GATES_PASS"
+        description: "G-ENG-01 through G-VIS-07 must be PASS or explicitly waived in writing"
+      - check_type: "WORKING_TREE_CLEANLINESS"
+        description: "No untracked garbage or stray debug log files in working tree"
+      - check_type: "STANG_WRITTEN_SIGN_OFF"
+        description: "Explicit confirmation from Stang approving the final diff"
+    owner_role: "roblox-team-lead"

@@ -4,6 +4,16 @@
 
 # PROJECT AGENT STATE & ROUTER
 
+## DIRECTORY PATH INDEX (สารบัญโฟลเดอร์และขอบเขตงาน)
+- `src/`: โค้ดหลักของเกม (Roblox Luau - client, server, shared) ดูเมื่อต้องพัฒนาฟีเจอร์, แก้ไขบั๊ก หรืออัปเดตระบบเกมหลัก
+- `tests/`: ชุดทดสอบระบบและสเปกอัตโนมัติ (Automated/Unit tests) ดูเมื่อต้องรันหรือปรับปรุงชุดทดสอบ
+- `docs/`: เอกสารโครงการ สเปกระบบ และแผนงานตาม Phase (เช่น Phase 1 Release-First, PRD, Specs) ดูเมื่อต้องการศึกษาข้อกำหนด แผนงาน หรือกติกา
+- `.agents/`: พื้นที่ประสานงาน Agent, ประวัติส่งมอบงานใน `teamwork/` (ignored) และชุดเทมเพลตอ้างอิง `_system/` (ดู [.agents/README.md](file:///C:/Users/Stang/cage-zero/.agents/README.md))
+- `.sandbox/`: สภาพแวดล้อมทดลองและแยกส่วนทดสอบ (`experiment/`, `approved/`, `rejected/`, และ rollback) ก่อนนำเข้า `src/` (ดู [.sandbox/README.md](file:///C:/Users/Stang/cage-zero/.sandbox/README.md))
+- `.backup/`: ที่เก็บไฟล์สำรอง (Backup storage) ของโค้ดและสถานะเดิม ใช้สำหรับอ้างอิงย้อนหลังเท่านั้น ห้ามแก้ไข (ignored ใน `.gitignore`)
+- `cage-zero-animation-work/`: พื้นที่งาน authoring แอนิเมชันและไฟล์ asset ดิบภายนอก (Blender/FBX) (ignored ใน `.gitignore`)
+
+
 > **Current pre-Idle checkpoint — 2026-10-25:** CleanupA + ROBLOX Boy R15/player appearance/+30% owner-accepted height/smaller ball/lifecycle reviewed in [review019](docs/plan/phase-01-gameplay-demo/release-first/assets/review-019.md). Owner authorizes Codex local checkpoint commit; no push. Sources frozen; no new Idle or camera implementation in this snapshot. Later camera-off/Idle work requires its bounded assignment and one Studio writer. Historical approval/paused findings below retain their own scope.
 
 > **LATEST OWNER AUTHORIZATION — 2026-10-25 Cleanup A:** agyanimation/3.8 Flash may execute ONLY the bounded source cleanup in [cleanup-option-a-HANDOFF](docs/plan/phase-01-gameplay-demo/release-first/assets/cleanup-option-a-HANDOFF.md), tracked in RF02/tasks CA01–04. Supersedes docs-only/deletion stop below only for that allowlist. Existing rig/cage preserved, free ball only. No R15/new gameplay/Idle/Studio/app tests/Git mutations; original rig review findings unchanged. Auto push reports, no monitoring.

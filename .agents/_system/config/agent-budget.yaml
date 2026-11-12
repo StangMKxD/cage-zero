@@ -1,0 +1,85 @@
+schema_version: "2.0.0"
+config_id: "roblox-agent-budget"
+title: "Project Last Wave: Agent Compaction & Resource Budgets"
+updated_at: "2026-11-10T14:48:00+07:00"
+
+# ==============================================================================
+# 1. DOCUMENTATION & FILE LINE BUDGETS (MEM-ADR-0003)
+# ==============================================================================
+file_budgets:
+  tasks_md:
+    target_file: "TASKS.md"
+    soft_target_lines: 70
+    compaction_trigger_lines: 90
+    enforcement: "MANDATORY_COMPACTION"
+    description: >
+      Keep TASKS.md compact (<= 70 lines) to avoid context pollution.
+      If TASKS.md reaches 90 lines, agents must execute 3-tier compaction before proceeding.
+
+  notes_md:
+    target_file: "NOTES.md"
+    max_lines: 80
+    enforcement: "ROLLOVER_TO_ARCHIVE"
+    description: >
+      NOTES.md must strictly remain under 80 lines.
+      Historical daily logs must roll over into archive-log.md to maintain zero data loss.
+
+  combat_vfx_controller:
+    target_file: "src/client/Controllers/CombatVFXController.luau"
+    max_bytes: 199000
+    enforcement: "HARD_SIZE_CEILING"
+    description: >
+      Strict project constraint from Project Last Wave architecture.
+      CombatVFXController.luau must never exceed 199,000 bytes.
+      Modularize particle configs or sub-controllers into dedicated helper modules if approached.
+
+# ==============================================================================
+# 2. SELECTIVE EVIDENCE RULE
+# ==============================================================================
+selective_evidence_policy:
+  rule: "SELECTIVE_EVIDENCE_LOGGING"
+  description: >
+    Avoid log file proliferation and workspace bloat by categorizing evidence logging.
+
+  passing_tests:
+    storage: "INLINE_ONLY"
+    target_location: "TASKS.md Section 3"
+    rule: >
+      Normal passing tests (exit code 0) record command name, exit code, execution timestamp,
+      and concise 1-line summary directly in TASKS.md Section 3.
+      Do NOT generate standalone .log files for passing runs.
+
+  failing_runs_and_profiling:
+    storage: "EVIDENCE_DIRECTORY"
+    target_location: ".agents/tasks/<slug>/run_XX/evidence/"
+    file_naming_conventions:
+      failure_repro: "repro-<finding_id>-<timestamp>.log"
+      profiler_capture: "profile-<system_name>-<timestamp>.csv"
+      security_audit: "exploit-audit-<remote_name>.log"
+    rule: >
+      Failing runs, detailed stack traces, and MicroProfiler metrics are saved as dedicated
+      evidence files and referenced by URI in TASKS.md.
+
+# ==============================================================================
+# 3. REWORK & ESCALATION BUDGETS
+# ==============================================================================
+rework_budget:
+  max_rework_rounds_before_escalation: 2
+  escalation_trigger: "BEFORE_STARTING_ROUND_3"
+  actions_on_escalation:
+    - "Set TASKS.md Board State to ESCALATED"
+    - "Halt automated subagent dispatch"
+    - "Compile root-cause summary and unresolved findings (F-xx)"
+    - "Notify Owner (Stang) and wait for human decision"
+
+# ==============================================================================
+# 4. PARALLELISM & CONCURRENCY BUDGETS
+# ==============================================================================
+parallelism_rules:
+  max_concurrent_implementers: 3
+  disjoint_ownership_requirement:
+    rule: "STRICTLY_DISJOINT_FILES_AND_INSTANCES"
+    description: >
+      Parallel subagents are permitted ONLY when their changed_files sets and Roblox DataModel
+      target instances are completely disjoint.
+      If any file or instance is shared between two workstreams, they must execute sequentially.

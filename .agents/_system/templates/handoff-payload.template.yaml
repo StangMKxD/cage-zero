@@ -1,0 +1,56 @@
+schema_version: "2.0.0"
+task_id: "{{TASK_ID}}" # e.g. TASK-20261110-001
+run_id: "{{RUN_ID}}" # e.g. run_01
+handoff_id: "{{HANDOFF_ID}}" # e.g. HND-0001
+idempotency_key: "{{IDEMPOTENCY_KEY}}" # e.g. UUID v4
+
+sender:
+  role: "{{SENDER_ROLE}}"
+  governance: "{{SENDER_GOVERNANCE}}"
+  session_id: "{{SENDER_SESSION_ID}}"
+
+recipient:
+  role: "{{RECIPIENT_ROLE}}"
+  governance: "{{RECIPIENT_GOVERNANCE}}"
+  session_id: "{{RECIPIENT_SESSION_ID}}"
+
+session_identity:
+  subagent_type: "{{SUBAGENT_TYPE}}"
+  provider_model: "{{PROVIDER_MODEL}}"
+
+scope:
+  feature_id: "{{FEATURE_ID}}"
+  allowed_file_patterns:
+    - "{{ALLOWED_FILE_PATTERN_1}}"
+  forbidden_file_patterns:
+    - "{{FORBIDDEN_FILE_PATTERN_1}}"
+
+acceptance_criteria:
+  - "{{ACCEPTANCE_CRITERIA_1}}"
+  - "{{ACCEPTANCE_CRITERIA_2}}"
+
+base_git_sha: "{{BASE_GIT_SHA}}"
+
+changed_files:
+  - "{{CHANGED_FILE_1}}"
+
+change_summary: >
+  {{CHANGE_SUMMARY_TEXT}}
+
+relevant_assets:
+  - "{{RELEVANT_ASSET_1}}"
+
+test_commands:
+  - "{{TEST_COMMAND_1}}"
+
+evidence_refs:
+  - "{{EVIDENCE_REF_1}}"
+
+outstanding_risks:
+  - "{{OUTSTANDING_RISK_1}}"
+
+unresolved_findings: []
+
+required_next_action: "{{REQUIRED_NEXT_ACTION}}" # e.g. INDEPENDENT_CODE_REVIEW | QA_TEST | OWNER_APPROVAL
+
+delivery_state: "PENDING_ACK" # PENDING_ACK | DELIVERED_ACK | DELIVERY_UNCONFIRMED | BLOCKED | REJECTED

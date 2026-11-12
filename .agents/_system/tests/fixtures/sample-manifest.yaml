@@ -1,0 +1,11 @@
+taskId: "TASK-20261110-042"
+runId: "run_02"
+slug: "ระบบคอมโบดาบ-getsuga"
+stage: "CODE_REVIEW"
+reworkRound: 1
+codeReviewStatus: "PENDING"
+boardState: "IN_PROGRESS"
+assignedSpecialist: "gameplay-engineer"
+assignedReviewer: "independent-code-reviewer"
+assignedTester: "roblox-qa-tester"
+updatedAt: "2026-11-10T14:50:00+07:00"

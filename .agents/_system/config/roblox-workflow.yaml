@@ -1,0 +1,168 @@
+schema_version: "2.0.0"
+workflow_id: "roblox-production-multi-agent-workflow"
+title: "Project Last Wave: Roblox Production Multi-Agent Workflow Configuration"
+updated_at: "2026-11-10T14:45:00+07:00"
+owner: "Stang"
+
+# ==============================================================================
+# 1. SCOPE LOCK & ACTIVATION FILTER
+# ==============================================================================
+scope_lock:
+  target_project: "project-last-wave"
+  project_root: "C:\\Users\\Stang\\roblox-game\\project-last-wave"
+  allowed_platforms:
+    - "Roblox"
+    - "Studio"
+    - "Rojo"
+    - "Luau"
+    - "R15 Rig"
+  enforcement: "STRICT"
+
+activation_filter:
+  mode: "EXCLUSIVE_ALLOWLIST"
+  allowed_intents_and_domains:
+    - "combat_system"
+    - "r15_animation"
+    - "vfx_particles_beams_trails"
+    - "ui_hud_screen_gui"
+    - "lobby_and_world_building"
+    - "npc_ai_and_wave_spawning"
+    - "rojo_project_sync"
+    - "luau_scripting"
+    - "datastore_profilestore"
+    - "roblox_studio_data_model"
+    - "sound_audio_design"
+    - "remote_event_networking"
+    - "anti_exploit_validation"
+    - "roblox_microprofiler_tuning"
+  
+  # Explicit rejection list. If matched, immediately reject with code WORKFLOW_NOT_APPLICABLE
+  explicit_rejections:
+    rejection_code: "WORKFLOW_NOT_APPLICABLE"
+    rejected_patterns:
+      - "csharp"
+      - "dotnet"
+      - "react"
+      - "nextjs"
+      - "web_frontend"
+      - "fleet_verify"
+      - "vms_management"
+      - "angular"
+      - "vue"
+      - "python_django"
+      - "spring_boot"
+    action_on_match:
+      action: "ABORT_AND_NOTIFY"
+      message: "WORKFLOW_NOT_APPLICABLE: This agent workflow is strictly locked to Project Last Wave (Roblox/Luau/R15/Rojo). Tasks outside this scope must not execute this workflow."
+
+# ==============================================================================
+# 2. PROJECT-FIRST PRECEDENCE
+# ==============================================================================
+# Derived from MEM-ADR-0003 & AGENTS.md. Project repository documents always override
+# global, vendor, or TeamAI defaults.
+precedence_hierarchy:
+  tier_1:
+    file: "AGENTS.md"
+    authority: "Supreme local repository root instructions and Stang authority rules"
+  tier_2:
+    file: "docs/READ.md"
+    authority: "Project document map and subsystem architecture boundaries"
+  tier_3:
+    file: "docs/decisions/owner-decision-log.md"
+    authority: "Owner decision identities, approved milestones, and explicit grants"
+  tier_4:
+    file: "docs/plans/TASKS.md"
+    authority: "Canonical Single Execution Board. All active workstreams register here"
+  tier_5:
+    file: ".agents/_system/config/*.yaml"
+    authority: "System workflow configuration, routing, and quality rules"
+  tier_6:
+    source: "Global / External Defaults"
+    authority: "Lowest precedence. Overridden by any project tier above"
+
+# ==============================================================================
+# 3. TASK SLUG & RUN MANAGEMENT
+# ==============================================================================
+task_and_run_management:
+  base_directory: ".agents/tasks"
+  
+  slug_normalization:
+    description: "Semantic Thai/English task naming normalized for Windows filesystem safety"
+    rules:
+      - "Strip forbidden Windows characters: <>:\"/\\|?*"
+      - "Collapse consecutive spaces or underscores to a single dash '-'"
+      - "Convert ASCII characters to lowercase while preserving valid UTF-8 Thai syllables"
+      - "Trim trailing dots or spaces"
+      - "Max slug length: 64 characters"
+      - "Check case-insensitive collision against existing directories before creation"
+    immutable_task_id_binding:
+      pattern: "^TASK-\\d{8}-\\d{3}$"
+      example: "TASK-20261110-001"
+      rule: "Every task directory must bind an immutable task_id in its manifest and TASKS.md"
+
+  folder_structure:
+    pattern: ".agents/tasks/<task-slug>/"
+    run_pattern: "run_XX"
+    continuation_policy:
+      rule: "Continuation prompts on the same topic increment run_02, run_03 inside the existing <task-slug>/ instead of creating duplicate task folders."
+      threshold: "Same feature, same bug cluster, or sequential review/rework cycle"
+    
+    sparse_directory_rule:
+      description: "Create only subdirectories under run_XX/ that have actual work in that run"
+      allowed_subdirs:
+        - "evidence"    # Created ONLY if logs or profiling output are generated
+        - "diffs"       # Created ONLY if patch diffs or asset exports are staged
+        - "reviews"     # Created ONLY when an independent reviewer produces a report
+
+# ==============================================================================
+# 4. GOVERNANCE MODES (MEM-ADR-0003)
+# ==============================================================================
+governance_modes:
+  OWNER_STANDARD:
+    description: "Standard production mode. Implementer changes code, Reviewer audits diff, Owner approves commit/push"
+    sod_enforced: true
+    independent_review_required: true
+    qa_verification_required: true
+    max_rework_rounds: 2
+    commit_policy: "Reviewer-Led after Stang explicit approval"
+
+  STRICT_IMPLEMENTER:
+    description: "Separation of Duties (SoD) isolation (e.g. AGY implementer under Codex controller)"
+    sod_enforced: true
+    scope_lock_strict: true
+    manifest_sha256_required: true
+    independent_review_required: true
+    qa_verification_required: true
+    max_rework_rounds: 2
+    commit_policy: "Reviewer-Led after Stang explicit approval"
+
+  SOLO_EXPRESS:
+    description: "Bounded hotfix or non-gameplay documentation change. Single agent with strict scope lock"
+    sod_enforced: false
+    independent_review_required: false
+    qa_verification_required: true
+    max_rework_rounds: 1
+    commit_policy: "Owner explicit approval required prior to any Git commit"
+
+# ==============================================================================
+# 5. HARD PROHIBITIONS (SAFETY GUARDRAILS)
+# ==============================================================================
+hard_prohibitions:
+  autonomous_git_commit:
+    rule: "NO_AUTONOMOUS_GIT_COMMIT"
+    description: "Zero autonomous git commit allowed. Requires explicit written command from Stang"
+  autonomous_git_push:
+    rule: "NO_AUTONOMOUS_GIT_PUSH"
+    description: "Zero autonomous git push allowed. Delivery is working-tree only"
+  autonomous_pr_creation:
+    rule: "NO_AUTONOMOUS_PR_CREATION"
+    description: "Zero PR creation or merging without explicit Owner authorization"
+  autonomous_roblox_publish:
+    rule: "NO_AUTONOMOUS_ROBLOX_PUBLISH"
+    description: "No automated place save/publish to Roblox cloud. Studio sessions remain sandbox only"
+  unapproved_gameplay_mutation:
+    rule: "NO_UNAPPROVED_GAMEPLAY_MUTATION"
+    description: "Do not advance to subsequent plan milestones (e.g. PLAN 04) without Owner sign-off"
+  destructive_fs_operations:
+    rule: "NO_DESTRUCTIVE_CLEAN_OR_RESET"
+    description: "Never run git reset --hard or git clean -fd without explicit Stang directive"
